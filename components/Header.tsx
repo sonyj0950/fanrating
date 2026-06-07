@@ -10,7 +10,7 @@ export default function Header() {
     <header className="bg-white border-b sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="font-bold text-lg tracking-tight">
-          🏟️ fanarena
+          🏟️ fanarena.kr
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           {isAdmin && (
