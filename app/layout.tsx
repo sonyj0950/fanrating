@@ -4,7 +4,7 @@ import Providers from "./providers";
 import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "fan.arena",
+  title: "fanarena.kr",
   description: "fan.arena — 야구·축구·LCK 팬 평점 아레나",
 };
 
