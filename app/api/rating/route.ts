@@ -20,8 +20,8 @@ export async function POST(req: Request) {
 
   // 코멘트를 작성한 경우에만 검사 (비워도 등록 가능)
   if (comment) {
-    if (comment.length < 10)
-      return NextResponse.json({ error: "코멘트는 10자 이상 입력하거나 비워주세요." }, { status: 400 });
+    if (comment.length < 5)
+      return NextResponse.json({ error: "코멘트는 5자 이상 입력하거나 비워주세요." }, { status: 400 });
     if (/^[ㄱ-ㅎㅏ-ㅣ\s]+$/.test(comment))
       return NextResponse.json({ error: "자음/모음만으로는 작성할 수 없습니다." }, { status: 400 });
   }

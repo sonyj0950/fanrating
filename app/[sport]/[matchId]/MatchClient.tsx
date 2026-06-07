@@ -326,7 +326,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
   }
 
   const commentLen = comment.trim().length;
-  const commentOk = commentLen === 0 || commentLen >= 10; // 코멘트는 선택 — 쓸 경우만 10자 이상
+  const commentOk = commentLen === 0 || commentLen >= 5; // 코멘트는 선택 — 쓸 경우만 5자 이상
   const ratableSegs = segments.filter(s => s.key !== "full");
   const top3 = (data?.comments || []).slice(0, 3);
   const rest = (data?.comments || []).slice(3);
@@ -366,11 +366,11 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
                 ))}
               </div>
               <textarea value={comment} onChange={e=>setComment(e.target.value)}
-                placeholder="코멘트 (선택) — 작성 시 10자 이상, 자음/모음만 사용 불가"
+                placeholder="코멘트 (선택) — 작성 시 5자 이상, 자음/모음만 사용 불가"
                 className="w-full border rounded p-2 h-20 text-sm"/>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-xs text-gray-500">
-                  {comment.length}자{commentLen > 0 && !commentOk ? " · 10자 이상 입력하거나 비워주세요" : ""}
+                  {comment.length}자{commentLen > 0 && !commentOk ? " · 5자 이상 입력하거나 비워주세요" : ""}
                 </span>
                 <button onClick={submit} disabled={score===null || !commentOk}
                   className="bg-blue-600 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
