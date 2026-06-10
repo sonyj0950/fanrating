@@ -43,6 +43,29 @@ export default async function Image({ params }: { params: { matchId: string; use
   }
 
   const avg = ratings.length ? (ratings.reduce((a, r) => a + r.score, 0) / ratings.length).toFixed(1) : "-";
+
+  // 내 최고 평점 선수 (동점이면 총평 총점이 높은 선수)
+  const myBest: Record<string, number> = {};
+  for (const r of ratings) {
+    if (myBest[r.playerId] === undefined || r.score > myBest[r.playerId]) myBest[r.playerId] = r.score;
+  }
+  const ids = Object.keys(myBest);
+  let topName = "";
+  let topScore = 0;
+  if (ids.length > 0) {
+    const max = Math.max(...ids.map(id => myBest[id]));
+    const tied = ids.filter(id => myBest[id] === max);
+    let bestId = tied[0];
+    if (tied.length > 1) {
+      const all = await prisma.rating.findMany({ where: { matchId: params.matchId, playerId: { in: tied } }, select: { playerId: true, score: true } });
+      const s: Record<string, number> = {};
+      for (const r of all) s[r.playerId] = (s[r.playerId] || 0) + r.score;
+      for (const id of tied) if ((s[id] || 0) > (s[bestId] || 0)) bestId = id;
+    }
+    const r0 = ratings.find(r => r.playerId === bestId);
+    topName = r0?.player.name ?? "";
+    topScore = max;
+  }
   const top = ratings.slice(0, 6);
 
   return new ImageResponse(
@@ -58,8 +81,10 @@ export default async function Image({ params }: { params: { matchId: string; use
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <span style={{ fontSize: 18, color: "#9ca3af" }}>내 평균</span>
-            <span style={{ fontSize: 56, fontWeight: 800, color: "#2563eb" }}>⭐ {avg}</span>
+            <span style={{ fontSize: 18, color: "#9ca3af" }}>{topName ? "내 최고 평점" : "내 평균"}</span>
+            <span style={{ fontSize: topName ? 40 : 56, fontWeight: 800, color: "#2563eb" }}>
+              {topName ? `${topName} ⭐${topScore}` : `⭐ ${avg}`}
+            </span>
           </div>
         </div>
 

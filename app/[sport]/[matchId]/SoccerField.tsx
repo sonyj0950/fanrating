@@ -59,13 +59,13 @@ function Marker({ p, homeTeam, onPick }: { p: Placed; homeTeam?: string; onPick:
       className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 group focus:outline-none"
     >
       <span
-        className={`min-w-[34px] h-[34px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
-          flex items-center justify-center text-[12px] font-extrabold
+        className={`min-w-[38px] h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
+          flex items-center justify-center text-[14px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} group-hover:scale-110 transition`}
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[11px] leading-none font-bold text-white drop-shadow max-w-[64px] truncate bg-black/45 rounded px-1 py-0.5">
+      <span className="text-[11px] leading-none font-bold text-white drop-shadow whitespace-nowrap bg-black/55 rounded px-1.5 py-0.5">
         {player.name}
       </span>
     </button>

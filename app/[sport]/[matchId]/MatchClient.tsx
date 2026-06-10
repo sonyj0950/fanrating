@@ -466,8 +466,10 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
     <div className="flex items-center justify-between mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
       <p className="text-sm font-semibold text-blue-800">
         ⭐ 나의 평점
-        {count > 0
-          ? <span className="font-normal text-blue-600"> · 평균 {data.avg} ({count}명)</span>
+        {count > 0 && data?.top
+          ? <span className="font-normal text-blue-600"> · 내 최고 평점 <b className="text-blue-800">{data.top.name}</b> ⭐{data.top.score}</span>
+          : count > 0
+          ? <span className="font-normal text-blue-600"> · {count}명 평가</span>
           : <span className="font-normal text-blue-500"> · 선수를 눌러 평점을 남겨보세요</span>}
       </p>
       {count > 0 && (
