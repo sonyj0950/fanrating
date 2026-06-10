@@ -5,7 +5,7 @@ export default function TermsPage() {
     <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
       <h1 className="text-xl font-bold mb-1">이용약관 및 운영정책</h1>
       {/* TODO: 시행일자 변경 */}
-      <p className="text-gray-500 mb-6">시행일: [2026-06-10]</p>
+      <p className="text-gray-500 mb-6">시행일: [YYYY-MM-DD]</p>
 
       <Section title="제1조 (목적)">
         <p>본 약관은 fanarena.kr(이하 “서비스”)이 제공하는 스포츠 선수 평점·코멘트 서비스의 이용 조건 및 절차, 이용자와 서비스의 권리·의무를 규정함을 목적으로 합니다.</p>
@@ -51,7 +51,7 @@ export default function TermsPage() {
         <p>본 약관은 관련 법령에 위배되지 않는 범위에서 변경될 수 있으며, 변경 시 시행일과 내용을 서비스 화면에 공지합니다.</p>
       </Section>
 
-      <p className="text-gray-500 mt-6">부칙: 본 약관은 [2026-06-10]부터 시행합니다.</p>
+      <p className="text-gray-500 mt-6">부칙: 본 약관은 [YYYY-MM-DD]부터 시행합니다.</p>
     </div>
   );
 }

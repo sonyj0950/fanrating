@@ -10,17 +10,22 @@ export default function Header() {
     <header className="bg-white border-b sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="font-bold text-lg tracking-tight">
-          🏟️  fanarena<span className="text-blue-600">.</span>kr
+          🏟️ fan<span className="text-blue-600">.</span>arena
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           {isAdmin && (
-            <Link href="/admin" className="px-3 py-1.5 rounded border border-blue-200 text-blue-700 bg-blue-50">
-              관리자
-            </Link>
+            <>
+              <Link href="/admin" className="px-3 py-1.5 rounded border border-blue-200 text-blue-700 bg-blue-50">
+                관리자
+              </Link>
+              <Link href="/admin/reports" className="px-3 py-1.5 rounded border border-red-200 text-red-600 bg-red-50">
+                신고
+              </Link>
+            </>
           )}
           {session ? (
             <>
-              <span className="text-gray-500 hidden sm:inline">{session.user?.name}님</span>
+              <Link href="/account" className="text-gray-500 hidden sm:inline hover:text-blue-600">{session.user?.name}님</Link>
               <button onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-3 py-1.5 rounded border">로그아웃</button>
             </>
