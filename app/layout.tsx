@@ -4,8 +4,24 @@ import Providers from "./providers";
 import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "fan.arena",
-  description: "fan.arena — 야구·축구·LCK 팬 평점 아레나",
+  metadataBase: new URL("https://fanarena.kr"),
+  title: {
+    default: "fanarena.kr — 팬 평점 아레나",
+    template: "%s · fanarena.kr",
+  },
+  description: "야구·축구·LCK 경기의 선수 평점을 매기고 의견을 나누는 팬 커뮤니티 fanarena.kr",
+  openGraph: {
+    title: "fanarena.kr — 팬 평점 아레나",
+    description: "팬이 평가하고, 경기가 더 재밌어진다",
+    siteName: "fanarena.kr",
+    url: "https://fanarena.kr",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "fanarena.kr — 팬 평점 아레나",
+    description: "팬이 평가하고, 경기가 더 재밌어진다",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
