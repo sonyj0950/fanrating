@@ -176,18 +176,37 @@ export default function SoccerField({
         <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-blue-500 inline-block" /> 윙·하프</span>
       </div>
 
-      {/* 후보/교체 (포지션 코드가 없는 선수) */}
+      {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
       {(homeP.bench.length > 0 || awayP.bench.length > 0) && (
         <div className="mt-3 border rounded p-2 bg-gray-50">
-          <p className="text-xs font-semibold text-gray-500 mb-1">후보/교체</p>
-          <div className="flex flex-wrap gap-1">
-            {[...homeP.bench, ...awayP.bench].map(p => (
-              <button key={p.mpId} onClick={() => onPick(p)}
-                className="text-xs px-2 py-1 rounded-full border bg-white hover:bg-gray-100">
-                {p.name}{p.avg !== null ? ` · ${p.avg}` : ""}
-              </button>
-            ))}
+          <p className="text-xs font-semibold text-gray-500 mb-2">후보/교체</p>
+          <div className="grid grid-cols-2 gap-3">
+            <BenchColumn team={homeTeam ?? "홈"} list={homeP.bench} dot="bg-blue-500" onPick={onPick} />
+            <BenchColumn team={awayTeam ?? "원정"} list={awayP.bench} dot="bg-red-500" onPick={onPick} />
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BenchColumn({ team, list, dot, onPick }:
+  { team: string; list: Player[]; dot: string; onPick: (p: Player) => void }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-gray-500 mb-1 flex items-center gap-1">
+        <span className={`w-2 h-2 rounded-full ${dot} inline-block`} />{team}
+      </p>
+      {list.length === 0 ? (
+        <p className="text-[11px] text-gray-300">없음</p>
+      ) : (
+        <div className="flex flex-wrap gap-1">
+          {list.map(p => (
+            <button key={p.mpId} onClick={() => onPick(p)}
+              className="text-xs px-2 py-1 rounded-full border bg-white hover:bg-gray-100">
+              {p.name}{p.avg !== null ? ` · ${p.avg}` : ""}
+            </button>
+          ))}
         </div>
       )}
     </div>
