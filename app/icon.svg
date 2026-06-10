@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#222222"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded square bg (black) -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- arena bowl -->
+  <g transform="translate(256,268)">
+    <ellipse cx="0" cy="0" rx="150" ry="128" fill="none" stroke="#ffffff" stroke-width="14"/>
+    <ellipse cx="0" cy="6" rx="96" ry="78" fill="#ffffff"/>
+    <!-- pitch line -->
+    <line x1="0" y1="-72" x2="0" y2="84" stroke="#111" stroke-width="8"/>
+    <!-- centre circle -->
+    <circle cx="0" cy="6" r="26" fill="none" stroke="#111" stroke-width="8"/>
+    <!-- rating star center -->
+    <path d="M0 -14 l6.2 12.6 13.9 2 -10.1 9.8 2.4 13.8 -12.4 -6.5 -12.4 6.5 2.4 -13.8 -10.1 -9.8 13.9 -2 Z" fill="#0a0a0a"/>
+  </g>
+
+  <!-- floodlights -->
+  <path d="M150 118 L176 168 L124 168 Z" fill="#ffffff"/>
+  <path d="M362 118 L388 168 L336 168 Z" fill="#ffffff"/>
+</svg>

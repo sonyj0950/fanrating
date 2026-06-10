@@ -9,8 +9,17 @@ export default function Header() {
   return (
     <header className="bg-white border-b sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg tracking-tight">
-          🏟️ fan<span className="text-blue-600">.</span>arena
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <svg width="26" height="26" viewBox="0 0 120 120" aria-hidden="true">
+            <ellipse cx="60" cy="60" rx="58" ry="58" fill="#0a0a0a"/>
+            <ellipse cx="60" cy="64" rx="40" ry="34" fill="#ffffff"/>
+            <line x1="60" y1="32" x2="60" y2="96" stroke="#1a1a1a" strokeWidth="3"/>
+            <circle cx="60" cy="64" r="11" fill="none" stroke="#1a1a1a" strokeWidth="3"/>
+            <path d="M30 18 L42 40 L24 40 Z" fill="#ffffff"/>
+            <path d="M90 18 L96 40 L78 40 Z" fill="#ffffff"/>
+            <path d="M60 57 l2.3 4.7 5.2 .7 -3.8 3.7 .9 5.2 -4.6 -2.5 -4.6 2.5 .9 -5.2 -3.8 -3.7 5.2 -.7 Z" fill="#0a0a0a"/>
+          </svg>
+          <span>fanarena<span className="text-gray-400">.</span>kr</span>
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           {isAdmin && (
