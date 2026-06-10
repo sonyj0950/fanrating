@@ -118,10 +118,12 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
         </div>
       )}
 
-      <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-        segLabel={segments.find(s => s.key === seg)?.label ?? ""} />
+      {seg !== "mine" && (
+        <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          segLabel={segments.find(s => s.key === seg)?.label ?? ""} />
+      )}
 
-      {segments.length > 1 && (
+      {(segments.length > 1 || session) && (
         <div className="flex gap-1 mb-4 border-b overflow-x-auto">
           {segments.map(s => (
             <button key={s.key} onClick={() => setSeg(s.key)}
@@ -129,9 +131,19 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
               {s.label}
             </button>
           ))}
+          {session && (
+            <button onClick={() => setSeg("mine")}
+              className={`px-4 py-2 whitespace-nowrap ${seg==="mine"?"border-b-2 border-blue-600 font-semibold text-blue-600":""}`}>
+              ⭐ 나의 평점
+            </button>
+          )}
         </div>
       )}
 
+      {seg === "mine" ? (
+        <MyRatingsPanel matchId={match.id} match={match} onPick={setOpen} />
+      ) : (
+      <>
       <div className="mb-4 flex gap-2 justify-end">
         {match.sport === "kbo" && (
           <button onClick={() => setShowAll(!showAll)} className="text-sm px-3 py-1 border rounded bg-white">
@@ -179,6 +191,8 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam} onPick={setOpen}/>
         )}
       </div>
+      </>
+      )}
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
         segments={segments} status={match.status} sport={match.sport}
@@ -392,6 +406,86 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
   );
 }
 
+// 나의 평점 탭: 내가 이 경기에서 매긴 평점 모아보기 + 공유
+function MyRatingsPanel({ matchId, match, onPick }:
+  { matchId: string; match: any; onPick: (p: Player) => void }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const SEG_LABEL: Record<string, string> = {
+    full: "총평", first: "전반", second: "후반",
+    set1: "1세트", set2: "2세트", set3: "3세트", set4: "4세트", set5: "5세트",
+  };
+
+  async function load() {
+    setLoading(true);
+    const res = await fetch(`/api/my-ratings?matchId=${matchId}`);
+    setData(await res.json());
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [matchId]);
+
+  if (loading) return <p className="text-sm text-gray-400 mb-6">불러오는 중…</p>;
+  if (!data?.loggedIn) return <p className="text-sm text-gray-500 mb-6">로그인 후 이용할 수 있습니다.</p>;
+
+  const items: any[] = data.items || [];
+  if (items.length === 0)
+    return <p className="text-sm text-gray-400 bg-white border rounded-lg p-4 mb-6">아직 이 경기에서 매긴 평점이 없습니다. 선수를 눌러 평점을 남겨보세요.</p>;
+
+  // 공유 텍스트 생성
+  function shareText() {
+    const head = `[fanarena.kr] ${match.homeTeam} ${match.homeScore ?? "-"}:${match.awayScore ?? "-"} ${match.awayTeam}\n내 평점 (평균 ⭐${data.avg})`;
+    const lines = items.slice(0, 12).map(r =>
+      `· ${r.name} ⭐${r.score}${SEG_LABEL[r.segment] && r.segment !== "full" ? ` (${SEG_LABEL[r.segment]})` : ""}`);
+    return `${head}\n${lines.join("\n")}`;
+  }
+
+  async function share() {
+    const url = `${window.location.origin}/${match.sport}/${matchId}`;
+    const text = shareText();
+    if ((navigator as any).share) {
+      try { await (navigator as any).share({ title: "내 평점 · fanarena.kr", text, url }); return; } catch { return; }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      setCopied(true); setTimeout(() => setCopied(false), 1800);
+    } catch {
+      prompt("아래 내용을 복사하세요:", `${text}\n${url}`);
+    }
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="font-semibold">⭐ 나의 평점 <span className="text-sm font-normal text-gray-500">평균 {data.avg} · {data.count}명</span></p>
+        </div>
+        <button onClick={share}
+          className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white">
+          {copied ? "✓ 복사됨" : "🔗 내 평점 공유"}
+        </button>
+      </div>
+
+      <div className="space-y-1.5">
+        {items.map((r, i) => (
+          <div key={`${r.playerId}-${r.segment}`}
+            onClick={() => onPick({ mpId: r.playerId, playerId: r.playerId, name: r.name, team: r.team, role: "", isDefault: true, segment: "all", avg: null, count: 0 } as Player)}
+            className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2 cursor-pointer hover:border-blue-400">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${r.team === match.homeTeam ? "bg-blue-500" : "bg-red-500"}`} />
+            <span className="text-sm font-medium flex-1 truncate">
+              {r.name}
+              {r.segment !== "full" && SEG_LABEL[r.segment] && <span className="text-xs text-gray-400 ml-1">{SEG_LABEL[r.segment]}</span>}
+            </span>
+            {r.comment && <span className="text-xs text-gray-400 truncate max-w-[40%] hidden sm:inline">“{r.comment}”</span>}
+            <span className="text-sm font-bold text-blue-700 shrink-0">⭐ {r.score}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MatchRecord({ matchId, record }: { matchId: string; record?: string | null }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -466,9 +560,12 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
     : status === "live" ? `${ratableSegs[0]?.label ?? "전반"} 진행 중 — 이후 구간은 경기 종료 후 입력할 수 있습니다.`
     : "";
 
-  // 첫 진입 시 입력 가능한 구간으로 자동 선택
+  // 첫 진입 시 입력 가능한 구간으로 자동 선택 ("mine" 탭에서 열면 총평처럼 처리)
   const initialSeg = (() => {
-    const base = segment === "full" && segments.length > 1 ? ratableSegs[0]?.key : segment;
+    const normalized = segment === "mine" ? "full" : segment;
+    const base = (normalized === "full" || segments.length <= 1) && ratableSegs[0]
+      ? (normalized === "full" ? ratableSegs[0].key : normalized)
+      : normalized;
     if (status === "live") return ratableSegs[0]?.key ?? base;
     return base;
   })();
