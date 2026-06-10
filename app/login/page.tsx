@@ -9,13 +9,21 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
+  const [agree, setAgree] = useState(false);   // 약관·개인정보 동의
+  const [ageOk, setAgeOk] = useState(false);    // 만 14세 이상
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(e: any) {
     e.preventDefault();
-    setMsg(""); setBusy(true);
+    setMsg("");
 
+    if (mode === "register") {
+      if (!agree) { setMsg("이용약관 및 개인정보 처리방침에 동의해주세요."); return; }
+      if (!ageOk) { setMsg("만 14세 이상만 가입할 수 있습니다."); return; }
+    }
+
+    setBusy(true);
     if (mode === "register") {
       const res = await fetch("/api/register", {
         method: "POST", headers: { "content-type": "application/json" },
@@ -44,6 +52,24 @@ export default function LoginPage() {
         )}
         <input className="border rounded w-full p-2" type="password" placeholder="비밀번호"
           value={password} onChange={e => setPassword(e.target.value)} />
+
+        {mode === "register" && (
+          <div className="space-y-2 pt-1">
+            <label className="flex items-start gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5" />
+              <span>
+                [필수]{" "}
+                <a href="/terms" target="_blank" className="text-blue-600 underline">이용약관</a> 및{" "}
+                <a href="/privacy" target="_blank" className="text-blue-600 underline">개인정보 처리방침</a>에 동의합니다.
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={ageOk} onChange={e => setAgeOk(e.target.checked)} className="mt-0.5" />
+              <span>[필수] 만 14세 이상입니다.</span>
+            </label>
+          </div>
+        )}
+
         {msg && <p className="text-sm text-red-500">{msg}</p>}
         <button disabled={busy}
           className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-40">
@@ -54,7 +80,6 @@ export default function LoginPage() {
         className="mt-3 text-sm text-gray-500 hover:text-blue-600">
         {mode === "login" ? "계정이 없나요? 회원가입" : "이미 계정이 있나요? 로그인"}
       </button>
-      <p className="mt-3 text-xs text-gray-400">※ 첫 번째로 가입한 계정이 관리자가 됩니다.</p>
     </div>
   );
 }

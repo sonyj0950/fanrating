@@ -23,7 +23,7 @@ export default async function MatchPage({ params }: any) {
     role: mp.role || mp.player.position || "",
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
-    avg: null,
+    avg: null as number | null,
     count: 0,
   }));
 
