@@ -2,6 +2,23 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
 
+const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK" };
+
+export async function generateMetadata({ params }: any) {
+  const m = await prisma.match.findUnique({ where: { id: params.matchId } });
+  if (!m) return { title: "경기를 찾을 수 없습니다 · fanarena.kr" };
+  const label = SPORT_LABEL[m.sport] ?? "";
+  const score = `${m.homeTeam} ${m.homeScore ?? "-"} : ${m.awayScore ?? "-"} ${m.awayTeam}`;
+  const title = `${score} 팬 평점 · fanarena.kr`;
+  const description = `${label} ${m.homeTeam} vs ${m.awayTeam} 경기의 선수 평점을 매기고 의견을 나눠보세요.`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "article", url: `https://fanarena.kr/${m.sport}/${m.id}` },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
 export default async function MatchPage({ params }: any) {
   const m = await prisma.match.findUnique({
     where: { id: params.matchId },

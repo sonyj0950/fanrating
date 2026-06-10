@@ -27,6 +27,12 @@ function MatchCard({ m }: { m: any }) {
           {" : "}
           <span className="text-blue-600">{m.awayScore ?? "-"}</span> {m.awayTeam}
         </div>
+        {m.pog && (
+          <div className="text-xs text-gray-500 mt-0.5 truncate">
+            🏆 {m.pog.name} ⭐ {m.pog.avg}
+            {m.ratingCount ? <span className="text-gray-400"> · 평점 {m.ratingCount}</span> : null}
+          </div>
+        )}
       </Link>
       <DeleteMatchButton matchId={m.id} />
     </div>
@@ -45,7 +51,28 @@ function Section({ title, matches, empty }: { title: string; matches: any[]; emp
 }
 
 export default async function Home() {
-  const matches = await prisma.match.findMany({ orderBy: { date: "desc" } });
+  const raw = await prisma.match.findMany({
+    orderBy: { date: "desc" },
+    include: { players: { include: { player: true } }, ratings: true },
+  });
+
+  // 경기별 POG(평점 최고 선수) 계산
+  const matches = raw.map(m => {
+    const agg: Record<string, { sum: number; n: number }> = {};
+    for (const r of m.ratings) {
+      agg[r.playerId] ||= { sum: 0, n: 0 };
+      agg[r.playerId].sum += r.score;
+      agg[r.playerId].n++;
+    }
+    let pog: { name: string; avg: number } | null = null;
+    for (const mp of m.players) {
+      const a = agg[mp.playerId];
+      if (!a) continue;
+      const avg = a.sum / a.n;
+      if (!pog || avg > pog.avg) pog = { name: mp.player.name, avg: Number(avg.toFixed(1)) };
+    }
+    return { ...m, pog, ratingCount: m.ratings.length };
+  });
 
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const end = new Date(); end.setHours(23, 59, 59, 999);

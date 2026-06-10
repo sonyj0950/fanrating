@@ -6,6 +6,7 @@ import BaseballField from "./BaseballField";
 import SoccerField from "./SoccerField";
 import LckLineup from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
+import ShareButton from "@/components/ShareButton";
 import type { Player, Agg } from "./types";
 
 function segmentsFor(sport: string) {
@@ -97,7 +98,14 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
             <StatusBadge status={match.status} />
           </p>
         </div>
-        <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
+        <div className="flex items-center gap-2 shrink-0">
+          <ShareButton
+            title={`${match.homeTeam} ${match.homeScore ?? "-"} : ${match.awayScore ?? "-"} ${match.awayTeam} 팬 평점`}
+            text="fanarena.kr에서 선수 평점을 매겨보세요!"
+            path={`/${match.sport}/${match.id}`}
+            label="경기 공유" />
+          <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
+        </div>
       </div>
 
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
@@ -503,7 +511,16 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
             <p className="text-sm text-gray-500">{player.team} · {player.role}</p>
             {data && <p className="text-sm mt-1">전체 평균 ⭐ {data.avg} ({data.count}명)</p>}
           </div>
-          <button onClick={onClose} className="text-2xl">×</button>
+          <div className="flex items-start gap-2">
+            {data && (
+              <ShareButton
+                title={`${player.name} 팬 평점 ⭐ ${data.avg}`}
+                text={`${player.team} ${player.name} — fanarena.kr 팬 평점 ${data.avg}점 (${data.count}명)`}
+                path={`/${sport}/${matchId}`}
+                label="공유" />
+            )}
+            <button onClick={onClose} className="text-2xl leading-none">×</button>
+          </div>
         </div>
 
         <div className="p-5 border-b">
