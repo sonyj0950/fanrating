@@ -23,6 +23,8 @@ export default async function MatchPage({ params }: any) {
     role: mp.role || mp.player.position || "",
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
+    avg: null,
+    count: 0,
   }));
 
   const aggClean: Record<string, Record<string, { avg: number; count: number }>> = {};
