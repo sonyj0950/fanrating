@@ -60,16 +60,43 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
   const isAdmin = (session?.user as any)?.role === "admin";
 
   const segments = segmentsFor(match.sport);
-  const players = useMemo(() => applyAgg(rawPlayers, agg, seg), [rawPlayers, agg, seg]);
 
-  // 전반/후반 출전 구성: 총평은 전체, 전/후반 탭은 해당 출전자만
+  // 나의 평점: playerId -> 내가 매긴 점수(총평 우선, 없으면 가장 높은 구간 점수)
+  const [myScores, setMyScores] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    if (!session) { setMyScores({}); return; }
+    fetch(`/api/my-ratings?matchId=${match.id}`)
+      .then(r => r.json())
+      .then(d => {
+        const map: Record<string, number> = {};
+        for (const it of (d.items || [])) {
+          // 같은 선수의 여러 구간 중 더 높은 점수를 대표로 (총평 우선)
+          if (it.segment === "full" || map[it.playerId] === undefined)
+            map[it.playerId] = it.score;
+        }
+        setMyScores(map);
+      })
+      .catch(() => setMyScores({}));
+  }, [session, match.id]);
+
+  const isMine = seg === "mine";
+  // mine 탭에서는 각 선수의 avg를 "내 점수"로 교체
+  const baseSeg = isMine ? "full" : seg;
+  const players = useMemo(() => applyAgg(rawPlayers, agg, baseSeg), [rawPlayers, agg, baseSeg]);
+
+  // 전반/후반 출전 구성: 총평·나의평점은 전체, 전/후반 탭은 해당 출전자만
   const segFiltered = players.filter(p =>
-    seg === "full" || !p.segment || p.segment === "all" || p.segment === seg);
+    baseSeg === "full" || !p.segment || p.segment === "all" || p.segment === baseSeg);
 
-  // 야구: 기본 우선선수만, "더보기" 시 전체
-  const visiblePlayers = (match.sport === "kbo" && !showAll)
+  // 야구: 기본 우선선수만, "더보기" 시 전체 (나의 평점 탭에서는 전체 표시)
+  const visiblePlayers0 = (match.sport === "kbo" && !showAll && !isMine)
     ? segFiltered.filter(p => p.isDefault)
     : segFiltered;
+
+  // mine 모드: avg를 내 점수로 교체 (안 매긴 선수는 null)
+  const visiblePlayers = isMine
+    ? visiblePlayers0.map(p => ({ ...p, avg: myScores?.[p.playerId] ?? null, count: myScores?.[p.playerId] !== undefined ? 1 : 0 }))
+    : visiblePlayers0;
 
   // 감독/코치/심판 분리 (축구)
   const isOfficial = (p: Player) => /심판|주심|부심|VAR/i.test(p.role || "");
@@ -140,10 +167,11 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
         </div>
       )}
 
-      {seg === "mine" ? (
-        <MyRatingsPanel matchId={match.id} match={match} onPick={setOpen} />
-      ) : (
-      <>
+      {isMine && (
+        <MyRatingsHeader matchId={match.id} match={match} />
+      )}
+
+      {seg !== "mine" && (
       <div className="mb-4 flex gap-2 justify-end">
         {match.sport === "kbo" && (
           <button onClick={() => setShowAll(!showAll)} className="text-sm px-3 py-1 border rounded bg-white">
@@ -162,8 +190,9 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           </button>
         )}
       </div>
+      )}
 
-      {manageOpen && isAdmin && (
+      {manageOpen && isAdmin && seg !== "mine" && (
         <LineupManager players={players} onChanged={() => router.refresh()} />
       )}
 
@@ -191,8 +220,6 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam} onPick={setOpen}/>
         )}
       </div>
-      </>
-      )}
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
         segments={segments} status={match.status} sport={match.sport}
@@ -406,34 +433,22 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
   );
 }
 
-// 나의 평점 탭: 내가 이 경기에서 매긴 평점 모아보기 + 공유
-function MyRatingsPanel({ matchId, match, onPick }:
-  { matchId: string; match: any; onPick: (p: Player) => void }) {
+// 나의 평점 탭 헤더: 내 평균 + 공유 버튼 (점수는 피치/필드 위에 표시됨)
+function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const SEG_LABEL: Record<string, string> = {
-    full: "총평", first: "전반", second: "후반",
-    set1: "1세트", set2: "2세트", set3: "3세트", set4: "4세트", set5: "5세트",
-  };
+  useEffect(() => {
+    fetch(`/api/my-ratings?matchId=${matchId}`).then(r => r.json()).then(setData).catch(() => {});
+  }, [matchId]);
 
-  async function load() {
-    setLoading(true);
-    const res = await fetch(`/api/my-ratings?matchId=${matchId}`);
-    setData(await res.json());
-    setLoading(false);
-  }
-  useEffect(() => { load(); }, [matchId]);
+  if (data && !data.loggedIn)
+    return <p className="text-sm text-gray-500 mb-4">로그인 후 이용할 수 있습니다.</p>;
 
-  if (loading) return <p className="text-sm text-gray-400 mb-6">불러오는 중…</p>;
-  if (!data?.loggedIn) return <p className="text-sm text-gray-500 mb-6">로그인 후 이용할 수 있습니다.</p>;
-
-  const items: any[] = data.items || [];
-  if (items.length === 0)
-    return <p className="text-sm text-gray-400 bg-white border rounded-lg p-4 mb-6">아직 이 경기에서 매긴 평점이 없습니다. 선수를 눌러 평점을 남겨보세요.</p>;
+  const count = data?.count ?? 0;
 
   async function share() {
+    if (!data?.userId) return;
     const shareUrl = `${window.location.origin}/me/${matchId}/${data.userId}`;
     const text = `${data.nickname}님의 평점 (평균 ⭐${data.avg}) · ${match.homeTeam} ${match.homeScore ?? "-"}:${match.awayScore ?? "-"} ${match.awayTeam}`;
     if ((navigator as any).share) {
@@ -448,32 +463,18 @@ function MyRatingsPanel({ matchId, match, onPick }:
   }
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <p className="font-semibold">⭐ 나의 평점 <span className="text-sm font-normal text-gray-500">평균 {data.avg} · {data.count}명</span></p>
-        </div>
-        <button onClick={share}
-          className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white">
-          {copied ? "✓ 복사됨" : "🔗 내 평점 공유"}
+    <div className="flex items-center justify-between mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+      <p className="text-sm font-semibold text-blue-800">
+        ⭐ 나의 평점
+        {count > 0
+          ? <span className="font-normal text-blue-600"> · 평균 {data.avg} ({count}명)</span>
+          : <span className="font-normal text-blue-500"> · 선수를 눌러 평점을 남겨보세요</span>}
+      </p>
+      {count > 0 && (
+        <button onClick={share} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white shrink-0">
+          {copied ? "✓ 복사됨" : "🔗 공유"}
         </button>
-      </div>
-
-      <div className="space-y-1.5">
-        {items.map((r, i) => (
-          <div key={`${r.playerId}-${r.segment}`}
-            onClick={() => onPick({ mpId: r.playerId, playerId: r.playerId, name: r.name, team: r.team, role: "", isDefault: true, segment: "all", avg: null, count: 0 } as Player)}
-            className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2 cursor-pointer hover:border-blue-400">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${r.team === match.homeTeam ? "bg-blue-500" : "bg-red-500"}`} />
-            <span className="text-sm font-medium flex-1 truncate">
-              {r.name}
-              {r.segment !== "full" && SEG_LABEL[r.segment] && <span className="text-xs text-gray-400 ml-1">{SEG_LABEL[r.segment]}</span>}
-            </span>
-            {r.comment && <span className="text-xs text-gray-400 truncate max-w-[40%] hidden sm:inline">“{r.comment}”</span>}
-            <span className="text-sm font-bold text-blue-700 shrink-0">⭐ {r.score}</span>
-          </div>
-        ))}
-      </div>
+      )}
     </div>
   );
 }
