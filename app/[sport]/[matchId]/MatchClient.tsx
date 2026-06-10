@@ -319,9 +319,9 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
   // 선수 순위 (베스트 → 워스트)
   const ranked = [...rated].sort((a, b) => b.avg - a.avg || b.count - a.count);
 
-  // 점수 → 색상 (2~9 기준)
-  const barColor = (v: number) =>
-    v >= 7 ? "bg-blue-500" : v >= 5 ? "bg-green-500" : v >= 4 ? "bg-amber-500" : "bg-red-500";
+  // 팀 기준 색상 (홈=파랑, 원정=빨강 — 팀 평균 막대와 통일)
+  const teamColor = (team: string) =>
+    team === homeTeam ? "bg-blue-500" : team === awayTeam ? "bg-red-500" : "bg-gray-400";
   const pct = (v: number) => `${((v - 1) / 8) * 100}%`; // 1~9 범위를 0~100%로
 
   if (rated.length === 0) return null;
@@ -364,14 +364,20 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
 
           {/* 선수 순위 막대 */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 mb-2">선수 평점 순위 (베스트 → 워스트)</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-500">선수 평점 순위 (베스트 → 워스트)</p>
+              <div className="flex gap-2 text-[10px] text-gray-400">
+                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />{homeTeam}</span>
+                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" />{awayTeam}</span>
+              </div>
+            </div>
             <div className="space-y-1.5">
               {ranked.map((p, i) => (
                 <div key={p.mpId} className="flex items-center gap-2">
                   <span className="w-4 shrink-0 text-[10px] text-gray-400 text-right">{i + 1}</span>
                   <span className="w-16 shrink-0 text-xs truncate">{p.name}</span>
                   <div className="flex-1 bg-gray-100 rounded h-5">
-                    <div className={`${barColor(p.avg)} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(p.avg) }}>
+                    <div className={`${teamColor(p.team)} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(p.avg) }}>
                       <span className="text-[10px] text-white font-bold">{p.avg}</span>
                     </div>
                   </div>
@@ -497,8 +503,6 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
     load();
   }
 
-  const commentLen = comment.trim().length;
-  const commentOk = commentLen === 0 || commentLen >= 5; // 코멘트는 선택 — 쓸 경우만 10자 이상
   const top3 = (data?.comments || []).slice(0, 3);
   const rest = (data?.comments || []).slice(3);
 
@@ -557,13 +561,11 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                     ))}
                   </div>
                   <textarea value={comment} onChange={e=>setComment(e.target.value)}
-                    placeholder="코멘트 (선택) — 작성 시 5자 이상, 자음/모음만 사용 불가"
+                    placeholder="코멘트 (선택)"
                     className="w-full border rounded p-2 h-20 text-sm"/>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">
-                      {comment.length}자{commentLen > 0 && !commentOk ? " · 5자 이상 입력하거나 비워주세요" : ""}
-                    </span>
-                    <button onClick={submit} disabled={score===null || !commentOk}
+                    <span className="text-xs text-gray-500">{comment.length}자</span>
+                    <button onClick={submit} disabled={score===null}
                       className="bg-blue-600 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
                   </div>
                   {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}

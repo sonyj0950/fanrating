@@ -39,13 +39,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "해당 구간은 경기 종료 후 입력할 수 있습니다." }, { status: 403 });
   }
 
-  // 코멘트를 작성한 경우에만 검사 (비워도 등록 가능)
-  if (comment) {
-    if (comment.length < 5)
-      return NextResponse.json({ error: "코멘트는 5자 이상 입력하거나 비워주세요." }, { status: 400 });
-    if (/^[ㄱ-ㅎㅏ-ㅣ\s]+$/.test(comment))
-      return NextResponse.json({ error: "자음/모음만으로는 작성할 수 없습니다." }, { status: 400 });
-  }
+  // 코멘트는 선택 사항이며 길이·문자 제한 없음 (빈 값 허용)
 
   const userId = (session.user as any).id;
   await prisma.rating.upsert({
