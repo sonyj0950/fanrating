@@ -12,8 +12,8 @@ export async function POST(req: Request) {
   const score = Number(b.score);
   if (!b.matchId || !b.playerId)
     return NextResponse.json({ error: "잘못된 요청" }, { status: 400 });
-  if (!Number.isInteger(score) || score < 2 || score > 9)
-    return NextResponse.json({ error: "평점은 2~9 사이여야 합니다." }, { status: 400 });
+  if (!Number.isInteger(score) || score < 1 || score > 10)
+    return NextResponse.json({ error: "평점은 1~10 사이여야 합니다." }, { status: 400 });
 
   const segment = typeof b.segment === "string" && b.segment ? b.segment : "full";
   const comment = (b.comment || "").trim();

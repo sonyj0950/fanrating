@@ -363,7 +363,7 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
   // 팀 기준 색상 (홈=파랑, 원정=빨강 — 팀 평균 막대와 통일)
   const teamColor = (team: string) =>
     team === homeTeam ? "bg-blue-500" : team === awayTeam ? "bg-red-500" : "bg-gray-400";
-  const pct = (v: number) => `${((v - 1) / 8) * 100}%`; // 1~9 범위를 0~100%로
+  const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - 1) / 9) * 100))}%`; // 1~10 범위를 0~100%로
 
   if (rated.length === 0) return null;
 
@@ -643,11 +643,11 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                 </p>
               ) : (
                 <>
-                  <p className="text-sm font-semibold mb-2">평점 매기기 (2~9)</p>
+                  <p className="text-sm font-semibold mb-2">평점 매기기 (1~10)</p>
                   <div className="flex gap-1 flex-wrap mb-3">
-                    {[2,3,4,5,6,7,8,9].map(n => (
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setScore(n)}
-                        className={`w-10 h-10 rounded border ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
+                        className={`w-9 h-10 rounded border text-sm ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
                         {n}
                       </button>
                     ))}

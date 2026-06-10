@@ -16,11 +16,20 @@ export const metadata: Metadata = {
     siteName: "fanarena.kr",
     url: "https://fanarena.kr",
     type: "website",
+    images: [
+      {
+        url: "https://fanarena.kr/og.png",
+        width: 1200,
+        height: 630,
+        alt: "fanarena.kr — 팬 평점 아레나",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "fanarena.kr — 팬 평점 아레나",
     description: "팬이 평가하고, 경기가 더 재밌어진다",
+    images: ["https://fanarena.kr/og.png"],
   },
 };
 
