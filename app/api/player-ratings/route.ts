@@ -31,6 +31,10 @@ export async function GET(req: Request) {
     ? Number((ratings.reduce((a, r) => a + r.score, 0) / count).toFixed(2))
     : 0;
 
+  // 점수 분포 (2~9) — 막대그래프용
+  const dist: Record<number, number> = {2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
+  for (const r of ratings) if (dist[r.score] !== undefined) dist[r.score]++;
+
   const comments = ratings
     .filter(r => r.comment.trim() !== "")
     .map(r => ({

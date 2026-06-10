@@ -110,6 +110,9 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
         </div>
       )}
 
+      <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+        segLabel={segments.find(s => s.key === seg)?.label ?? ""} />
+
       {segments.length > 1 && (
         <div className="flex gap-1 mb-4 border-b overflow-x-auto">
           {segments.map(s => (
@@ -284,6 +287,93 @@ function StatusSwitcher({ matchId, status, onChanged }:
         ))}
       </div>
       <span className="text-xs text-gray-400">진행중=전반/1세트만, 종료=전 구간 평점 가능</span>
+    </div>
+  );
+}
+
+// 평점 통계: 선수 순위 막대 + 팀별 평균 비교
+function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
+  { players: Player[]; homeTeam: string; awayTeam: string; segLabel: string }) {
+  const [open, setOpen] = useState(false);
+
+  const rated = players.filter(p => p.avg !== null) as (Player & { avg: number })[];
+
+  // 팀 평균 (평점이 매겨진 선수 기준)
+  const teamAvg = (team: string) => {
+    const list = rated.filter(p => p.team === team);
+    if (list.length === 0) return null;
+    const sum = list.reduce((a, p) => a + p.avg, 0);
+    return { avg: Number((sum / list.length).toFixed(2)), n: list.length };
+  };
+  const homeA = teamAvg(homeTeam);
+  const awayA = teamAvg(awayTeam);
+
+  // 선수 순위 (베스트 → 워스트)
+  const ranked = [...rated].sort((a, b) => b.avg - a.avg || b.count - a.count);
+
+  // 점수 → 색상 (2~9 기준)
+  const barColor = (v: number) =>
+    v >= 7 ? "bg-blue-500" : v >= 5 ? "bg-green-500" : v >= 4 ? "bg-amber-500" : "bg-red-500";
+  const pct = (v: number) => `${((v - 1) / 8) * 100}%`; // 1~9 범위를 0~100%로
+
+  if (rated.length === 0) return null;
+
+  return (
+    <div className="mb-4 border rounded-lg bg-white overflow-hidden">
+      <button onClick={() => setOpen(!open)}
+        className="w-full flex justify-between items-center px-4 py-2.5 text-sm font-semibold hover:bg-gray-50">
+        <span>📊 평점 통계{segLabel ? ` · ${segLabel}` : ""}</span>
+        <span className="text-gray-400">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-5">
+          {/* 팀별 평균 비교 */}
+          {(homeA || awayA) && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 mb-2">팀 평균 평점</p>
+              <div className="space-y-2">
+                {[{ t: homeTeam, d: homeA, c: "bg-blue-500" }, { t: awayTeam, d: awayA, c: "bg-red-500" }].map(({ t, d, c }) => (
+                  <div key={t} className="flex items-center gap-2">
+                    <span className="w-20 shrink-0 text-xs truncate">{t}</span>
+                    <div className="flex-1 bg-gray-100 rounded h-5 relative">
+                      {d && <div className={`${c} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(d.avg) }}>
+                        <span className="text-[10px] text-white font-bold">{d.avg}</span>
+                      </div>}
+                    </div>
+                    <span className="w-10 shrink-0 text-[10px] text-gray-400 text-right">{d ? `${d.n}명` : "-"}</span>
+                  </div>
+                ))}
+              </div>
+              {homeA && awayA && (
+                <p className="text-xs text-gray-500 mt-1.5 text-center">
+                  {homeA.avg > awayA.avg ? `${homeTeam}` : awayA.avg > homeA.avg ? `${awayTeam}` : "양 팀"}
+                  {homeA.avg === awayA.avg ? " 평점 동일" : ` 우세 (+${Math.abs(homeA.avg - awayA.avg).toFixed(2)})`}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 선수 순위 막대 */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-2">선수 평점 순위 (베스트 → 워스트)</p>
+            <div className="space-y-1.5">
+              {ranked.map((p, i) => (
+                <div key={p.mpId} className="flex items-center gap-2">
+                  <span className="w-4 shrink-0 text-[10px] text-gray-400 text-right">{i + 1}</span>
+                  <span className="w-16 shrink-0 text-xs truncate">{p.name}</span>
+                  <div className="flex-1 bg-gray-100 rounded h-5">
+                    <div className={`${barColor(p.avg)} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(p.avg) }}>
+                      <span className="text-[10px] text-white font-bold">{p.avg}</span>
+                    </div>
+                  </div>
+                  <span className="w-8 shrink-0 text-[10px] text-gray-400 text-right">{p.count}명</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
