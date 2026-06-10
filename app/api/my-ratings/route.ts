@@ -32,5 +32,5 @@ export async function GET(req: Request) {
     ? Number((items.reduce((a, r) => a + r.score, 0) / items.length).toFixed(2))
     : 0;
 
-  return NextResponse.json({ items, avg, count: items.length, loggedIn: true, nickname: (session.user as any).name });
+  return NextResponse.json({ items, avg, count: items.length, loggedIn: true, userId, nickname: (session.user as any).name });
 }

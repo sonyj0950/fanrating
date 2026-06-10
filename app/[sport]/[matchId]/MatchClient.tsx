@@ -433,25 +433,17 @@ function MyRatingsPanel({ matchId, match, onPick }:
   if (items.length === 0)
     return <p className="text-sm text-gray-400 bg-white border rounded-lg p-4 mb-6">아직 이 경기에서 매긴 평점이 없습니다. 선수를 눌러 평점을 남겨보세요.</p>;
 
-  // 공유 텍스트 생성
-  function shareText() {
-    const head = `[fanarena.kr] ${match.homeTeam} ${match.homeScore ?? "-"}:${match.awayScore ?? "-"} ${match.awayTeam}\n내 평점 (평균 ⭐${data.avg})`;
-    const lines = items.slice(0, 12).map(r =>
-      `· ${r.name} ⭐${r.score}${SEG_LABEL[r.segment] && r.segment !== "full" ? ` (${SEG_LABEL[r.segment]})` : ""}`);
-    return `${head}\n${lines.join("\n")}`;
-  }
-
   async function share() {
-    const url = `${window.location.origin}/${match.sport}/${matchId}`;
-    const text = shareText();
+    const shareUrl = `${window.location.origin}/me/${matchId}/${data.userId}`;
+    const text = `${data.nickname}님의 평점 (평균 ⭐${data.avg}) · ${match.homeTeam} ${match.homeScore ?? "-"}:${match.awayScore ?? "-"} ${match.awayTeam}`;
     if ((navigator as any).share) {
-      try { await (navigator as any).share({ title: "내 평점 · fanarena.kr", text, url }); return; } catch { return; }
+      try { await (navigator as any).share({ title: "내 평점 · fanarena.kr", text, url: shareUrl }); return; } catch { return; }
     }
     try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true); setTimeout(() => setCopied(false), 1800);
     } catch {
-      prompt("아래 내용을 복사하세요:", `${text}\n${url}`);
+      prompt("아래 링크를 복사하세요:", shareUrl);
     }
   }
 
