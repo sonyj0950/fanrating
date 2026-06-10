@@ -47,9 +47,10 @@ function place(players: Player[], side: Side): { placed: Placed[]; bench: Player
   return { placed, bench };
 }
 
-function Marker({ p, onPick }: { p: Placed; onPick: (pl: Player) => void }) {
+function Marker({ p, homeTeam, onPick }: { p: Placed; homeTeam?: string; onPick: (pl: Player) => void }) {
   const { player } = p;
-  const ring = p.accent === "core" ? "ring-red-500" : "ring-blue-500";
+  // 팀별 테두리 색 통일 (홈=파랑, 원정=빨강)
+  const ring = player.team === homeTeam ? "ring-blue-500" : "ring-red-500";
   const rated = player.avg !== null;
   return (
     <button
@@ -59,12 +60,12 @@ function Marker({ p, onPick }: { p: Placed; onPick: (pl: Player) => void }) {
     >
       <span
         className={`min-w-[34px] h-[34px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
-          flex items-center justify-center text-[11px] font-bold
+          flex items-center justify-center text-[12px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} group-hover:scale-110 transition`}
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[10px] leading-none font-medium text-white drop-shadow max-w-[64px] truncate bg-black/35 rounded px-1 py-0.5">
+      <span className="text-[11px] leading-none font-bold text-white drop-shadow max-w-[64px] truncate bg-black/45 rounded px-1 py-0.5">
         {player.name}
       </span>
     </button>
@@ -145,8 +146,8 @@ export default function SoccerField({
           <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{bottomLabel}</span>
 
           {/* 선수 마커 */}
-          {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} onPick={onPick} />)}
-          {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} onPick={onPick} />)}
+          {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} />)}
+          {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} />)}
         </div>
 
         {/* 우측 스태프 (감독/코치) */}
@@ -170,10 +171,10 @@ export default function SoccerField({
         </div>
       )}
 
-      {/* 범례 */}
+      {/* 팀 색 범례 */}
       <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-red-500 inline-block" /> 중앙 라인</span>
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-blue-500 inline-block" /> 윙·하프</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-blue-500 inline-block" /> {homeTeam ?? "홈"}</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-red-500 inline-block" /> {awayTeam ?? "원정"}</span>
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
