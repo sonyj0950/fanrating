@@ -83,3 +83,10 @@ prisma/schema.prisma           DB 스키마
 대신 `fanarena.com` / `fan-arena.com` / `fanarena.kr` / `fanarena.gg` 등을
 가비아·Cloudflare·Namecheap 등에서 구매한 뒤,
 Vercel 프로젝트 → Settings → Domains에서 추가하고 안내되는 DNS 레코드(A/CNAME)를 등록하면 됩니다.
+
+## v0.8 추가
+- 코멘트 신고(🚩) — 로그인 유저, 코멘트당 1회, 신고 3건 누적 시 자동 블라인드
+- 관리자 코멘트 블라인드/복구/삭제
+- 코멘트 최소 글자수 5자로 통일, 자음·모음만 작성 차단(서버 검증)
+
+※ 스키마 변경: Rating.blinded, Report 모델 추가 → 배포 시 `prisma db push` 필요

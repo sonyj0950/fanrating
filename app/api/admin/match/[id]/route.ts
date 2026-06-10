@@ -9,18 +9,21 @@ async function requireAdmin() {
   return session;
 }
 
-// 골·어시스트 기록 수정
+// 골·어시스트 기록 / 경기 상태 수정
 export async function PATCH(req: Request, { params }: any) {
   if (!(await requireAdmin()))
     return NextResponse.json({ error: "권한없음" }, { status: 403 });
 
   const b = await req.json();
-  const record = typeof b.record === "string" ? b.record.trim() : "";
+  const data: any = {};
+  if (typeof b.record === "string") data.record = b.record.trim() || null;
+  if (typeof b.status === "string" && ["scheduled", "live", "finished"].includes(b.status))
+    data.status = b.status;
 
-  await prisma.match.update({
-    where: { id: params.id },
-    data: { record: record || null },
-  });
+  if (Object.keys(data).length === 0)
+    return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
+
+  await prisma.match.update({ where: { id: params.id }, data });
   return NextResponse.json({ ok: true });
 }
 

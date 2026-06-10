@@ -20,6 +20,7 @@ model User {
   ratings   Rating[]
   replies   Reply[]
   likes     CommentLike[]
+  reports   Report[]
 }
 
 model Match {
@@ -70,9 +71,11 @@ model Rating {
   segment   String        @default("full") // full | first | second | set1...set5
   score     Int // 2~9
   comment   String        @default("") // 선택 사항 (빈 문자열 허용)
+  blinded   Boolean       @default(false) // 신고 누적/관리자 처리로 가려진 상태
   createdAt DateTime      @default(now())
   replies   Reply[]
   likes     CommentLike[]
+  reports   Report[]
 
   @@unique([matchId, playerId, userId, segment]) // 유저당 세그먼트별 1회 (재등록 시 갱신)
 }
@@ -95,6 +98,19 @@ model CommentLike {
   rating   Rating @relation(fields: [ratingId], references: [id], onDelete: Cascade)
   userId   String
   user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([ratingId, userId])
+}
+
+// 코멘트 신고 (유저당 코멘트별 1회)
+model Report {
+  id        String   @id @default(cuid())
+  ratingId  String
+  rating    Rating   @relation(fields: [ratingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  reason    String   @default("")
+  createdAt DateTime @default(now())
 
   @@unique([ratingId, userId])
 }

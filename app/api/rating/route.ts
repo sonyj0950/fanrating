@@ -18,6 +18,27 @@ export async function POST(req: Request) {
   const segment = typeof b.segment === "string" && b.segment ? b.segment : "full";
   const comment = (b.comment || "").trim();
 
+  // 경기 상태 기반 구간 잠금 (UI를 우회한 직접 요청도 차단)
+  const match = await prisma.match.findUnique({ where: { id: b.matchId } });
+  if (!match) return NextResponse.json({ error: "경기를 찾을 수 없습니다." }, { status: 404 });
+
+  // 종목별 평점 가능 구간 순서 (full=총평 제외)
+  const SEG_ORDER: Record<string, string[]> = {
+    kleague: ["first", "second"],
+    kbo: ["first", "second"],
+    lck: ["set1", "set2", "set3", "set4", "set5"],
+  };
+  const order = SEG_ORDER[match.sport] ?? ["first", "second"];
+
+  if (segment !== "full") {
+    const idx = order.indexOf(segment);
+    if (match.status === "scheduled")
+      return NextResponse.json({ error: "경기 시작 후 평점을 매길 수 있습니다." }, { status: 403 });
+    // live: 첫 구간(idx 0)만 허용, 이후 구간은 종료 후
+    if (match.status === "live" && idx > 0)
+      return NextResponse.json({ error: "해당 구간은 경기 종료 후 입력할 수 있습니다." }, { status: 403 });
+  }
+
   // 코멘트를 작성한 경우에만 검사 (비워도 등록 가능)
   if (comment) {
     if (comment.length < 5)

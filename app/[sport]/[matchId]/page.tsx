@@ -23,8 +23,6 @@ export default async function MatchPage({ params }: any) {
     role: mp.role || mp.player.position || "",
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
-    avg: null as number | null,
-    count: 0,
   }));
 
   const aggClean: Record<string, Record<string, { avg: number; count: number }>> = {};
@@ -40,7 +38,7 @@ export default async function MatchPage({ params }: any) {
     <MatchClient
       match={{ id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
         homeScore: m.homeScore, awayScore: m.awayScore, date: m.date.toISOString(),
-        record: m.record ?? null }}
+        record: m.record ?? null, status: m.status }}
       players={players}
       agg={aggClean}
     />

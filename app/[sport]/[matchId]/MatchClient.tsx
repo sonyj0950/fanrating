@@ -92,10 +92,15 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
       <div className="flex items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold mb-1">{match.homeTeam} {match.homeScore ?? "-"} : {match.awayScore ?? "-"} {match.awayTeam}</h1>
-          <p className="text-gray-500 mb-2">{new Date(match.date).toLocaleString("ko-KR")}</p>
+          <p className="text-gray-500 mb-2">
+            {new Date(match.date).toLocaleString("ko-KR")}
+            <StatusBadge status={match.status} />
+          </p>
         </div>
         <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
       </div>
+
+      {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
       <MatchRecord matchId={match.id} record={match.record} />
 
@@ -165,7 +170,8 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
       </div>
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
-        segments={segments} onClose={() => { setOpen(null); router.refresh(); }}/>}
+        segments={segments} status={match.status} sport={match.sport}
+        onClose={() => { setOpen(null); router.refresh(); }}/>}
 
       {addOpen && <AddPlayerModal matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
         onClose={() => { setAddOpen(false); router.refresh(); }}/>}
@@ -236,6 +242,52 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    scheduled: { label: "예정", cls: "bg-gray-100 text-gray-600" },
+    live: { label: "진행중", cls: "bg-red-100 text-red-600" },
+    finished: { label: "종료", cls: "bg-blue-100 text-blue-700" },
+  };
+  const s = map[status] ?? map.scheduled;
+  return <span className={`ml-2 text-xs px-2 py-0.5 rounded-full align-middle ${s.cls}`}>{s.label}</span>;
+}
+
+// 관리자: 경기 진행 상태 변경 (예정 → 진행중 → 종료)
+function StatusSwitcher({ matchId, status, onChanged }:
+  { matchId: string; status: string; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const OPTS = [
+    { key: "scheduled", label: "예정" },
+    { key: "live", label: "진행중" },
+    { key: "finished", label: "종료" },
+  ];
+  async function setStatus(s: string) {
+    if (s === status) return;
+    setBusy(true);
+    const res = await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: s }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert("상태 변경 실패"); return; }
+    onChanged();
+  }
+  return (
+    <div className="flex items-center gap-2 mb-4 text-sm">
+      <span className="text-gray-500 text-xs">경기 상태:</span>
+      <div className="flex rounded overflow-hidden border">
+        {OPTS.map(o => (
+          <button key={o.key} disabled={busy} onClick={() => setStatus(o.key)}
+            className={`px-3 py-1 text-xs ${status === o.key ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-50"}`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <span className="text-xs text-gray-400">진행중=전반/1세트만, 종료=전 구간 평점 가능</span>
+    </div>
+  );
+}
+
 function MatchRecord({ matchId, record }: { matchId: string; record?: string | null }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -292,9 +344,31 @@ function MatchRecord({ matchId, record }: { matchId: string; record?: string | n
   );
 }
 
-function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
-  { matchId: string; player: Player; loggedIn: boolean; segment: string; segments:{key:string;label:string}[]; onClose: () => void }) {
-  const [seg, setSeg] = useState(segment === "full" && segments.length > 1 ? segments[1].key : segment);
+function PlayerModal({ matchId, player, loggedIn, segment, segments, status, sport, onClose }:
+  { matchId: string; player: Player; loggedIn: boolean; segment: string; segments:{key:string;label:string}[]; status: string; sport: string; onClose: () => void }) {
+  const ratableSegs = segments.filter(s => s.key !== "full");
+
+  // 경기 상태에 따른 평점 가능 구간
+  // - scheduled(예정): 아직 평점 불가
+  // - live(진행중): 첫 구간(전반/1세트)만 가능, 이후 구간 잠금
+  // - finished(종료): 모든 구간 가능
+  function segLocked(key: string): boolean {
+    if (status === "finished") return false;
+    if (status === "live") return key !== ratableSegs[0]?.key; // 첫 구간 외 잠금
+    return true; // scheduled: 전부 잠금
+  }
+  const lockMsg =
+    status === "scheduled" ? "경기 시작 후 평점을 매길 수 있습니다."
+    : status === "live" ? `${ratableSegs[0]?.label ?? "전반"} 진행 중 — 이후 구간은 경기 종료 후 입력할 수 있습니다.`
+    : "";
+
+  // 첫 진입 시 입력 가능한 구간으로 자동 선택
+  const initialSeg = (() => {
+    const base = segment === "full" && segments.length > 1 ? ratableSegs[0]?.key : segment;
+    if (status === "live") return ratableSegs[0]?.key ?? base;
+    return base;
+  })();
+  const [seg, setSeg] = useState(initialSeg);
   const [score, setScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState("");
@@ -326,8 +400,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
   }
 
   const commentLen = comment.trim().length;
-  const commentOk = commentLen === 0 || commentLen >= 5; // 코멘트는 선택 — 쓸 경우만 5자 이상
-  const ratableSegs = segments.filter(s => s.key !== "full");
+  const commentOk = commentLen === 0 || commentLen >= 5; // 코멘트는 선택 — 쓸 경우만 10자 이상
   const top3 = (data?.comments || []).slice(0, 3);
   const rest = (data?.comments || []).slice(3);
 
@@ -348,34 +421,47 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
             <>
               {ratableSegs.length > 1 && (
                 <div className="flex gap-1 mb-3 flex-wrap">
-                  {ratableSegs.map(s => (
-                    <button key={s.key} type="button" onClick={() => setSeg(s.key)}
-                      className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-blue-600 text-white":"bg-gray-100"}`}>
-                      {s.label}
-                    </button>
-                  ))}
+                  {ratableSegs.map(s => {
+                    const locked = segLocked(s.key);
+                    return (
+                      <button key={s.key} type="button" disabled={locked}
+                        onClick={() => setSeg(s.key)}
+                        title={locked ? "아직 입력할 수 없는 구간입니다." : ""}
+                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-blue-600 text-white":"bg-gray-100"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
+                        {locked ? "🔒 " : ""}{s.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-              <p className="text-sm font-semibold mb-2">평점 매기기 (2~9)</p>
-              <div className="flex gap-1 flex-wrap mb-3">
-                {[2,3,4,5,6,7,8,9].map(n => (
-                  <button key={n} onClick={() => setScore(n)}
-                    className={`w-10 h-10 rounded border ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <textarea value={comment} onChange={e=>setComment(e.target.value)}
-                placeholder="코멘트 (선택) — 작성 시 5자 이상, 자음/모음만 사용 불가"
-                className="w-full border rounded p-2 h-20 text-sm"/>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-xs text-gray-500">
-                  {comment.length}자{commentLen > 0 && !commentOk ? " · 5자 이상 입력하거나 비워주세요" : ""}
-                </span>
-                <button onClick={submit} disabled={score===null || !commentOk}
-                  className="bg-blue-600 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
-              </div>
-              {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}
+              {segLocked(seg) ? (
+                <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-3">
+                  🔒 {lockMsg}
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold mb-2">평점 매기기 (2~9)</p>
+                  <div className="flex gap-1 flex-wrap mb-3">
+                    {[2,3,4,5,6,7,8,9].map(n => (
+                      <button key={n} onClick={() => setScore(n)}
+                        className={`w-10 h-10 rounded border ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea value={comment} onChange={e=>setComment(e.target.value)}
+                    placeholder="코멘트 (선택) — 작성 시 5자 이상, 자음/모음만 사용 불가"
+                    className="w-full border rounded p-2 h-20 text-sm"/>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">
+                      {comment.length}자{commentLen > 0 && !commentOk ? " · 5자 이상 입력하거나 비워주세요" : ""}
+                    </span>
+                    <button onClick={submit} disabled={score===null || !commentOk}
+                      className="bg-blue-600 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
+                  </div>
+                  {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}
+                </>
+              )}
             </>
           ) : <p className="text-sm text-gray-500">로그인 후 평점을 등록할 수 있습니다.</p>}
         </div>
@@ -387,21 +473,22 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, onClose }:
           {top3.length > 0 && (
             <div className="mb-3">
               <p className="text-xs text-orange-600 font-semibold mb-1">🔥 인기 코멘트</p>
-              {top3.map((c:any) => <CommentRow key={c.id} c={c} onLike={() => like(c.id)} onReload={load} loggedIn={loggedIn} highlight/>)}
+              {top3.map((c:any) => <CommentRow key={c.id} c={c} onLike={() => like(c.id)} onReload={load} loggedIn={loggedIn} isAdmin={!!data?.isAdmin} highlight/>)}
             </div>
           )}
-          {rest.map((c:any) => <CommentRow key={c.id} c={c} onLike={() => like(c.id)} onReload={load} loggedIn={loggedIn} />)}
+          {rest.map((c:any) => <CommentRow key={c.id} c={c} onLike={() => like(c.id)} onReload={load} loggedIn={loggedIn} isAdmin={!!data?.isAdmin} />)}
         </div>
       </div>
     </div>
   );
 }
 
-function CommentRow({ c, onLike, onReload, loggedIn, highlight }:
-  { c: any; onLike: () => void; onReload: () => void; loggedIn: boolean; highlight?: boolean }) {
+function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
+  { c: any; onLike: () => void; onReload: () => void; loggedIn: boolean; isAdmin?: boolean; highlight?: boolean }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [revealed, setRevealed] = useState(false); // 블라인드 코멘트 펼쳐보기
   const replies: any[] = c.replies || [];
 
   async function submitReply() {
@@ -418,23 +505,90 @@ function CommentRow({ c, onLike, onReload, loggedIn, highlight }:
     onReload();
   }
 
-  return (
-    <div className={`border rounded p-3 mb-2 ${highlight ? "bg-orange-50 border-orange-200" : ""}`}>
-      <div className="flex justify-between text-xs text-gray-500 mb-1">
-        <span>{c.username} · ⭐ {c.score}</span>
-        <button onClick={onLike} className="hover:text-red-500">👍 {c.likes}</button>
-      </div>
-      <p className="text-sm whitespace-pre-wrap">{c.text}</p>
+  async function report() {
+    if (!loggedIn) { alert("로그인이 필요합니다."); return; }
+    if (c.reportedByMe) { alert("이미 신고한 코멘트입니다."); return; }
+    const reason = prompt("신고 사유를 입력해주세요 (선택).\n예: 욕설/비방, 허위사실, 도배 등");
+    if (reason === null) return; // 취소
+    setBusy(true);
+    const res = await fetch(`/api/comment/${c.id}/report`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    setBusy(false);
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(j.error || "신고 실패"); return; }
+    alert("신고가 접수되었습니다.");
+    onReload();
+  }
 
-      <div className="mt-1">
+  async function setBlind(blinded: boolean) {
+    setBusy(true);
+    const res = await fetch(`/api/admin/comment/${c.id}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ blinded }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert("처리 실패"); return; }
+    onReload();
+  }
+
+  async function removeComment() {
+    if (!confirm("이 코멘트를 삭제할까요? (평점 점수는 유지되고 코멘트 내용만 삭제됩니다)")) return;
+    setBusy(true);
+    const res = await fetch(`/api/admin/comment/${c.id}`, { method: "DELETE" });
+    setBusy(false);
+    if (!res.ok) { alert("삭제 실패"); return; }
+    onReload();
+  }
+
+  // 블라인드 처리: 관리자가 아니고 펼치지 않았으면 가림
+  const hidden = c.blinded && !isAdmin && !revealed;
+
+  return (
+    <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-orange-50 border-orange-200" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
+      <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <span>{c.username} · ⭐ {c.score}{isAdmin && c.reportCount > 0 ? <span className="text-red-500"> · 🚩 {c.reportCount}</span> : null}</span>
+        {!c.blinded && <button onClick={onLike} className="hover:text-red-500">👍 {c.likes}</button>}
+      </div>
+
+      {hidden ? (
+        <p className="text-sm text-gray-400 italic">
+          🚫 신고가 누적되어 가려진 코멘트입니다.
+          <button onClick={() => setRevealed(true)} className="ml-2 text-blue-500 underline not-italic">보기</button>
+        </p>
+      ) : (
+        <>
+          {c.blinded && (
+            <p className="text-xs text-amber-600 mb-1">🚫 {isAdmin ? "신고 누적으로 자동 블라인드됨" : "신고에 의해 가려진 코멘트"}</p>
+          )}
+          <p className="text-sm whitespace-pre-wrap">{c.text}</p>
+        </>
+      )}
+
+      <div className="mt-1 flex items-center gap-3">
         <button
           onClick={() => loggedIn ? setReplyOpen(!replyOpen) : alert("로그인이 필요합니다.")}
           className="text-xs text-gray-400 hover:text-blue-600">
           💬 답글{replies.length > 0 ? ` ${replies.length}` : ""}
         </button>
+        {!c.mine && (
+          <button onClick={report} disabled={busy || c.reportedByMe}
+            className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40">
+            🚩 {c.reportedByMe ? "신고됨" : "신고"}
+          </button>
+        )}
+        {isAdmin && (
+          <>
+            {c.blinded
+              ? <button onClick={() => setBlind(false)} disabled={busy} className="text-xs text-green-600 hover:underline">복구</button>
+              : <button onClick={() => setBlind(true)} disabled={busy} className="text-xs text-amber-600 hover:underline">블라인드</button>}
+            <button onClick={removeComment} disabled={busy} className="text-xs text-red-500 hover:underline">삭제</button>
+          </>
+        )}
       </div>
 
-      {replies.length > 0 && (
+      {replies.length > 0 && !hidden && (
         <div className="mt-2 space-y-1.5 border-l-2 border-gray-200 pl-3">
           {replies.map(r => (
             <div key={r.id} className="text-sm">

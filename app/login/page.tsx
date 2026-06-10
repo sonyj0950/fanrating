@@ -54,6 +54,7 @@ export default function LoginPage() {
         className="mt-3 text-sm text-gray-500 hover:text-blue-600">
         {mode === "login" ? "계정이 없나요? 회원가입" : "이미 계정이 있나요? 로그인"}
       </button>
+      <p className="mt-3 text-xs text-gray-400">※ 첫 번째로 가입한 계정이 관리자가 됩니다.</p>
     </div>
   );
 }
