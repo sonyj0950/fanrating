@@ -16,9 +16,9 @@ interface Placed {
 // 기본(전반 기준): home = 아래쪽 절반, away = 위쪽 절반(좌우/상하 반전).
 function toPitch(x: number, y: number, side: Side): { left: number; top: number } {
   if (side === "home") {
-    return { left: x, top: 98 - y * 0.46 };       // y0→98(하단), y100→52(중앙 부근)
+    return { left: x, top: 99 - y * 0.49 };       // y0→99(하단), y100→50(중앙)
   }
-  return { left: 100 - x, top: 2 + y * 0.46 };     // 반전: y0→2(상단), y100→48
+  return { left: 100 - x, top: 1 + y * 0.49 };     // 반전: y0→1(상단), y100→50
 }
 
 function place(players: Player[], side: Side): { placed: Placed[]; bench: Player[] } {
@@ -128,7 +128,7 @@ export default function SoccerField({
           className="relative w-full max-w-md rounded-xl overflow-hidden shadow-lg
             bg-gradient-to-b from-green-600 via-green-500 to-green-600
             border-2 border-white/30"
-          style={{ aspectRatio: "2 / 3" }}
+          style={{ aspectRatio: "2 / 3.5" }}
         >
           {/* 잔디 줄무늬 */}
           <div className="absolute inset-0 opacity-20 pointer-events-none"
