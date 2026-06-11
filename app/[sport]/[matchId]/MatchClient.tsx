@@ -82,10 +82,15 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
   // 관리자: 토론거리 재생성
   async function regenSeed() {
-    await fetch(`/api/admin/match/${match.id}`, {
+    const res = await fetch(`/api/admin/match/${match.id}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
       body: JSON.stringify({ regenSeed: true }),
     });
+    const j = await res.json().catch(() => ({}));
+    if (!j.regenerated) {
+      alert(j.message || "토론거리를 생성하지 못했습니다. (평점이 더 필요할 수 있습니다)");
+      return;
+    }
     router.refresh();
   }
 
@@ -175,10 +180,10 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           <p className="text-[11px] text-orange-400 mt-1">아래에서 선수를 눌러 평점·코멘트로 의견을 남겨보세요.</p>
         </div>
       )}
-      {isAdmin && match.sport === "kleague" && match.status === "finished" && (
+      {isAdmin && match.sport === "kleague" && (
         <button onClick={regenSeed}
           className="text-xs px-2 py-1 mb-4 border rounded bg-white text-gray-500 hover:bg-gray-50">
-          🔄 토론거리 다시 생성
+          🔄 토론거리 생성/갱신
         </button>
       )}
 

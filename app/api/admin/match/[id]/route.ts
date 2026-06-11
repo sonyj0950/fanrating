@@ -13,15 +13,16 @@ async function requireAdmin() {
 const SEED_MIN_TOTAL = 2; // 경기 전체 평점이 이만큼 모이면 시드 생성 시도
 
 // 경기 종료 시 토론 시드 자동 생성 (축구만, 총평 평점 기준)
-async function maybeGenerateSeed(matchId: string) {
+async function maybeGenerateSeed(matchId: string): Promise<boolean> {
   const m = await prisma.match.findUnique({
     where: { id: matchId },
     include: {
-      ratings: { where: { segment: "full" }, include: { player: { select: { name: true, team: true } } } },
+      // 모든 세그먼트(총평·전반·후반) 평점을 합쳐서 계산
+      ratings: { include: { player: { select: { name: true, team: true } } } },
     },
   });
-  if (!m || m.sport !== "kleague") return;
-  if (m.ratings.length < SEED_MIN_TOTAL) return;
+  if (!m || m.sport !== "kleague") return false;
+  if (m.ratings.length < SEED_MIN_TOTAL) return false;
 
   const seed = generateFootballSeed({
     homeTeam: m.homeTeam,
@@ -32,7 +33,11 @@ async function maybeGenerateSeed(matchId: string) {
       playerId: r.playerId, name: r.player.name, team: r.player.team, score: r.score,
     })),
   });
-  if (seed) await prisma.match.update({ where: { id: matchId }, data: { seed } });
+  if (seed) {
+    await prisma.match.update({ where: { id: matchId }, data: { seed } });
+    return true;
+  }
+  return false;
 }
 
 // 골·어시스트 기록 / 경기 상태 수정
@@ -48,8 +53,12 @@ export async function PATCH(req: Request, { params }: any) {
 
   // 시드 강제 재생성 요청
   if (b.regenSeed === true) {
-    await maybeGenerateSeed(params.id);
-    return NextResponse.json({ ok: true, regenerated: true });
+    const ok = await maybeGenerateSeed(params.id);
+    return NextResponse.json({
+      ok: true,
+      regenerated: ok,
+      message: ok ? "토론거리를 생성했습니다." : "평점이 부족하거나 축구 경기가 아닙니다.",
+    });
   }
 
   if (Object.keys(data).length === 0)
