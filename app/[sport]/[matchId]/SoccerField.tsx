@@ -56,7 +56,7 @@ function Marker({ p, homeTeam, onPick }: { p: Placed; homeTeam?: string; onPick:
     <button
       onClick={() => onPick(player)}
       style={{ left: `${p.left}%`, top: `${p.top}%` }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 group focus:outline-none"
+      className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20"
     >
       <span
         className={`min-w-[38px] h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
@@ -65,7 +65,7 @@ function Marker({ p, homeTeam, onPick }: { p: Placed; homeTeam?: string; onPick:
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[11px] leading-none font-bold text-white drop-shadow whitespace-nowrap bg-black/55 rounded px-1.5 py-0.5">
+      <span className="text-[11px] leading-tight font-bold text-white drop-shadow whitespace-nowrap bg-black/65 rounded px-1.5 py-0.5">
         {player.name}
       </span>
     </button>

@@ -24,33 +24,33 @@ export const POSITIONS: PositionDef[] = [
   // 세컨드 스트라이커
   { code: "SS", x: 50, y: 84, line: "SS", lineLabel: "세컨톱", accent: "wide" },
   // 포워드 / 윙
-  { code: "LW",  x: 10, y: 76, line: "FW", lineLabel: "포워드", accent: "core" },
+  { code: "LW",  x: 15, y: 76, line: "FW", lineLabel: "포워드", accent: "core" },
   { code: "LCF", x: 35, y: 76, line: "FW", lineLabel: "포워드", accent: "wide" },
   { code: "CF",  x: 50, y: 76, line: "FW", lineLabel: "포워드", accent: "core" },
   { code: "RCF", x: 65, y: 76, line: "FW", lineLabel: "포워드", accent: "wide" },
-  { code: "RW",  x: 90, y: 76, line: "FW", lineLabel: "포워드", accent: "core" },
+  { code: "RW",  x: 85, y: 76, line: "FW", lineLabel: "포워드", accent: "core" },
   // 공격형 미드필더
   { code: "LAM", x: 33, y: 64, line: "AM", lineLabel: "공격형 MF", accent: "wide" },
   { code: "AM",  x: 50, y: 64, line: "AM", lineLabel: "공격형 MF", accent: "core" },
   { code: "RAM", x: 67, y: 64, line: "AM", lineLabel: "공격형 MF", accent: "wide" },
   // 중앙 미드필더
-  { code: "LM",  x: 8,  y: 50, line: "MID", lineLabel: "중앙 MF", accent: "core" },
+  { code: "LM",  x: 14,  y: 50, line: "MID", lineLabel: "중앙 MF", accent: "core" },
   { code: "LCM", x: 33, y: 50, line: "MID", lineLabel: "중앙 MF", accent: "wide" },
   { code: "CM",  x: 50, y: 50, line: "MID", lineLabel: "중앙 MF", accent: "core" },
   { code: "RCM", x: 67, y: 50, line: "MID", lineLabel: "중앙 MF", accent: "wide" },
-  { code: "RM",  x: 92, y: 50, line: "MID", lineLabel: "중앙 MF", accent: "core" },
+  { code: "RM",  x: 86, y: 50, line: "MID", lineLabel: "중앙 MF", accent: "core" },
   // 수비형 미드필더
-  { code: "LWB", x: 10, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
+  { code: "LWB", x: 15, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
   { code: "LDM", x: 34, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
   { code: "DM",  x: 50, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "core" },
   { code: "RDM", x: 66, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
-  { code: "RWB", x: 90, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
+  { code: "RWB", x: 85, y: 34, line: "DM", lineLabel: "수비형 MF", accent: "wide" },
   // 수비
-  { code: "LB",  x: 10, y: 20, line: "DEF", lineLabel: "수비", accent: "core" },
+  { code: "LB",  x: 15, y: 20, line: "DEF", lineLabel: "수비", accent: "core" },
   { code: "LCB", x: 32, y: 20, line: "DEF", lineLabel: "수비", accent: "wide" },
   { code: "CB",  x: 50, y: 20, line: "DEF", lineLabel: "수비", accent: "core" },
   { code: "RCB", x: 68, y: 20, line: "DEF", lineLabel: "수비", accent: "wide" },
-  { code: "RB",  x: 90, y: 20, line: "DEF", lineLabel: "수비", accent: "core" },
+  { code: "RB",  x: 85, y: 20, line: "DEF", lineLabel: "수비", accent: "core" },
   // 스위퍼
   { code: "SW",  x: 50, y: 11, line: "SW", lineLabel: "스위퍼", accent: "wide" },
   // 골키퍼
