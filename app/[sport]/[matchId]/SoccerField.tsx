@@ -50,7 +50,7 @@ function place(players: Player[], side: Side, flipped: boolean): { placed: Place
     const list = groups[code];
     const n = list.length;
     list.forEach((player, i) => {
-      const spread = n > 1 ? (i - (n - 1) / 2) * 8 : 0;
+      const spread = n > 1 ? (i - (n - 1) / 2) * 11 : 0;
       const baseX = Math.min(94, Math.max(6, def.x + spread));
       const { left, top } = toPitch(baseX, def.y, side);
       placed.push({ player, left, top, accent: def.accent });
@@ -103,13 +103,14 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
         ${editMode ? "cursor-move ring-2 ring-amber-400 rounded-full" : ""}`}
     >
       <span
-        className={`min-w-[32px] h-[32px] sm:min-w-[38px] sm:h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
-          flex items-center justify-center text-[12px] sm:text-[14px] font-extrabold
+        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white shadow-md ring-2 ${ring}
+          flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[10px] sm:text-[11px] leading-tight font-bold text-white drop-shadow whitespace-nowrap bg-black/65 rounded px-1 sm:px-1.5 py-0.5">
+      <span className="text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
+        max-w-[52px] sm:max-w-none truncate sm:whitespace-nowrap bg-black/65 rounded px-1 py-0.5">
         {player.name}
       </span>
     </button>
@@ -195,7 +196,7 @@ export default function SoccerField({
           className="relative w-full max-w-md rounded-xl overflow-hidden shadow-lg
             bg-gradient-to-b from-green-600 via-green-500 to-green-600
             border-2 border-white/30"
-          style={{ aspectRatio: "2 / 3.5" }}
+          style={{ aspectRatio: "2 / 3.8" }}
         >
           {/* 잔디 줄무늬 */}
           <div className="absolute inset-0 opacity-20 pointer-events-none"
