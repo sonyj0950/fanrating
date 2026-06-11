@@ -50,6 +50,9 @@ export async function PATCH(req: Request, { params }: any) {
   if (typeof b.record === "string") data.record = b.record.trim() || null;
   if (typeof b.status === "string" && ["scheduled", "live", "finished"].includes(b.status))
     data.status = b.status;
+  // 스코어 수정 (숫자면 저장, null이면 미정으로)
+  if ("homeScore" in b) data.homeScore = b.homeScore === null ? null : Math.max(0, Math.min(99, Number(b.homeScore) || 0));
+  if ("awayScore" in b) data.awayScore = b.awayScore === null ? null : Math.max(0, Math.min(99, Number(b.awayScore) || 0));
   // 관리자가 토론 주제(시드)를 직접 수정/삭제
   if (typeof b.seed === "string") data.seed = b.seed.trim().slice(0, 300) || null;
 

@@ -172,6 +172,11 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
+      {isAdmin && (
+        <ScoreEditor matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          homeScore={match.homeScore} awayScore={match.awayScore} onChanged={() => router.refresh()} />
+      )}
+
       <MatchRecord matchId={match.id} record={match.record} />
 
       {match.status === "finished" && (match.seed || isAdmin) && (
@@ -365,6 +370,46 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // 관리자: 경기 진행 상태 변경 (예정 → 진행중 → 종료)
+function ScoreEditor({ matchId, homeTeam, awayTeam, homeScore, awayScore, onChanged }:
+  { matchId: string; homeTeam: string; awayTeam: string;
+    homeScore: number | null; awayScore: number | null; onChanged: () => void }) {
+  const [h, setH] = useState<string>(homeScore?.toString() ?? "");
+  const [a, setA] = useState<string>(awayScore?.toString() ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        homeScore: h === "" ? null : Number(h),
+        awayScore: a === "" ? null : Number(a),
+      }),
+    });
+    setBusy(false);
+    onChanged();
+  }
+
+  const changed = h !== (homeScore?.toString() ?? "") || a !== (awayScore?.toString() ?? "");
+
+  return (
+    <div className="flex items-center gap-2 mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
+      <span className="text-gray-500 text-xs">스코어</span>
+      <span className="font-medium">{homeTeam}</span>
+      <input type="number" min={0} max={99} value={h} onChange={e => setH(e.target.value)}
+        className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
+      <span className="text-gray-400">:</span>
+      <input type="number" min={0} max={99} value={a} onChange={e => setA(e.target.value)}
+        className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
+      <span className="font-medium">{awayTeam}</span>
+      <button onClick={save} disabled={busy || !changed}
+        className="ml-auto text-xs px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40">
+        {busy ? "저장중" : "저장"}
+      </button>
+    </div>
+  );
+}
+
 function StatusSwitcher({ matchId, status, onChanged }:
   { matchId: string; status: string; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
