@@ -229,7 +229,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
             {showAll ? "우선 선수만" : `전체 선수 보기 (${players.length}명)`}
           </button>
         )}
-        {session && (
+        {isAdmin && (
           <button onClick={() => setAddOpen(true)} className="text-sm px-3 py-1 border rounded bg-blue-50 text-blue-700">
             + 선수 추가
           </button>

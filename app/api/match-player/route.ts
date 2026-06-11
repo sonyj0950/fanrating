@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  if ((session.user as any).role !== "admin")
+    return NextResponse.json({ error: "권한없음" }, { status: 403 });
 
   const { matchId, name, team, role, segment } = await req.json();
   if (!matchId || !name || !team) return NextResponse.json({ error: "필수값 누락" }, { status: 400 });
