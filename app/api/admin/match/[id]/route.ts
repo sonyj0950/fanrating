@@ -50,6 +50,8 @@ export async function PATCH(req: Request, { params }: any) {
   if (typeof b.record === "string") data.record = b.record.trim() || null;
   if (typeof b.status === "string" && ["scheduled", "live", "finished"].includes(b.status))
     data.status = b.status;
+  // 관리자가 토론 주제(시드)를 직접 수정/삭제
+  if (typeof b.seed === "string") data.seed = b.seed.trim().slice(0, 300) || null;
 
   // 시드 강제 재생성 요청
   if (b.regenSeed === true) {

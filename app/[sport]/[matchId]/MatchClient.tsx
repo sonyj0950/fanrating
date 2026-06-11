@@ -174,16 +174,14 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       <MatchRecord matchId={match.id} record={match.record} />
 
-      {match.seed && match.status === "finished" && (
-        <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
-          <p className="text-sm text-orange-900 font-medium">{match.seed}</p>
-          <DiscussionThread matchId={match.id} loggedIn={!!session} />
-        </div>
+      {match.status === "finished" && (match.seed || isAdmin) && (
+        <SeedBanner matchId={match.id} seed={match.seed} isAdmin={isAdmin}
+          loggedIn={!!session} onChanged={() => router.refresh()} />
       )}
       {isAdmin && match.sport === "kleague" && (
         <button onClick={regenSeed}
           className="text-xs px-2 py-1 mb-4 border rounded bg-white text-gray-500 hover:bg-gray-50">
-          🔄 토론거리 생성/갱신
+          🔄 토론거리 자동 생성/갱신
         </button>
       )}
 
@@ -544,6 +542,66 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
 }
 
 // 경기 토론 댓글창 (시드 배너 아래)
+// 토론 주제(시드) 배너 — 관리자는 직접 수정 가능
+function SeedBanner({ matchId, seed, isAdmin, loggedIn, onChanged }:
+  { matchId: string; seed: string | null; isAdmin: boolean; loggedIn: boolean; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(seed || "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ seed: text }),
+    });
+    setBusy(false);
+    setEditing(false);
+    onChanged();
+  }
+
+  // 시드도 없고 편집 중도 아니면 (관리자에게만) 추가 버튼
+  if (!seed && !editing) {
+    if (!isAdmin) return null;
+    return (
+      <div className="mb-4">
+        <button onClick={() => { setText(""); setEditing(true); }}
+          className="text-xs px-2 py-1 border rounded bg-white text-orange-600 hover:bg-orange-50">
+          ✏️ 토론 주제 직접 입력
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
+      {editing ? (
+        <div className="space-y-2">
+          <textarea value={text} onChange={e => setText(e.target.value)} maxLength={300}
+            placeholder="토론 주제를 입력하세요 (비우면 삭제됩니다)"
+            className="w-full border rounded p-2 text-sm h-20 bg-white" />
+          <div className="flex gap-2 justify-end">
+            <span className="text-[11px] text-orange-400 mr-auto self-center">{text.length}/300</span>
+            <button onClick={() => { setText(seed || ""); setEditing(false); }}
+              className="text-xs px-3 py-1 border rounded bg-white">취소</button>
+            <button onClick={save} disabled={busy}
+              className="text-xs px-3 py-1 rounded bg-orange-500 text-white disabled:opacity-40">저장</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-between items-start gap-2">
+          <p className="text-sm text-orange-900 font-medium">{seed}</p>
+          {isAdmin && (
+            <button onClick={() => { setText(seed || ""); setEditing(true); }}
+              className="text-[11px] text-orange-500 shrink-0 hover:underline">✏️ 수정</button>
+          )}
+        </div>
+      )}
+      {seed && !editing && <DiscussionThread matchId={matchId} loggedIn={loggedIn} />}
+    </div>
+  );
+}
+
 function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: boolean }) {
   const [items, setItems] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
