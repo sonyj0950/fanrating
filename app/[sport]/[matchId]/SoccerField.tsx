@@ -103,13 +103,13 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
         ${editMode ? "cursor-move ring-2 ring-amber-400 rounded-full" : ""}`}
     >
       <span
-        className={`min-w-[38px] h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
-          flex items-center justify-center text-[14px] font-extrabold
+        className={`min-w-[32px] h-[32px] sm:min-w-[38px] sm:h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
+          flex items-center justify-center text-[12px] sm:text-[14px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[11px] leading-tight font-bold text-white drop-shadow whitespace-nowrap bg-black/65 rounded px-1.5 py-0.5">
+      <span className="text-[10px] sm:text-[11px] leading-tight font-bold text-white drop-shadow whitespace-nowrap bg-black/65 rounded px-1 sm:px-1.5 py-0.5">
         {player.name}
       </span>
     </button>
@@ -181,9 +181,9 @@ export default function SoccerField({
         </p>
       )}
       <div className="flex gap-2 justify-center items-stretch">
-        {/* 좌측 스태프 (감독/코치) */}
+        {/* 좌측 스태프 (감독/코치) — 데스크톱만 */}
         {hasStaff && (
-          <div className="w-24 shrink-0 flex flex-col gap-1.5 justify-end pb-2">
+          <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-end pb-2">
             <p className="text-[10px] text-gray-400 text-center">{leftLabel}</p>
             {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
@@ -217,14 +217,28 @@ export default function SoccerField({
           {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
         </div>
 
-        {/* 우측 스태프 (감독/코치) */}
+        {/* 우측 스태프 (감독/코치) — 데스크톱만 */}
         {hasStaff && (
-          <div className="w-24 shrink-0 flex flex-col gap-1.5 justify-start pt-2">
+          <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-start pt-2">
             <p className="text-[10px] text-gray-400 text-center">{rightLabel}</p>
             {rightStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
         )}
       </div>
+
+      {/* 스태프 (감독/코치) — 모바일은 피치 아래 가로 배치 */}
+      {hasStaff && (
+        <div className="md:hidden mt-2 grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <p className="text-[10px] text-gray-400">{leftLabel}</p>
+            {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] text-gray-400">{rightLabel}</p>
+            {rightStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
+          </div>
+        </div>
+      )}
 
       {/* 심판 */}
       {officials.length > 0 && (

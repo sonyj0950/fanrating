@@ -8,8 +8,8 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b sticky top-0 z-40">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
+        <Link href="/" className="flex items-center gap-1.5 font-bold text-base sm:text-lg tracking-tight shrink-0">
           <svg width="26" height="26" viewBox="0 0 120 120" aria-hidden="true">
             <ellipse cx="60" cy="60" rx="58" ry="58" fill="#0a0a0a"/>
             <ellipse cx="60" cy="64" rx="40" ry="34" fill="#ffffff"/>
@@ -21,13 +21,13 @@ export default function Header() {
           </svg>
           <span>fanarena<span className="text-gray-400">.</span>kr</span>
         </Link>
-        <nav className="flex items-center gap-3 text-sm">
+        <nav className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
           {isAdmin && (
             <>
-              <Link href="/admin" className="px-3 py-1.5 rounded border border-blue-200 text-blue-700 bg-blue-50">
+              <Link href="/admin" className="px-2 sm:px-3 py-1.5 rounded border border-blue-200 text-blue-700 bg-blue-50">
                 관리자
               </Link>
-              <Link href="/admin/reports" className="px-3 py-1.5 rounded border border-red-200 text-red-600 bg-red-50">
+              <Link href="/admin/reports" className="px-2 sm:px-3 py-1.5 rounded border border-red-200 text-red-600 bg-red-50">
                 신고
               </Link>
             </>
@@ -36,10 +36,10 @@ export default function Header() {
             <>
               <Link href="/account" className="text-gray-500 hidden sm:inline hover:text-blue-600">{session.user?.name}님</Link>
               <button onClick={() => signOut({ callbackUrl: "/" })}
-                className="px-3 py-1.5 rounded border">로그아웃</button>
+                className="px-2 sm:px-3 py-1.5 rounded border">로그아웃</button>
             </>
           ) : (
-            <Link href="/login" className="px-3 py-1.5 rounded bg-blue-600 text-white">로그인</Link>
+            <Link href="/login" className="px-2 sm:px-3 py-1.5 rounded bg-blue-600 text-white">로그인</Link>
           )}
         </nav>
       </div>

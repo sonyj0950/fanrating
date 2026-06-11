@@ -701,10 +701,10 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
               ) : (
                 <>
                   <p className="text-sm font-semibold mb-2">평점 매기기 (1~10)</p>
-                  <div className="flex gap-1 flex-wrap mb-3">
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setScore(n)}
-                        className={`w-9 h-10 rounded border text-sm ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
+                        className={`h-10 rounded border text-sm ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
                         {n}
                       </button>
                     ))}
