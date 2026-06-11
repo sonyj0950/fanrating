@@ -80,6 +80,15 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
     router.refresh();
   }
 
+  // 관리자: 토론거리 재생성
+  async function regenSeed() {
+    await fetch(`/api/admin/match/${match.id}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ regenSeed: true }),
+    });
+    router.refresh();
+  }
+
   const segments = segmentsFor(match.sport);
 
   // 나의 평점: playerId -> 내가 매긴 점수(총평 우선, 없으면 가장 높은 구간 점수)
@@ -159,6 +168,19 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
       <MatchRecord matchId={match.id} record={match.record} />
+
+      {match.seed && (
+        <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
+          <p className="text-sm text-orange-900">{match.seed}</p>
+          <p className="text-[11px] text-orange-400 mt-1">아래에서 선수를 눌러 평점·코멘트로 의견을 남겨보세요.</p>
+        </div>
+      )}
+      {isAdmin && match.sport === "kleague" && match.status === "finished" && (
+        <button onClick={regenSeed}
+          className="text-xs px-2 py-1 mb-4 border rounded bg-white text-gray-500 hover:bg-gray-50">
+          🔄 토론거리 다시 생성
+        </button>
+      )}
 
       {pog && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">

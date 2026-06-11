@@ -2,11 +2,37 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateFootballSeed } from "@/lib/discussionSeed";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any).role !== "admin") return null;
   return session;
+}
+
+const SEED_MIN_TOTAL = 10; // 경기 전체 평점이 이만큼 모이면 시드 생성 시도
+
+// 경기 종료 시 토론 시드 자동 생성 (축구만, 총평 평점 기준)
+async function maybeGenerateSeed(matchId: string) {
+  const m = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      ratings: { where: { segment: "full" }, include: { player: { select: { name: true, team: true } } } },
+    },
+  });
+  if (!m || m.sport !== "kleague") return;
+  if (m.ratings.length < SEED_MIN_TOTAL) return;
+
+  const seed = generateFootballSeed({
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
+    ratings: m.ratings.map(r => ({
+      playerId: r.playerId, name: r.player.name, team: r.player.team, score: r.score,
+    })),
+  });
+  if (seed) await prisma.match.update({ where: { id: matchId }, data: { seed } });
 }
 
 // 골·어시스트 기록 / 경기 상태 수정
@@ -20,10 +46,20 @@ export async function PATCH(req: Request, { params }: any) {
   if (typeof b.status === "string" && ["scheduled", "live", "finished"].includes(b.status))
     data.status = b.status;
 
+  // 시드 강제 재생성 요청
+  if (b.regenSeed === true) {
+    await maybeGenerateSeed(params.id);
+    return NextResponse.json({ ok: true, regenerated: true });
+  }
+
   if (Object.keys(data).length === 0)
     return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
 
   await prisma.match.update({ where: { id: params.id }, data });
+
+  // 종료로 바뀌면 토론 시드 생성 시도
+  if (data.status === "finished") await maybeGenerateSeed(params.id);
+
   return NextResponse.json({ ok: true });
 }
 
