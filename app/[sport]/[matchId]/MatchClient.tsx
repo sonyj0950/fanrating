@@ -162,7 +162,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       {pog && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
-          🏆 <b>POG/POM</b>: {pog.name} ({pog.team}) — 평균 {pog.avg} / {pog.count}명 참여
+          🏆 <b>POG/POM</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
         </div>
       )}
 
