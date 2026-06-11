@@ -56,6 +56,8 @@ model MatchPlayer {
   role      String?
   isDefault Boolean @default(true) // 야구: 우선 노출 선수
   segment   String  @default("all") // 출전: all | first(전반) | second(후반)
+  posX      Float?  // 관리자 커스텀 위치 (%) — null이면 포지션 코드 기준 자동 배치
+  posY      Float?
 
   @@unique([matchId, playerId])
 }

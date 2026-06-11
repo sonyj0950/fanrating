@@ -57,7 +57,28 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
   const [showAll, setShowAll] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [editPos, setEditPos] = useState(false);
   const isAdmin = (session?.user as any)?.role === "admin";
+
+  // 관리자: 선수 위치 드래그 저장
+  async function savePosition(mpId: string, x: number, y: number) {
+    await fetch(`/api/match-player/${mpId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ posX: x, posY: y }),
+    });
+    router.refresh();
+  }
+  // 관리자: 모든 커스텀 위치 초기화 (포지션 코드 기준 자동 배치로 복귀)
+  async function resetPositions() {
+    if (!confirm("모든 선수 위치를 자동 배치로 되돌릴까요?")) return;
+    await Promise.all(rawPlayers.map(p =>
+      fetch(`/api/match-player/${p.mpId}`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ resetPos: true }),
+      })
+    ));
+    router.refresh();
+  }
 
   const segments = segmentsFor(match.sport);
 
@@ -189,6 +210,18 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
             ⚙️ 전/후반 명단 관리
           </button>
         )}
+        {isAdmin && match.sport === "kleague" && (
+          <button onClick={() => setEditPos(!editPos)}
+            className={`text-sm px-3 py-1 border rounded ${editPos ? "bg-amber-500 text-white border-amber-500" : "bg-amber-50 text-amber-700"}`}>
+            {editPos ? "✓ 위치 편집 종료" : "✋ 선수 위치 편집"}
+          </button>
+        )}
+        {isAdmin && match.sport === "kleague" && editPos && (
+          <button onClick={resetPositions}
+            className="text-sm px-3 py-1 border rounded bg-white text-gray-600">
+            ↺ 위치 초기화
+          </button>
+        )}
       </div>
       )}
 
@@ -214,7 +247,9 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
             homeStaff={homeStaff} awayStaff={awayStaff} officials={officials}
             homeTeam={match.homeTeam} awayTeam={match.awayTeam}
             flip={seg === "second"} /* 후반: 진영 반대 (총평은 전반 기준 유지) */
-            onPick={setOpen}/>
+            onPick={setOpen}
+            editMode={editPos && isAdmin && seg !== "mine"}
+            onMove={savePosition}/>
         )}
         {match.sport === "lck" && (
           <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam} onPick={setOpen}/>

@@ -9,15 +9,30 @@ async function requireAdmin() {
   return session;
 }
 
-// 출전 구간 변경 (all | first | second)
+// 출전 구간 변경 / 커스텀 위치 저장
 export async function PATCH(req: Request, { params }: any) {
   if (!(await requireAdmin()))
     return NextResponse.json({ error: "권한없음" }, { status: 403 });
 
   const b = await req.json();
-  const segment = ["all", "first", "second"].includes(b.segment) ? b.segment : "all";
+  const data: any = {};
 
-  await prisma.matchPlayer.update({ where: { id: params.id }, data: { segment } });
+  if (typeof b.segment === "string" && ["all", "first", "second"].includes(b.segment))
+    data.segment = b.segment;
+
+  // 커스텀 위치 저장 (posX/posY는 0~100 %)
+  if (b.resetPos === true) {
+    data.posX = null;
+    data.posY = null;
+  } else {
+    if (typeof b.posX === "number") data.posX = Math.max(0, Math.min(100, b.posX));
+    if (typeof b.posY === "number") data.posY = Math.max(0, Math.min(100, b.posY));
+  }
+
+  if (Object.keys(data).length === 0)
+    return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
+
+  await prisma.matchPlayer.update({ where: { id: params.id }, data });
   return NextResponse.json({ ok: true });
 }
 

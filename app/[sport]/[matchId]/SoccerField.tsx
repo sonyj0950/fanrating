@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole } from "@/lib/soccerPositions";
 
@@ -21,23 +21,35 @@ function toPitch(x: number, y: number, side: Side): { left: number; top: number 
   return { left: 100 - x, top: 1 + y * 0.49 };     // 반전: y0→1(상단), y100→50
 }
 
-function place(players: Player[], side: Side): { placed: Placed[]; bench: Player[] } {
+function place(players: Player[], side: Side, flipped: boolean): { placed: Placed[]; bench: Player[] } {
   const bench: Player[] = [];
-  // 같은 포지션 코드를 가진 선수들을 모아서 가로로 살짝 분산
-  const groups: Record<string, Player[]> = {};
+  const auto: Player[] = [];
+  const placed: Placed[] = [];
+
+  // 커스텀 위치가 있으면 그대로 사용 (flip 시 상하/좌우 반전)
   for (const p of players) {
-    const code = normalizeRole(p.role);
-    if (!code || !POSITION_MAP[code]) { bench.push(p); continue; }
-    (groups[code] ||= []).push(p);
+    if (p.posX != null && p.posY != null) {
+      const left = flipped ? 100 - p.posX : p.posX;
+      const top = flipped ? 100 - p.posY : p.posY;
+      placed.push({ player: p, left, top, accent: "core" });
+    } else {
+      const code = normalizeRole(p.role);
+      if (!code || !POSITION_MAP[code]) { bench.push(p); continue; }
+      auto.push(p);
+    }
   }
 
-  const placed: Placed[] = [];
+  // 나머지는 포지션 코드 기준 자동 배치
+  const groups: Record<string, Player[]> = {};
+  for (const p of auto) {
+    const code = normalizeRole(p.role)!;
+    (groups[code] ||= []).push(p);
+  }
   for (const code of Object.keys(groups)) {
     const def = POSITION_MAP[code];
     const list = groups[code];
     const n = list.length;
     list.forEach((player, i) => {
-      // 다중 인원이면 ±8% 범위에서 분산
       const spread = n > 1 ? (i - (n - 1) / 2) * 8 : 0;
       const baseX = Math.min(94, Math.max(6, def.x + spread));
       const { left, top } = toPitch(baseX, def.y, side);
@@ -47,21 +59,53 @@ function place(players: Player[], side: Side): { placed: Placed[]; bench: Player
   return { placed, bench };
 }
 
-function Marker({ p, homeTeam, onPick }: { p: Placed; homeTeam?: string; onPick: (pl: Player) => void }) {
+function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
+  { p: Placed; homeTeam?: string; onPick: (pl: Player) => void;
+    editMode?: boolean; onDragEnd?: (mpId: string, clientX: number, clientY: number) => void }) {
   const { player } = p;
   // 팀별 테두리 색 통일 (홈=파랑, 원정=빨강)
   const ring = player.team === homeTeam ? "ring-blue-500" : "ring-red-500";
   const rated = player.avg !== null;
+
+  // 편집 모드: 포인터 드래그 (놓으면 좌표 저장 후 재렌더로 스냅)
+  function onPointerDown(e: React.PointerEvent) {
+    if (!editMode || !onDragEnd) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget as HTMLElement;
+    const startX = e.clientX, startY = e.clientY;
+    target.setPointerCapture(e.pointerId);
+    let moved = false;
+    const move = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      // 손가락을 따라가는 임시 미리보기 (translate에 더해줌)
+      target.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
+      target.style.opacity = "0.8";
+    };
+    const up = (ev: PointerEvent) => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", up);
+      target.style.transform = "";
+      target.style.opacity = "";
+      if (moved) onDragEnd!(player.mpId, ev.clientX, ev.clientY);
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", up);
+  }
+
   return (
     <button
-      onClick={() => onPick(player)}
-      style={{ left: `${p.left}%`, top: `${p.top}%` }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20"
+      onClick={() => { if (!editMode) onPick(player); }}
+      onPointerDown={onPointerDown}
+      style={{ left: `${p.left}%`, top: `${p.top}%`, touchAction: editMode ? "none" : undefined }}
+      className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20
+        ${editMode ? "cursor-move ring-2 ring-amber-400 rounded-full" : ""}`}
     >
       <span
         className={`min-w-[38px] h-[38px] px-1 rounded-full bg-white shadow-md ring-2 ${ring}
           flex items-center justify-center text-[14px] font-extrabold
-          ${rated ? "text-gray-900" : "text-gray-400"} group-hover:scale-110 transition`}
+          ${rated ? "text-gray-900" : "text-gray-400"} ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
         {rated ? player.avg : "–"}
       </span>
@@ -90,17 +134,20 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
 
 export default function SoccerField({
   home, away, homeStaff = [], awayStaff = [], officials = [],
-  homeTeam, awayTeam, flip = false, onPick,
+  homeTeam, awayTeam, flip = false, onPick, editMode = false, onMove,
 }: {
   home: Player[]; away: Player[];
   homeStaff?: Player[]; awayStaff?: Player[]; officials?: Player[];
   homeTeam?: string; awayTeam?: string;
   flip?: boolean; // 후반: 전반과 반대 진영 (총평은 전반 기준 유지)
   onPick: (p: Player) => void;
+  editMode?: boolean;                          // 관리자 위치 편집 모드
+  onMove?: (mpId: string, x: number, y: number) => void; // 드래그 종료 시 좌표(%) 저장
 }) {
+  const pitchRef = useRef<HTMLDivElement>(null);
   // flip이면 두 팀의 진영(상/하)을 서로 맞바꾼다
-  const homeP = useMemo(() => place(home, flip ? "away" : "home"), [home, flip]);
-  const awayP = useMemo(() => place(away, flip ? "home" : "away"), [away, flip]);
+  const homeP = useMemo(() => place(home, flip ? "away" : "home", flip), [home, flip]);
+  const awayP = useMemo(() => place(away, flip ? "home" : "away", flip), [away, flip]);
 
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;
@@ -112,8 +159,27 @@ export default function SoccerField({
 
   const hasStaff = homeStaff.length > 0 || awayStaff.length > 0;
 
+  // 드래그: 포인터 위치를 피치 기준 %로 변환해 onMove 호출 (flip 시 역변환해 저장)
+  function handleDragEnd(mpId: string, clientX: number, clientY: number) {
+    const el = pitchRef.current;
+    if (!el || !onMove) return;
+    const r = el.getBoundingClientRect();
+    let x = ((clientX - r.left) / r.width) * 100;
+    let y = ((clientY - r.top) / r.height) * 100;
+    x = Math.max(2, Math.min(98, x));
+    y = Math.max(2, Math.min(98, y));
+    // 저장은 항상 비-flip(기본) 기준으로: flip 화면이면 되돌려 저장
+    if (flip) { x = 100 - x; y = 100 - y; }
+    onMove(mpId, Number(x.toFixed(1)), Number(y.toFixed(1)));
+  }
+
   return (
     <div>
+      {editMode && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2 text-center">
+          ✋ 편집 모드 — 선수를 끌어서 위치를 옮기세요. 위치는 자동 저장됩니다.
+        </p>
+      )}
       <div className="flex gap-2 justify-center items-stretch">
         {/* 좌측 스태프 (감독/코치) */}
         {hasStaff && (
@@ -125,6 +191,7 @@ export default function SoccerField({
 
         {/* 피치 */}
         <div
+          ref={pitchRef}
           className="relative w-full max-w-md rounded-xl overflow-hidden shadow-lg
             bg-gradient-to-b from-green-600 via-green-500 to-green-600
             border-2 border-white/30"
@@ -146,8 +213,8 @@ export default function SoccerField({
           <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{bottomLabel}</span>
 
           {/* 선수 마커 */}
-          {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} />)}
-          {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} />)}
+          {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
+          {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
         </div>
 
         {/* 우측 스태프 (감독/코치) */}

@@ -70,6 +70,8 @@ export default async function SharePage({ params }: any) {
     role: mp.role || mp.player.position || "",
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
+    posX: mp.posX ?? null,
+    posY: mp.posY ?? null,
     avg: myScore[mp.playerId] ?? null,
     count: myScore[mp.playerId] !== undefined ? 1 : 0,
   }));

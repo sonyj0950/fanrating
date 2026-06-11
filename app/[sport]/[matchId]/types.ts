@@ -6,6 +6,8 @@ export type Player = {
   role: string;
   isDefault: boolean;
   segment: string; // all | first | second
+  posX: number | null; // 관리자 커스텀 위치 (%)
+  posY: number | null;
   avg: number | null;
   count: number;
 };

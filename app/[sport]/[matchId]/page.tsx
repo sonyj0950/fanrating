@@ -40,6 +40,8 @@ export default async function MatchPage({ params }: any) {
     role: mp.role || mp.player.position || "",
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
+    posX: mp.posX ?? null,
+    posY: mp.posY ?? null,
     avg: null as number | null,
     count: 0,
   }));
