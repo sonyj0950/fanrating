@@ -174,7 +174,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       <MatchRecord matchId={match.id} record={match.record} />
 
-      {match.seed && (
+      {match.seed && match.status === "finished" && (
         <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
           <p className="text-sm text-orange-900 font-medium">{match.seed}</p>
           <DiscussionThread matchId={match.id} loggedIn={!!session} />
@@ -550,6 +550,8 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(true);
+  const [replyOn, setReplyOn] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   async function load() {
     const res = await fetch(`/api/discussion/${matchId}`);
@@ -569,6 +571,38 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
     const j = await res.json().catch(() => ({}));
     if (!res.ok) { alert(j.error || "등록 실패"); return; }
     setText(""); load();
+  }
+
+  async function submitReply(commentId: string) {
+    const t = replyText.trim();
+    if (!t) return;
+    const res = await fetch(`/api/discussion/comment/${commentId}/reply`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: t }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(j.error || "등록 실패"); return; }
+    setReplyText(""); setReplyOn(null); load();
+  }
+
+  async function like(id: string) {
+    if (!loggedIn) { alert("로그인이 필요합니다."); return; }
+    await fetch(`/api/discussion/comment/${id}/like`, { method: "POST" });
+    load();
+  }
+
+  async function report(id: string) {
+    if (!loggedIn) { alert("로그인이 필요합니다."); return; }
+    const reason = prompt("신고 사유를 입력해주세요 (선택)");
+    if (reason === null) return; // 취소
+    const res = await fetch(`/api/discussion/comment/${id}/report`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(j.error || "신고 실패"); return; }
+    alert("신고가 접수되었습니다.");
+    load();
   }
 
   async function remove(id: string) {
@@ -623,9 +657,47 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
                     )}
                   </div>
                 </div>
+
                 {c.blinded
-                  ? <p className="text-sm text-gray-400 italic">🚫 가려진 댓글입니다.</p>
+                  ? <p className="text-sm text-gray-400 italic">🚫 신고 누적으로 가려진 댓글입니다.</p>
                   : <p className="text-sm whitespace-pre-wrap break-words">{c.text}</p>}
+
+                {/* 액션 바 */}
+                {!c.blinded && (
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
+                    <button onClick={() => like(c.id)} className="hover:text-orange-600">👍 {c.likes > 0 ? c.likes : ""}</button>
+                    <button onClick={() => { setReplyOn(replyOn === c.id ? null : c.id); setReplyText(""); }} className="hover:text-orange-600">💬 답글 {c.replies.length > 0 ? c.replies.length : ""}</button>
+                    {!c.mine && (
+                      <button onClick={() => report(c.id)} className={`hover:text-red-500 ${c.reportedByMe ? "text-red-400" : ""}`}>
+                        🚩 {c.reportedByMe ? "신고됨" : "신고"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* 답글 입력 */}
+                {replyOn === c.id && loggedIn && (
+                  <div className="flex gap-1 mt-2">
+                    <input value={replyText} onChange={e => setReplyText(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") submitReply(c.id); }}
+                      placeholder="답글 입력" maxLength={300}
+                      className="flex-1 border rounded px-2 py-1 text-xs bg-white" />
+                    <button onClick={() => submitReply(c.id)} disabled={!replyText.trim()}
+                      className="text-xs px-2 bg-orange-500 text-white rounded disabled:opacity-40">등록</button>
+                  </div>
+                )}
+
+                {/* 답글 목록 */}
+                {c.replies.length > 0 && (
+                  <div className="mt-2 space-y-1 pl-3 border-l-2 border-orange-100">
+                    {c.replies.map((r: any) => (
+                      <div key={r.id} className="text-xs">
+                        <span className="text-gray-400">{r.username}</span>{" "}
+                        <span className="whitespace-pre-wrap break-words">{r.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

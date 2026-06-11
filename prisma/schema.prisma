@@ -22,6 +22,9 @@ model User {
   likes     CommentLike[]
   reports   Report[]
   discussions DiscussionComment[]
+  discussionReplies DiscussionReply[]
+  discussionLikes DiscussionLike[]
+  discussionReports DiscussionReport[]
 }
 
 model Match {
@@ -51,8 +54,41 @@ model DiscussionComment {
   text      String
   blinded   Boolean  @default(false)
   createdAt DateTime @default(now())
+  replies   DiscussionReply[]
+  likes     DiscussionLike[]
+  reports   DiscussionReport[]
 
   @@index([matchId])
+}
+
+model DiscussionReply {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   DiscussionComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model DiscussionLike {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   DiscussionComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  @@unique([commentId, userId])
+}
+
+model DiscussionReport {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   DiscussionComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  reason    String   @default("")
+  createdAt DateTime @default(now())
+  @@unique([commentId, userId])
 }
 
 model Player {

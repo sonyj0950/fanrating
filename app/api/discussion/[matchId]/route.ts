@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// 경기 토론 댓글 목록
+// 경기 토론 댓글 목록 (대댓글·좋아요·신고 포함)
 export async function GET(req: Request, { params }: any) {
   const session = await getServerSession(authOptions);
   const isAdmin = (session?.user as any)?.role === "admin";
@@ -11,7 +11,12 @@ export async function GET(req: Request, { params }: any) {
 
   const list = await prisma.discussionComment.findMany({
     where: { matchId: params.matchId },
-    include: { user: { select: { nickname: true } } },
+    include: {
+      user: { select: { nickname: true } },
+      replies: { include: { user: { select: { nickname: true } } }, orderBy: { createdAt: "asc" } },
+      reports: { select: { userId: true } },
+      _count: { select: { likes: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -21,8 +26,15 @@ export async function GET(req: Request, { params }: any) {
     text: c.text,
     blinded: c.blinded,
     mine: viewerId ? c.userId === viewerId : false,
+    likes: c._count.likes,
+    reportCount: c.reports.length,
+    reportedByMe: viewerId ? c.reports.some(r => r.userId === viewerId) : false,
+    replies: c.replies.map(r => ({ id: r.id, username: r.user.nickname, text: r.text })),
     createdAt: c.createdAt,
-  }));
+  }))
+  // 좋아요순 정렬
+  .sort((a, b) => b.likes - a.likes);
+
   return NextResponse.json({ items, isAdmin });
 }
 
