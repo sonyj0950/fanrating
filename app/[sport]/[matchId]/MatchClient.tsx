@@ -176,8 +176,8 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       {match.seed && (
         <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
-          <p className="text-sm text-orange-900">{match.seed}</p>
-          <p className="text-[11px] text-orange-400 mt-1">아래에서 선수를 눌러 평점·코멘트로 의견을 남겨보세요.</p>
+          <p className="text-sm text-orange-900 font-medium">{match.seed}</p>
+          <DiscussionThread matchId={match.id} loggedIn={!!session} />
         </div>
       )}
       {isAdmin && match.sport === "kleague" && (
@@ -538,6 +538,98 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
         <button onClick={share} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white shrink-0">
           {copied ? "✓ 복사됨" : "🔗 공유"}
         </button>
+      )}
+    </div>
+  );
+}
+
+// 경기 토론 댓글창 (시드 배너 아래)
+function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: boolean }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  async function load() {
+    const res = await fetch(`/api/discussion/${matchId}`);
+    if (res.ok) { const j = await res.json(); setItems(j.items || []); setIsAdmin(!!j.isAdmin); }
+  }
+  useEffect(() => { load(); }, [matchId]);
+
+  async function submit() {
+    const t = text.trim();
+    if (!t) return;
+    setBusy(true);
+    const res = await fetch(`/api/discussion/${matchId}`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: t }),
+    });
+    setBusy(false);
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(j.error || "등록 실패"); return; }
+    setText(""); load();
+  }
+
+  async function remove(id: string) {
+    if (!confirm("이 댓글을 삭제할까요?")) return;
+    await fetch(`/api/discussion/comment/${id}`, { method: "DELETE" });
+    load();
+  }
+  async function setBlind(id: string, blinded: boolean) {
+    await fetch(`/api/discussion/comment/${id}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ blinded }),
+    });
+    load();
+  }
+
+  return (
+    <div className="mt-3 border-t border-orange-200 pt-3">
+      <button onClick={() => setOpen(!open)} className="text-xs font-semibold text-orange-700 mb-2">
+        💬 토론 {items.length > 0 ? `(${items.length})` : ""} {open ? "▲" : "▼"}
+      </button>
+
+      {open && (
+        <>
+          {/* 입력 */}
+          {loggedIn ? (
+            <div className="flex gap-1 mb-3">
+              <input value={text} onChange={e => setText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") submit(); }}
+                placeholder="이 경기에 대한 의견을 남겨보세요"
+                maxLength={500}
+                className="flex-1 border rounded px-2 py-1.5 text-sm bg-white" />
+              <button onClick={submit} disabled={busy || !text.trim()}
+                className="text-sm px-3 bg-orange-500 text-white rounded disabled:opacity-40">등록</button>
+            </div>
+          ) : (
+            <p className="text-xs text-orange-500 mb-3">로그인하면 토론에 참여할 수 있습니다.</p>
+          )}
+
+          {/* 목록 */}
+          <div className="space-y-1.5">
+            {items.length === 0 && <p className="text-xs text-orange-400">첫 댓글을 남겨보세요!</p>}
+            {items.map(c => (
+              <div key={c.id} className="bg-white border border-orange-100 rounded px-2.5 py-1.5">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="text-[11px] text-gray-500">{c.username}</span>
+                  <div className="flex gap-2 shrink-0">
+                    {isAdmin && (c.blinded
+                      ? <button onClick={() => setBlind(c.id, false)} className="text-[10px] text-green-600">복구</button>
+                      : <button onClick={() => setBlind(c.id, true)} className="text-[10px] text-amber-600">블라인드</button>)}
+                    {(isAdmin || c.mine) && (
+                      <button onClick={() => remove(c.id)} className="text-[10px] text-red-400">삭제</button>
+                    )}
+                  </div>
+                </div>
+                {c.blinded
+                  ? <p className="text-sm text-gray-400 italic">🚫 가려진 댓글입니다.</p>
+                  : <p className="text-sm whitespace-pre-wrap break-words">{c.text}</p>}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

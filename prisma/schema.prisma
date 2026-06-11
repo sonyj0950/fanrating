@@ -21,6 +21,7 @@ model User {
   replies   Reply[]
   likes     CommentLike[]
   reports   Report[]
+  discussions DiscussionComment[]
 }
 
 model Match {
@@ -37,6 +38,21 @@ model Match {
   createdAt DateTime      @default(now())
   players   MatchPlayer[]
   ratings   Rating[]
+  discussions DiscussionComment[]
+}
+
+// 경기 토론 댓글 (시드 배너 아래 자유 토론 — 선수 평점과 별개)
+model DiscussionComment {
+  id        String   @id @default(cuid())
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  blinded   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([matchId])
 }
 
 model Player {
