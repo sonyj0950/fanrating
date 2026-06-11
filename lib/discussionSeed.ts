@@ -68,9 +68,9 @@ function aggregate(ratings: SeedRating[], minN: number): PlayerStat[] {
  * 반환: 토론 시드 문자열 (충분한 데이터가 없으면 null)
  */
 export function generateFootballSeed(input: SeedInput): string | null {
-  const minN = input.minRatingsPerPlayer ?? 3;
+  const minN = input.minRatingsPerPlayer ?? 1;
   const stats = aggregate(input.ratings, minN);
-  if (stats.length < 3) return null; // 표본이 너무 적으면 시드 생략
+  if (stats.length < 1) return null; // 평가된 선수가 아예 없으면 시드 생략
 
   const { homeTeam, awayTeam, homeScore, awayScore } = input;
 

@@ -10,7 +10,7 @@ async function requireAdmin() {
   return session;
 }
 
-const SEED_MIN_TOTAL = 10; // 경기 전체 평점이 이만큼 모이면 시드 생성 시도
+const SEED_MIN_TOTAL = 2; // 경기 전체 평점이 이만큼 모이면 시드 생성 시도
 
 // 경기 종료 시 토론 시드 자동 생성 (축구만, 총평 평점 기준)
 async function maybeGenerateSeed(matchId: string) {
