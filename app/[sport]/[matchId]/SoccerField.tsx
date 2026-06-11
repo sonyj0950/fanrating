@@ -5,6 +5,18 @@ import { POSITION_MAP, normalizeRole } from "@/lib/soccerPositions";
 
 type Side = "home" | "away";
 
+// 피치 라벨용 짧은 이름:
+//  - 6자 이하(짧은 한글 등): 풀네임 그대로
+//  - 길면(주로 외국 이름 "이름 성"): 마지막 어절(성)만 — 말줄임 없음
+//  - 전체 이름은 마커 탭/호버 시 따로 표시
+function displayName(name: string): string {
+  const n = name.trim();
+  if (n.length <= 6) return n;
+  const parts = n.split(/\s+/);
+  if (parts.length >= 2) return parts[parts.length - 1]; // 마지막 어절(성)
+  return n; // 공백 없는 긴 한 단어는 그대로 (탭하면 전체 보임)
+}
+
 interface Placed {
   player: Player;
   left: number; // % (피치 기준)
@@ -66,6 +78,8 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
   // 팀별 테두리 색 통일 (홈=파랑, 원정=빨강)
   const ring = player.team === homeTeam ? "ring-blue-500" : "ring-red-500";
   const rated = player.avg !== null;
+  const short = displayName(player.name);
+  const isShortened = short !== player.name;
 
   // 편집 모드: 포인터 드래그 (놓으면 좌표 저장 후 재렌더로 스냅)
   function onPointerDown(e: React.PointerEvent) {
@@ -98,6 +112,7 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
     <button
       onClick={() => { if (!editMode) onPick(player); }}
       onPointerDown={onPointerDown}
+      title={player.name}
       style={{ left: `${p.left}%`, top: `${p.top}%`, touchAction: editMode ? "none" : undefined }}
       className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20
         ${editMode ? "cursor-move ring-2 ring-amber-400 rounded-full" : ""}`}
@@ -109,9 +124,16 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd }:
       >
         {rated ? player.avg : "–"}
       </span>
-      <span className="text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
-        max-w-[52px] sm:max-w-none truncate sm:whitespace-nowrap bg-black/65 rounded px-1 py-0.5">
-        {player.name}
+      <span className="relative text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
+        whitespace-nowrap bg-black/65 rounded px-1 py-0.5">
+        {short}
+        {/* 줄임된 이름은 호버 시 전체 이름 표시 (데스크톱) */}
+        {isShortened && (
+          <span className="hidden sm:group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1
+            whitespace-nowrap bg-black/90 text-white rounded px-1.5 py-0.5 text-[11px] z-30 pointer-events-none">
+            {player.name}
+          </span>
+        )}
       </span>
     </button>
   );
