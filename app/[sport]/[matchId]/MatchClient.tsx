@@ -655,6 +655,10 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                   <textarea value={comment} onChange={e=>setComment(e.target.value)}
                     placeholder="코멘트 (선택)"
                     className="w-full border rounded p-2 h-20 text-sm"/>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                    특정인(선수·감독·심판 등 포함)에 대한 과도한 욕설·비방·모욕, 근거 없는 명예훼손은
+                    통보 없이 삭제될 수 있습니다. 평점·코멘트는 작성자 개인의 의견입니다.
+                  </p>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-gray-500">{comment.length}자</span>
                     <button onClick={submit} disabled={score===null}

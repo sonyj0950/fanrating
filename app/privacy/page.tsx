@@ -5,7 +5,7 @@ export default function PrivacyPage() {
     <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
       <h1 className="text-xl font-bold mb-1">개인정보 처리방침</h1>
       {/* TODO: 시행일자를 실제 날짜로 변경하세요 */}
-      <p className="text-gray-500 mb-6">시행일: [YYYY-MM-DD]</p>
+      <p className="text-gray-500 mb-6">시행일: 2026-06-10</p>
 
       <p className="mb-6">
         fanarena.kr(이하 “서비스”)은 「개인정보 보호법」 등 관련 법령을 준수하며, 이용자의 개인정보를
@@ -70,8 +70,8 @@ export default function PrivacyPage() {
       <Section title="10. 개인정보 보호책임자">
         {/* TODO: 책임자 이름과 연락 이메일을 채우세요 */}
         <ul className="list-disc pl-5 space-y-1">
-          <li>책임자: [이름 또는 닉네임]</li>
-          <li>연락처(이메일): [연락 이메일 주소]</li>
+          <li>책임자: fanarena.kr 관리자</li>
+          <li>연락처(이메일): fanarenakr@gmail.com</li>
         </ul>
         <p className="mt-2">개인정보 관련 문의·불만·피해구제는 위 연락처로 접수해 주시기 바랍니다.</p>
       </Section>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         <p>본 방침의 내용이 변경되는 경우 시행일 및 변경 사항을 서비스 화면에 공지합니다.</p>
       </Section>
 
-      <p className="text-gray-500 mt-6">부칙: 본 방침은 [YYYY-MM-DD]부터 시행합니다.</p>
+      <p className="text-gray-500 mt-6">부칙: 본 방침은 2026-06-10부터 시행합니다.</p>
     </div>
   );
 }
