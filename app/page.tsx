@@ -7,45 +7,65 @@ export const dynamic = "force-dynamic";
 const SPORT_LABEL: Record<string, string> = {
   kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LCK",
 };
-const STATUS_LABEL: Record<string, string> = {
-  scheduled: "예정", live: "진행중", finished: "종료",
-};
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "live")
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />LIVE</span>;
+  if (status === "finished")
+    return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">종료</span>;
+  return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">예정</span>;
+}
 
 function MatchCard({ m }: { m: any }) {
+  const homeWin = m.homeScore != null && m.awayScore != null && m.homeScore > m.awayScore;
+  const awayWin = m.homeScore != null && m.awayScore != null && m.awayScore > m.homeScore;
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-3 flex items-center gap-2">
-      <Link href={`/${m.sport}/${m.id}`} className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-          <span>{SPORT_LABEL[m.sport] ?? m.sport}</span>
-          <span className={m.status === "live" ? "text-red-500 font-semibold" : ""}>
-            {STATUS_LABEL[m.status] ?? m.status}
+    <div className="group relative rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <Link href={`/${m.sport}/${m.id}`} className="block">
+        <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-3">
+          <span className="text-gray-700 font-semibold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
+          <StatusBadge status={m.status} />
+          <span className="ml-auto">
+            {new Date(m.date).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </span>
-          <span>{new Date(m.date).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
         </div>
-        <div className="font-semibold truncate">
-          {m.homeTeam} <span className="text-blue-600">{m.homeScore ?? "-"}</span>
-          {" : "}
-          <span className="text-blue-600">{m.awayScore ?? "-"}</span> {m.awayTeam}
+
+        <div className="flex items-center justify-center gap-4 my-1">
+          <div className="flex-1 text-right font-bold text-gray-900 text-[15px] truncate">{m.homeTeam}</div>
+          <div className="flex items-center gap-2.5 font-black text-2xl tracking-wide shrink-0">
+            <span className={homeWin ? "text-blue-600" : "text-gray-300"}>{m.homeScore ?? "-"}</span>
+            <span className="text-gray-300 text-base">:</span>
+            <span className={awayWin ? "text-blue-600" : "text-gray-300"}>{m.awayScore ?? "-"}</span>
+          </div>
+          <div className="flex-1 text-left font-bold text-gray-900 text-[15px] truncate">{m.awayTeam}</div>
         </div>
+
         {m.pog && (
-          <div className="text-xs text-gray-500 mt-0.5 truncate">
-            🏆 {m.pog.name} ⭐ {m.pog.avg}
-            {m.ratingCount ? <span className="text-gray-400"> · 평점 {m.ratingCount}</span> : null}
+          <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-gray-100 text-[12px]">
+            <span className="text-amber-500 font-bold">🏆 POG</span>
+            <span className="text-gray-900 font-semibold">{m.pog.name}</span>
+            <span className="text-amber-500">⭐ {m.pog.avg}</span>
+            {m.ratingCount ? <span className="text-gray-400">· 평점 {m.ratingCount}</span> : null}
           </div>
         )}
       </Link>
-      <DeleteMatchButton matchId={m.id} />
+      <div className="absolute top-3 right-3"><DeleteMatchButton matchId={m.id} /></div>
     </div>
   );
 }
 
 function Section({ title, matches, empty }: { title: string; matches: any[]; empty: string }) {
   return (
-    <section className="mb-8">
-      <h2 className="text-lg font-bold mb-3">{title}</h2>
+    <section className="mb-7">
+      <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-gray-900 mb-3 px-1">
+        <span className="w-[3px] h-[15px] rounded-sm bg-blue-600" />
+        {title}
+        {matches.length > 0 && <span className="ml-auto text-xs text-gray-400 font-semibold">{matches.length}경기</span>}
+      </h2>
       {matches.length === 0
-        ? <p className="text-sm text-gray-400 bg-white border rounded-lg p-4">{empty}</p>
-        : <div className="space-y-2">{matches.map(m => <MatchCard key={m.id} m={m} />)}</div>}
+        ? <p className="text-sm text-gray-400 bg-white border border-dashed border-gray-200 rounded-xl p-4 text-center">{empty}</p>
+        : <div className="space-y-2.5">{matches.map(m => <MatchCard key={m.id} m={m} />)}</div>}
     </section>
   );
 }
@@ -56,7 +76,6 @@ export default async function Home() {
     include: { players: { include: { player: true } }, ratings: true },
   });
 
-  // 경기별 POG(평점 최고 선수) 계산
   const matches = raw.map(m => {
     const agg: Record<string, { sum: number; n: number }> = {};
     for (const r of m.ratings) {

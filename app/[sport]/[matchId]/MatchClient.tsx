@@ -152,21 +152,36 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">{match.homeTeam} {match.homeScore ?? "-"} : {match.awayScore ?? "-"} {match.awayTeam}</h1>
-          <p className="text-gray-500 mb-2">
-            {new Date(match.date).toLocaleString("ko-KR")}
-            <StatusBadge status={match.status} />
-          </p>
+      {/* 스코어보드 (라이트) */}
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4 sm:p-5 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <StatusBadge status={match.status} />
+          <div className="flex items-center gap-2">
+            <ShareButton
+              title={`${match.homeTeam} ${match.homeScore ?? "-"} : ${match.awayScore ?? "-"} ${match.awayTeam} 팬 평점`}
+              text="fanarena.kr에서 선수 평점을 매겨보세요!"
+              path={`/${match.sport}/${match.id}`}
+              label="공유" />
+            <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <ShareButton
-            title={`${match.homeTeam} ${match.homeScore ?? "-"} : ${match.awayScore ?? "-"} ${match.awayTeam} 팬 평점`}
-            text="fanarena.kr에서 선수 평점을 매겨보세요!"
-            path={`/${match.sport}/${match.id}`}
-            label="경기 공유" />
-          <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 text-center min-w-0">
+            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{match.homeTeam}</div>
+            <div className="text-[10px] text-gray-400 tracking-widest mt-1">HOME</div>
+          </div>
+          <div className="flex items-center gap-3 sm:gap-4 font-black text-3xl sm:text-4xl tracking-wide shrink-0">
+            <span className={scoreWin(match.homeScore, match.awayScore)}>{match.homeScore ?? "-"}</span>
+            <span className="text-xl text-gray-300">:</span>
+            <span className={scoreWin(match.awayScore, match.homeScore)}>{match.awayScore ?? "-"}</span>
+          </div>
+          <div className="flex-1 text-center min-w-0">
+            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{match.awayTeam}</div>
+            <div className="text-[10px] text-gray-400 tracking-widest mt-1">AWAY</div>
+          </div>
+        </div>
+        <div className="text-center text-[11px] text-gray-400 mt-3">
+          {new Date(match.date).toLocaleString("ko-KR")}
         </div>
       </div>
 
@@ -359,14 +374,34 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
+function StatusBadge({ status, dark = false }: { status: string; dark?: boolean }) {
+  const light: Record<string, { label: string; cls: string }> = {
     scheduled: { label: "예정", cls: "bg-gray-100 text-gray-600" },
     live: { label: "진행중", cls: "bg-red-100 text-red-600" },
     finished: { label: "종료", cls: "bg-blue-100 text-blue-700" },
   };
-  const s = map[status] ?? map.scheduled;
+  const darkMap: Record<string, { label: string; cls: string; live?: boolean }> = {
+    scheduled: { label: "예정", cls: "border border-[#39415a] text-[#9aa6bd]" },
+    live: { label: "진행중", cls: "bg-[rgba(255,90,90,.16)] text-[#ff8585]", live: true },
+    finished: { label: "종료", cls: "bg-[#2a3040] text-[#9aa6bd]" },
+  };
+  if (dark) {
+    const s = darkMap[status] ?? darkMap.scheduled;
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${s.cls}`}>
+        {s.live && <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a5a] animate-pulse" />}
+        {s.label}
+      </span>
+    );
+  }
+  const s = light[status] ?? light.scheduled;
   return <span className={`ml-2 text-xs px-2 py-0.5 rounded-full align-middle ${s.cls}`}>{s.label}</span>;
+}
+
+// 이긴 팀 점수는 파란색, 진 팀/무승부는 회색
+function scoreWin(mine: number | null, other: number | null): string {
+  if (mine == null || other == null) return "text-gray-300";
+  return mine > other ? "text-blue-600" : "text-gray-300";
 }
 
 // 관리자: 경기 진행 상태 변경 (예정 → 진행중 → 종료)

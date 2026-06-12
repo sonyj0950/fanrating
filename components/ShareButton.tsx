@@ -4,8 +4,8 @@ import { useState } from "react";
 /**
  * 공유 버튼 — 모바일은 OS 공유 시트(Web Share API), 데스크톱은 링크 복사로 폴백.
  */
-export default function ShareButton({ title, text, path, label = "공유", className }:
-  { title: string; text?: string; path: string; label?: string; className?: string }) {
+export default function ShareButton({ title, text, path, label = "공유", className, dark = false }:
+  { title: string; text?: string; path: string; label?: string; className?: string; dark?: boolean }) {
   const [copied, setCopied] = useState(false);
 
   async function share() {
@@ -32,7 +32,9 @@ export default function ShareButton({ title, text, path, label = "공유", class
 
   return (
     <button onClick={share}
-      className={className ?? "text-xs px-2 py-1 border rounded bg-white hover:bg-gray-50"}>
+      className={className ?? (dark
+        ? "text-xs px-2.5 py-1 rounded border border-[#39415a] text-[#cfd5e2] hover:bg-white/5"
+        : "text-xs px-2 py-1 border rounded bg-white hover:bg-gray-50")}>
       {copied ? "✓ 링크 복사됨" : `🔗 ${label}`}
     </button>
   );
