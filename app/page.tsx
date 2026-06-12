@@ -27,7 +27,7 @@ function MatchCard({ m }: { m: any }) {
           <span className="text-gray-700 font-semibold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
           <StatusBadge status={m.status} />
           <span className="ml-auto">
-            {new Date(m.date).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            {new Date(m.date).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
 
@@ -93,8 +93,12 @@ export default async function Home() {
     return { ...m, pog, ratingCount: m.ratings.length };
   });
 
-  const start = new Date(); start.setHours(0, 0, 0, 0);
-  const end = new Date(); end.setHours(23, 59, 59, 999);
+  // "오늘"을 한국 시간(KST, UTC+9) 기준으로 계산
+  const KST = 9 * 3600 * 1000;
+  const kstNow = new Date(Date.now() + KST);
+  const y = kstNow.getUTCFullYear(), mo = kstNow.getUTCMonth(), d = kstNow.getUTCDate();
+  const start = new Date(Date.UTC(y, mo, d, 0, 0, 0, 0) - KST);
+  const end = new Date(Date.UTC(y, mo, d, 23, 59, 59, 999) - KST);
 
   const today = matches.filter(m => m.date >= start && m.date <= end);
   const upcoming = matches.filter(m => m.date > end).slice().reverse();

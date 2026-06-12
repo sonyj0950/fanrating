@@ -181,7 +181,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           </div>
         </div>
         <div className="text-center text-[11px] text-gray-400 mt-3">
-          {new Date(match.date).toLocaleString("ko-KR")}
+          {new Date(match.date).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
         </div>
       </div>
 

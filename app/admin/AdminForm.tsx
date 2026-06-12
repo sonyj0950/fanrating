@@ -6,7 +6,7 @@ import { POSITIONS_BY_LINE } from "@/lib/soccerPositions";
 export default function AdminForm() {
   const r = useRouter();
   const [f, setF] = useState({
-    sport:"kbo", date: new Date().toISOString().slice(0,16),
+    sport:"kbo", date: new Date(Date.now() + 9*3600*1000).toISOString().slice(0,16),
     homeTeam:"", awayTeam:"", homeScore:"", awayScore:"", status:"finished",
     players: ""
   });
