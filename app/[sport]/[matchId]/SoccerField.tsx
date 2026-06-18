@@ -33,10 +33,14 @@ function toPitch(x: number, y: number, side: Side): { left: number; top: number 
   return { left: 100 - x, top: 1 + y * 0.49 };     // 반전: y0→1(상단), y100→50
 }
 
-function place(players: Player[], side: Side, flipped: boolean): { placed: Placed[]; bench: Player[] } {
+function place(players: Player[], side: Side, flipped: boolean,
+  subs: { minute: number; outPlayerId: string; inPlayerId: string }[] = []): { placed: Placed[]; bench: Player[] } {
   const bench: Player[] = [];
   const auto: Player[] = [];
   const placed: Placed[] = [];
+  // 교체로 들어온 선수 → 나간 선수 매핑 (벌림 계산에서 제외하고 파트너 자리에 겹침)
+  const inToOut = new Map<string, string>();
+  for (const s of subs) inToOut.set(s.inPlayerId, s.outPlayerId);
 
   // 커스텀 위치가 있으면 그대로 사용 (flip 시 상하/좌우 반전)
   for (const p of players) {
@@ -52,9 +56,11 @@ function place(players: Player[], side: Side, flipped: boolean): { placed: Place
     }
   }
 
-  // 나머지는 포지션 코드 기준 자동 배치
+  // 자동 배치 — 교체 인 선수는 일단 제외(파트너 자리에 겹쳐 둘 것이므로 벌림에 안 셈)
+  const subIns: Player[] = [];
   const groups: Record<string, Player[]> = {};
   for (const p of auto) {
+    if (inToOut.has(p.playerId)) { subIns.push(p); continue; }
     const code = normalizeRole(p.role)!;
     (groups[code] ||= []).push(p);
   }
@@ -68,6 +74,18 @@ function place(players: Player[], side: Side, flipped: boolean): { placed: Place
       const { left, top } = toPitch(baseX, def.y, side);
       placed.push({ player, left, top, accent: def.accent });
     });
+  }
+  // 교체 인 선수: 파트너(나간 선수) 자리에 겹쳐 배치 → 스택. 파트너 없으면 자기 코드 위치로.
+  for (const p of subIns) {
+    const partner = placed.find(pl => pl.player.playerId === inToOut.get(p.playerId));
+    if (partner) {
+      placed.push({ player: p, left: partner.left, top: partner.top, accent: "core" });
+    } else {
+      const code = normalizeRole(p.role);
+      const def = code ? POSITION_MAP[code] : null;
+      if (def) { const { left, top } = toPitch(def.x, def.y, side); placed.push({ player: p, left, top, accent: def.accent }); }
+      else bench.push(p);
+    }
   }
   return { placed, bench };
 }
@@ -241,8 +259,8 @@ export default function SoccerField({
   const pitchRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null); // 펼쳐진 스택 id (한 번에 하나)
   // flip이면 두 팀의 진영(상/하)을 서로 맞바꾼다
-  const homeP = useMemo(() => place(home, flip ? "away" : "home", flip), [home, flip]);
-  const awayP = useMemo(() => place(away, flip ? "home" : "away", flip), [away, flip]);
+  const homeP = useMemo(() => place(home, flip ? "away" : "home", flip, subs), [home, flip, subs]);
+  const awayP = useMemo(() => place(away, flip ? "home" : "away", flip, subs), [away, flip, subs]);
   // 교체 처리: OUT/IN을 같은 자리로 모음.
   //  - 둘 다 피치: IN을 OUT 자리로 이동
   //  - IN이 후보(벤치)면: 끌어와서 OUT 자리에 배치하고 벤치에서 제거 → 스택 형성
