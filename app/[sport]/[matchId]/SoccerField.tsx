@@ -242,19 +242,34 @@ export default function SoccerField({
   // flip이면 두 팀의 진영(상/하)을 서로 맞바꾼다
   const homeP = useMemo(() => place(home, flip ? "away" : "home", flip), [home, flip]);
   const awayP = useMemo(() => place(away, flip ? "home" : "away", flip), [away, flip]);
-  // 교체쌍(나간↔들어온)이 둘 다 피치에 있으면 같은 자리로 모아 스택되게 함
-  function mergeSubs(placed: Placed[]): Placed[] {
-    if (!subs.length) return placed;
-    const copy = placed.map(p => ({ ...p }));
+  // 교체 처리: OUT/IN을 같은 자리로 모음.
+  //  - 둘 다 피치: IN을 OUT 자리로 이동
+  //  - IN이 후보(벤치)면: 끌어와서 OUT 자리에 배치하고 벤치에서 제거 → 스택 형성
+  function resolvePitch(placed: Placed[], bench: Player[]): { placed: Placed[]; bench: Player[] } {
+    if (!subs.length) return { placed, bench };
+    const np = placed.map(p => ({ ...p }));
+    let nb = [...bench];
     for (const s of subs) {
-      const out = copy.find(p => p.player.playerId === s.outPlayerId);
-      const inn = copy.find(p => p.player.playerId === s.inPlayerId);
-      if (out && inn) { inn.left = out.left; inn.top = out.top; }
+      const out = np.find(p => p.player.playerId === s.outPlayerId);
+      if (!out) continue;
+      const inOnPitch = np.find(p => p.player.playerId === s.inPlayerId);
+      if (inOnPitch) {
+        inOnPitch.left = out.left; inOnPitch.top = out.top;
+      } else {
+        const idx = nb.findIndex(b => b.playerId === s.inPlayerId);
+        if (idx >= 0) {
+          const inP = nb[idx];
+          nb.splice(idx, 1);
+          np.push({ player: inP, left: out.left, top: out.top, accent: "core" });
+        }
+      }
     }
-    return copy;
+    return { placed: np, bench: nb };
   }
-  const homeStacks = useMemo(() => buildStacks(mergeSubs(homeP.placed), seg, subInfo), [homeP, subs, seg, subInfo]);
-  const awayStacks = useMemo(() => buildStacks(mergeSubs(awayP.placed), seg, subInfo), [awayP, subs, seg, subInfo]);
+  const homeR = useMemo(() => resolvePitch(homeP.placed, homeP.bench), [homeP, subs]);
+  const awayR = useMemo(() => resolvePitch(awayP.placed, awayP.bench), [awayP, subs]);
+  const homeStacks = useMemo(() => buildStacks(homeR.placed, seg, subInfo), [homeR, seg, subInfo]);
+  const awayStacks = useMemo(() => buildStacks(awayR.placed, seg, subInfo), [awayR, seg, subInfo]);
 
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;
@@ -407,14 +422,14 @@ export default function SoccerField({
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
-      {(homeP.bench.length > 0 || awayP.bench.length > 0) && (
+      {(homeR.bench.length > 0 || awayR.bench.length > 0) && (
         <div className="mt-3 border rounded p-2 bg-gray-50">
           <p className="text-xs font-semibold text-gray-500 mb-2">
             🔁 후보/교체 <span className="font-normal text-gray-400">— 탭하면 평점 매기기</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <BenchColumn team={homeTeam ?? "홈"} list={homeP.bench} dot="bg-blue-500" onPick={onPick} subInfo={subInfo} />
-            <BenchColumn team={awayTeam ?? "원정"} list={awayP.bench} dot="bg-red-500" onPick={onPick} subInfo={subInfo} />
+            <BenchColumn team={homeTeam ?? "홈"} list={homeR.bench} dot="bg-blue-500" onPick={onPick} subInfo={subInfo} />
+            <BenchColumn team={awayTeam ?? "원정"} list={awayR.bench} dot="bg-red-500" onPick={onPick} subInfo={subInfo} />
           </div>
         </div>
       )}
