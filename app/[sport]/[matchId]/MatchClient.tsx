@@ -8,6 +8,7 @@ import LckLineup from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import type { Player, Agg } from "./types";
+import { POSITION_MAP, normalizeRole } from "@/lib/soccerPositions";
 
 function segmentsFor(sport: string) {
   if (sport === "kleague") return [
@@ -301,12 +302,140 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
         )}
       </div>
 
+      {/* 평점 리스트 (캡처용) — 축구만, 현재 탭 기준 */}
+      {match.sport === "kleague" && (home.length > 0 || away.length > 0) && (
+        <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          isMine={isMine} pog={pog} onPick={setOpen} />
+      )}
+
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
         segments={segments} status={match.status} sport={match.sport}
         onClose={() => { setOpen(null); router.refresh(); }}/>}
 
       {addOpen && <AddPlayerModal matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
         onClose={() => { setAddOpen(false); router.refresh(); }}/>}
+    </div>
+  );
+}
+
+// 포지션 코드 → 4그룹(GK/DF/MF/FW)
+function posGroup(role: string | undefined): "GK" | "DF" | "MF" | "FW" | null {
+  const code = normalizeRole(role);
+  const line = code ? POSITION_MAP[code]?.line : null;
+  if (!line) return null;
+  if (line === "GK" || line === "SW") return "GK";
+  if (line === "DEF") return "DF";
+  if (line === "DM" || line === "MID" || line === "AM") return "MF";
+  return "FW"; // FW, SS, ST
+}
+const GROUP_LABEL: Record<string, string> = { GK: "GK · 골키퍼", DF: "DF · 수비수", MF: "MF · 미드필더", FW: "FW · 공격수" };
+const GROUP_ORDER = ["GK", "DF", "MF", "FW"] as const;
+
+// 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
+function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick }:
+  { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string;
+    isMine: boolean; pog: Player | null; onPick: (p: Player) => void }) {
+  const [mode, setMode] = useState<"high" | "low" | "pos">("high");
+  const all = [...home, ...away];
+
+  // 정렬 리스트 (평점 있는 선수만)
+  const ratedSorted = all.filter(p => p.avg !== null)
+    .sort((a, b) => mode === "low" ? (a.avg! - b.avg!) : (b.avg! - a.avg!));
+
+  function Row({ p, rank }: { p: Player; rank: number }) {
+    const isHome = p.team === homeTeam;
+    const top = mode === "high" && rank === 1;
+    return (
+      <button onClick={() => onPick(p)}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 text-left">
+        <span className={`w-5 text-center text-[13px] font-extrabold ${top ? "text-amber-500" : "text-gray-300"}`}>{rank}</span>
+        <span className={`w-2 h-2 rounded-full shrink-0 ${isHome ? "bg-blue-500" : "bg-red-500"}`} />
+        <span className="flex-1 text-[14px] font-medium text-gray-900 truncate">
+          {p.name} <span className="text-[10px] text-gray-400">{p.role}</span>
+        </span>
+        <span className={`text-[16px] font-extrabold w-11 text-right ${top ? "text-amber-500" : p.avg! < 4 ? "text-red-500" : "text-gray-900"}`}>{p.avg}</span>
+      </button>
+    );
+  }
+
+  // 포지션 비교: 그룹별로 양 팀 평점 높은 순 나란히
+  function posCompare() {
+    const sortByAvg = (a: Player, b: Player) => (b.avg ?? -1) - (a.avg ?? -1);
+    return GROUP_ORDER.map(g => {
+      const h = home.filter(p => posGroup(p.role) === g).sort(sortByAvg);
+      const a = away.filter(p => posGroup(p.role) === g).sort(sortByAvg);
+      const rows = Math.max(h.length, a.length);
+      if (rows === 0) return null;
+      return (
+        <div key={g} className="border-b-4 border-gray-100 last:border-0">
+          <div className="bg-gray-100 text-[11px] font-extrabold text-gray-500 px-3.5 py-1">{GROUP_LABEL[g]}</div>
+          {Array.from({ length: rows }).map((_, i) => {
+            const ph = h[i], pa = a[i];
+            const hv = ph?.avg ?? null, av = pa?.avg ?? null;
+            const hWin = hv !== null && av !== null && hv > av;
+            const aWin = hv !== null && av !== null && av > hv;
+            return (
+              <div key={i} className="flex items-stretch border-b border-gray-50 last:border-0 text-[13px]">
+                <button onClick={() => ph && onPick(ph)} disabled={!ph}
+                  className={`flex-1 flex items-center justify-end gap-1.5 px-2.5 py-2 ${hWin ? "bg-blue-50" : ""}`}>
+                  {ph ? <>
+                    <span className={`font-semibold truncate ${hWin ? "text-blue-700" : "text-gray-800"}`}>{ph.name}</span>
+                    <span className={`font-extrabold w-8 text-left ${hWin ? "text-blue-600" : "text-gray-400"}`}>{hv ?? "–"}{hWin ? "▲" : ""}</span>
+                  </> : <span className="text-gray-300 italic">—</span>}
+                </button>
+                <div className="w-10 shrink-0 flex items-center justify-center text-[9px] text-gray-300 font-bold border-x border-gray-100">VS</div>
+                <button onClick={() => pa && onPick(pa)} disabled={!pa}
+                  className={`flex-1 flex items-center gap-1.5 px-2.5 py-2 ${aWin ? "bg-red-50" : ""}`}>
+                  {pa ? <>
+                    <span className={`font-extrabold w-8 text-right ${aWin ? "text-red-600" : "text-gray-400"}`}>{aWin ? "▲" : ""}{av ?? "–"}</span>
+                    <span className={`font-semibold truncate ${aWin ? "text-red-700" : "text-gray-800"}`}>{pa.name}</span>
+                  </> : <span className="text-gray-300 italic">—</span>}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      );
+    });
+  }
+
+  const btn = (k: "high" | "low" | "pos", label: string) => (
+    <button onClick={() => setMode(k)}
+      className={`flex-1 text-[12px] font-bold py-2 rounded-lg border transition ${
+        mode === k ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-gray-200 text-gray-500"}`}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="mt-5">
+      <div className="flex gap-1.5 mb-3">
+        {btn("high", "평점 높은순")}
+        {btn("low", "평점 낮은순")}
+        {btn("pos", "포지션 비교")}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-gray-100">
+          <span className="text-[13px] font-extrabold text-gray-900">📊 평점 {mode === "pos" ? "포지션 비교" : "순위"}</span>
+          <span className="text-[11px] text-gray-400 font-semibold">{isMine ? "나의 평점" : "총평"}{mode === "low" ? " · 낮은 순" : mode === "high" ? " · 높은 순" : ""}</span>
+        </div>
+
+        {mode === "pos" ? (
+          posCompare()
+        ) : ratedSorted.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-6">아직 평점이 없습니다.</p>
+        ) : (
+          ratedSorted.map((p, i) => <Row key={p.mpId} p={p} rank={i + 1} />)
+        )}
+
+        {/* 캡처용 푸터 */}
+        <div className="flex items-center justify-center gap-2 bg-gray-900 text-white text-[12px] font-semibold py-2.5">
+          {pog && <span>🏆 POG {pog.name} {pog.avg}</span>}
+          <span className="text-gray-500">·</span>
+          <span>fanarena<span className="text-gray-400">.kr</span></span>
+        </div>
+      </div>
     </div>
   );
 }
