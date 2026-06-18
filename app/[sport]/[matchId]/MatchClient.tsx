@@ -8,7 +8,7 @@ import LckLineup from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import type { Player, Agg } from "./types";
-import { POSITION_MAP, normalizeRole } from "@/lib/soccerPositions";
+import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 
 function segmentsFor(sport: string) {
   if (sport === "kleague") return [
@@ -65,10 +65,10 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const isAdmin = (session?.user as any)?.role === "admin";
 
   // 관리자: 선수 위치 드래그 저장
-  async function savePosition(mpId: string, x: number, y: number) {
+  async function savePosition(mpId: string, x: number, y: number, role?: string) {
     await fetch(`/api/match-player/${mpId}`, {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ posX: x, posY: y }),
+      body: JSON.stringify(role ? { posX: x, posY: y, role } : { posX: x, posY: y }),
     });
     router.refresh();
   }
@@ -1435,15 +1435,23 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
   { matchId: string; homeTeam: string; awayTeam: string; onClose: () => void }) {
   const [name, setName] = useState("");
   const [team, setTeam] = useState(homeTeam);
-  const [role, setRole] = useState("");
+  const [starter, setStarter] = useState(true);       // 선발 여부
+  const [group, setGroup] = useState<"GK" | "DF" | "MF" | "FW">("MF"); // 선발 시 역할군
   const [segment, setSegment] = useState("all");
   const [msg, setMsg] = useState("");
 
+  const GROUPS: { key: "GK" | "DF" | "MF" | "FW"; label: string }[] = [
+    { key: "GK", label: "GK 골키퍼" }, { key: "DF", label: "DF 수비" },
+    { key: "MF", label: "MF 미드필더" }, { key: "FW", label: "FW 공격" },
+  ];
+
   async function submit() {
-    if (!name.trim()) { setMsg("이름 입력"); return; }
+    if (!name.trim()) { setMsg("이름을 입력하세요."); return; }
+    // 선발: 역할군 기본 코드로 피치 배치 / 후보: 역할 비움 → 후보칸
+    const role = starter ? (GROUP_DEFAULT[group] ?? "CM") : "";
     const res = await fetch("/api/match-player", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId, name: name.trim(), team, role: role.trim(), segment }),
+      body: JSON.stringify({ matchId, name: name.trim(), team, role, segment }),
     });
     const j = await res.json();
     if (!res.ok) { setMsg(j.error); return; }
@@ -1454,18 +1462,48 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-xl max-w-md w-full p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-bold">선수 추가</h3>
+
         <input className="border rounded w-full p-2" placeholder="선수 이름" value={name} onChange={e=>setName(e.target.value)}/>
+
         <select className="border rounded w-full p-2" value={team} onChange={e=>setTeam(e.target.value)}>
           <option value={homeTeam}>{homeTeam}</option>
           <option value={awayTeam}>{awayTeam}</option>
           <option value="공통">공통 (심판 등)</option>
         </select>
-        <input className="border rounded w-full p-2" placeholder="역할 (예: ST/GK/감독/코치/주심 등)" value={role} onChange={e=>setRole(e.target.value)}/>
+
+        {/* 선발 / 후보 토글 */}
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setStarter(true)}
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${starter ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500"}`}>
+            ⚽ 선발 (피치)
+          </button>
+          <button type="button" onClick={() => setStarter(false)}
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${!starter ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500"}`}>
+            🔁 후보/교체
+          </button>
+        </div>
+
+        {/* 선발이면 역할군 선택 */}
+        {starter && (
+          <div>
+            <p className="text-xs text-gray-500 mb-1.5">역할군 (등록 후 드래그하면 그 위치의 세부 포지션으로 자동 변경)</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {GROUPS.map(g => (
+                <button key={g.key} type="button" onClick={() => setGroup(g.key)}
+                  className={`py-2 rounded-lg border text-xs font-bold ${group === g.key ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600"}`}>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <select className="border rounded w-full p-2" value={segment} onChange={e=>setSegment(e.target.value)}>
           <option value="all">전·후반 출전</option>
           <option value="first">전반만</option>
           <option value="second">후반만</option>
         </select>
+
         {msg && <p className="text-red-500 text-sm">{msg}</p>}
         <div className="flex gap-2 justify-end">
           <button onClick={onClose} className="px-4 py-1.5 border rounded">취소</button>

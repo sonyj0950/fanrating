@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
-import { POSITION_MAP, normalizeRole } from "@/lib/soccerPositions";
+import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
 
 type Side = "home" | "away";
 
@@ -212,7 +212,7 @@ export default function SoccerField({
   flip?: boolean; // 후반: 전반과 반대 진영 (총평은 전반 기준 유지)
   onPick: (p: Player) => void;
   editMode?: boolean;                          // 관리자 위치 편집 모드
-  onMove?: (mpId: string, x: number, y: number) => void; // 드래그 종료 시 좌표(%) 저장
+  onMove?: (mpId: string, x: number, y: number, role?: string) => void; // 드래그 종료 시 좌표(%)+포지션 저장
   subs?: { minute: number; outPlayerId: string; inPlayerId: string }[];
   subInfo?: Record<string, { dir: "in" | "out"; min: number }>;
 }) {
@@ -280,7 +280,14 @@ export default function SoccerField({
     y = Math.max(2, Math.min(98, y));
     // 저장은 항상 비-flip(기본) 기준으로: flip 화면이면 되돌려 저장
     if (flip) { x = 100 - x; y = 100 - y; }
-    onMove(mpId, Number(x.toFixed(1)), Number(y.toFixed(1)));
+    // 드롭한 위치 → 팀 로컬 좌표로 변환 후 가장 가까운 포지션 코드 자동 산출
+    const isHome = home.some(p => p.mpId === mpId);
+    let tx: number, ty: number;
+    if (isHome) { tx = x; ty = (99 - y) / 0.49; }
+    else { tx = 100 - x; ty = (y - 1) / 0.49; }
+    ty = Math.max(0, Math.min(100, ty));
+    const role = nearestCode(tx, ty);
+    onMove(mpId, Number(x.toFixed(1)), Number(y.toFixed(1)), role);
   }
 
   return (

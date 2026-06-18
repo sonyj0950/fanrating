@@ -101,3 +101,19 @@ export function normalizeRole(role?: string | null): string | null {
   const found = byLen.find(p => upper.includes(p.code));
   return found ? found.code : null;
 }
+
+// 큰 역할군(GK/DF/MF/FW) → 기본 포지션 코드 (입력 시 자동 배치용)
+export const GROUP_DEFAULT: Record<string, string> = {
+  GK: "GK", DF: "CB", MF: "CM", FW: "ST",
+};
+
+// 팀 로컬 좌표(x:0~100 좌우, y:0 자기골문~100 상대골문)에서 가장 가까운 포지션 코드.
+// 드래그로 위치를 옮겼을 때 그 자리에 맞는 세부 포지션으로 자동 변경하는 데 사용.
+export function nearestCode(x: number, y: number): string {
+  let best = "CM", bestD = Infinity;
+  for (const p of POSITIONS) {
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+    if (d < bestD) { bestD = d; best = p.code; }
+  }
+  return best;
+}

@@ -20,6 +20,9 @@ export async function PATCH(req: Request, { params }: any) {
   if (typeof b.segment === "string" && ["all", "first", "second"].includes(b.segment))
     data.segment = b.segment;
 
+  // 역할(포지션 코드) 변경 — 드래그로 위치 옮기면 자동 갱신
+  if (typeof b.role === "string") data.role = b.role.trim();
+
   // 커스텀 위치 저장 (posX/posY는 0~100 %)
   if (b.resetPos === true) {
     data.posX = null;
