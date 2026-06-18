@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: any) {
 export default async function MatchPage({ params }: any) {
   const m = await prisma.match.findUnique({
     where: { id: params.matchId },
-    include: { players: { include: { player: true } }, ratings: true },
+    include: { players: { include: { player: true } }, ratings: true, substitutions: true },
   });
   if (!m) notFound();
 
@@ -62,6 +62,7 @@ export default async function MatchPage({ params }: any) {
         record: m.record ?? null, status: m.status, seed: m.seed ?? null }}
       players={players}
       agg={aggClean}
+      subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId }))}
     />
   );
 }

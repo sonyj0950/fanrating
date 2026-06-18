@@ -93,10 +93,10 @@ function buildStacks(placed: Placed[]): Stack[] {
   return stacks;
 }
 
-function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick }:
+function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick, sub }:
   { p: Placed; homeTeam?: string; onPick: (pl: Player) => void;
     editMode?: boolean; onDragEnd?: (mpId: string, clientX: number, clientY: number) => void;
-    stackCount?: number; onStackClick?: () => void }) {
+    stackCount?: number; onStackClick?: () => void; sub?: { dir: "in" | "out"; min: number } }) {
   const { player } = p;
   // 팀별 테두리 색 통일 (홈=파랑, 원정=빨강)
   const ring = player.team === homeTeam ? "ring-blue-500" : "ring-red-500";
@@ -161,6 +161,14 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
             +{stackCount}
           </span>
         )}
+        {/* 교체 배지 (→들어옴 / ←나감 + 분) */}
+        {sub && (
+          <span className={`absolute -top-1.5 -left-2.5 h-[15px] px-1 rounded-md flex items-center
+            text-[8px] sm:text-[9px] font-extrabold text-white shadow z-20 whitespace-nowrap
+            ${sub.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+            {sub.dir === "in" ? "→" : "←"}{sub.min}{"'"}
+          </span>
+        )}
       </span>
       <span className="relative text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
         whitespace-nowrap bg-black/65 rounded px-1 py-0.5">
@@ -196,6 +204,7 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
 export default function SoccerField({
   home, away, homeStaff = [], awayStaff = [], officials = [],
   homeTeam, awayTeam, flip = false, onPick, editMode = false, onMove,
+  subs = [], subInfo = {},
 }: {
   home: Player[]; away: Player[];
   homeStaff?: Player[]; awayStaff?: Player[]; officials?: Player[];
@@ -204,14 +213,27 @@ export default function SoccerField({
   onPick: (p: Player) => void;
   editMode?: boolean;                          // 관리자 위치 편집 모드
   onMove?: (mpId: string, x: number, y: number) => void; // 드래그 종료 시 좌표(%) 저장
+  subs?: { minute: number; outPlayerId: string; inPlayerId: string }[];
+  subInfo?: Record<string, { dir: "in" | "out"; min: number }>;
 }) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null); // 펼쳐진 스택 id (한 번에 하나)
   // flip이면 두 팀의 진영(상/하)을 서로 맞바꾼다
   const homeP = useMemo(() => place(home, flip ? "away" : "home", flip), [home, flip]);
   const awayP = useMemo(() => place(away, flip ? "home" : "away", flip), [away, flip]);
-  const homeStacks = useMemo(() => buildStacks(homeP.placed), [homeP]);
-  const awayStacks = useMemo(() => buildStacks(awayP.placed), [awayP]);
+  // 교체쌍(나간↔들어온)이 둘 다 피치에 있으면 같은 자리로 모아 스택되게 함
+  function mergeSubs(placed: Placed[]): Placed[] {
+    if (!subs.length) return placed;
+    const copy = placed.map(p => ({ ...p }));
+    for (const s of subs) {
+      const out = copy.find(p => p.player.playerId === s.outPlayerId);
+      const inn = copy.find(p => p.player.playerId === s.inPlayerId);
+      if (out && inn) { inn.left = out.left; inn.top = out.top; }
+    }
+    return copy;
+  }
+  const homeStacks = useMemo(() => buildStacks(mergeSubs(homeP.placed)), [homeP, subs]);
+  const awayStacks = useMemo(() => buildStacks(mergeSubs(awayP.placed)), [awayP, subs]);
 
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;
@@ -229,12 +251,12 @@ export default function SoccerField({
       const isOpen = expanded === s.id;
       if (s.members.length === 1) {
         return <Marker key={s.id} p={s.members[0]} homeTeam={homeTeam} onPick={onPick}
-          editMode={editMode} onDragEnd={handleDragEnd} />;
+          editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[s.members[0].player.playerId]} />;
       }
       if (!isOpen) {
         const rep = s.members[0];
         return <Marker key={s.id} p={rep} homeTeam={homeTeam} onPick={onPick}
-          editMode={editMode} onDragEnd={handleDragEnd}
+          editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[rep.player.playerId]}
           stackCount={s.members.length - 1} onStackClick={() => setExpanded(s.id)} />;
       }
       const k = s.members.length;
@@ -242,7 +264,7 @@ export default function SoccerField({
         const off = (i - (k - 1) / 2) * 15;
         const left = Math.max(7, Math.min(93, s.left + off));
         return <Marker key={m.player.mpId} p={{ ...m, left }} homeTeam={homeTeam}
-          onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />;
+          onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[m.player.playerId]} />;
       });
     });
   }
@@ -363,8 +385,8 @@ export default function SoccerField({
             🔁 후보/교체 <span className="font-normal text-gray-400">— 탭하면 평점 매기기</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <BenchColumn team={homeTeam ?? "홈"} list={homeP.bench} dot="bg-blue-500" onPick={onPick} />
-            <BenchColumn team={awayTeam ?? "원정"} list={awayP.bench} dot="bg-red-500" onPick={onPick} />
+            <BenchColumn team={homeTeam ?? "홈"} list={homeP.bench} dot="bg-blue-500" onPick={onPick} subInfo={subInfo} />
+            <BenchColumn team={awayTeam ?? "원정"} list={awayP.bench} dot="bg-red-500" onPick={onPick} subInfo={subInfo} />
           </div>
         </div>
       )}
@@ -372,8 +394,9 @@ export default function SoccerField({
   );
 }
 
-function BenchColumn({ team, list, dot, onPick }:
-  { team: string; list: Player[]; dot: string; onPick: (p: Player) => void }) {
+function BenchColumn({ team, list, dot, onPick, subInfo = {} }:
+  { team: string; list: Player[]; dot: string; onPick: (p: Player) => void;
+    subInfo?: Record<string, { dir: "in" | "out"; min: number }> }) {
   const ring = dot.includes("blue") ? "ring-blue-500" : "ring-red-500";
   return (
     <div>
@@ -386,10 +409,18 @@ function BenchColumn({ team, list, dot, onPick }:
         <div className="flex flex-wrap gap-2">
           {list.map(p => {
             const rated = p.avg !== null;
+            const s = subInfo[p.playerId];
             return (
               <button key={p.mpId} onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
-                className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border bg-white
+                className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border bg-white
                   hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition group">
+                {s && (
+                  <span className={`absolute -top-1.5 -left-1 h-[14px] px-1 rounded-md flex items-center
+                    text-[8px] font-extrabold text-white shadow whitespace-nowrap
+                    ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+                    {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
+                  </span>
+                )}
                 <span className={`w-7 h-7 rounded-full bg-white shadow-sm ring-2 ${ring}
                   flex items-center justify-center text-[12px] font-extrabold
                   ${rated ? "text-gray-900" : "text-gray-300"} group-hover:scale-105 transition`}>

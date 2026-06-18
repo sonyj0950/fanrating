@@ -22,7 +22,7 @@ export default async function SharePage({ params }: any) {
   const [m, user, ratings] = await Promise.all([
     prisma.match.findUnique({
       where: { id: params.matchId },
-      include: { players: { include: { player: true } } },
+      include: { players: { include: { player: true } }, substitutions: true },
     }),
     prisma.user.findUnique({ where: { id: params.userId }, select: { nickname: true } }),
     prisma.rating.findMany({
@@ -91,7 +91,8 @@ export default async function SharePage({ params }: any) {
       {ratings.length === 0 ? (
         <p className="text-sm text-gray-400 bg-white border rounded-lg p-4">아직 매긴 평점이 없습니다.</p>
       ) : (
-        <SharePitch sport={m.sport} players={players} homeTeam={m.homeTeam} awayTeam={m.awayTeam} />
+        <SharePitch sport={m.sport} players={players} homeTeam={m.homeTeam} awayTeam={m.awayTeam}
+          subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId }))} />
       )}
 
       <Link href={`/${m.sport}/${m.id}`}

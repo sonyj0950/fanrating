@@ -49,8 +49,10 @@ function applyAgg(players: Player[], agg: Agg, seg: string): Player[] {
   });
 }
 
-export default function MatchClient({ match, players: rawPlayers, agg }:
-  { match: any; players: Player[]; agg: Agg }) {
+type Sub = { minute: number; outPlayerId: string; inPlayerId: string };
+
+export default function MatchClient({ match, players: rawPlayers, agg, subs = [] }:
+  { match: any; players: Player[]; agg: Agg; subs?: Sub[] }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [seg, setSeg] = useState("full");
@@ -145,6 +147,16 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
   const away = fieldPlayers.filter(p => p.team === match.awayTeam);
   const homeStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.homeTeam);
   const awayStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.awayTeam);
+
+  // 교체 정보: playerId → 들어옴(in)/나감(out) + 시각
+  const subInfo = useMemo(() => {
+    const m: Record<string, { dir: "in" | "out"; min: number }> = {};
+    for (const s of subs) {
+      if (s.inPlayerId && m[s.inPlayerId] === undefined) m[s.inPlayerId] = { dir: "in", min: s.minute };
+      if (s.outPlayerId && m[s.outPlayerId] === undefined) m[s.outPlayerId] = { dir: "out", min: s.minute };
+    }
+    return m;
+  }, [subs]);
 
   // POG: 총평 기준
   const totalPlayers = applyAgg(rawPlayers, agg, "full");
@@ -307,6 +319,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
             homeTeam={match.homeTeam} awayTeam={match.awayTeam}
             flip={seg === "second"} /* 후반: 진영 반대 (총평은 전반 기준 유지) */
             onPick={setOpen}
+            subs={subs} subInfo={subInfo}
             editMode={editPos && isAdmin && seg !== "mine"}
             onMove={savePosition}/>
         )}
@@ -318,7 +331,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
       {/* 평점 리스트 (캡처용) — 축구만, 현재 탭 기준 */}
       {match.sport === "kleague" && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          isMine={isMine} pog={pog} onPick={setOpen} />
+          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} />
       )}
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
@@ -426,15 +439,27 @@ const GROUP_LABEL: Record<string, string> = { GK: "GK · 골키퍼", DF: "DF · 
 const GROUP_ORDER = ["GK", "DF", "MF", "FW"] as const;
 
 // 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
-function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick }:
+function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {} }:
   { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string;
-    isMine: boolean; pog: Player | null; onPick: (p: Player) => void }) {
+    isMine: boolean; pog: Player | null; onPick: (p: Player) => void;
+    subInfo?: Record<string, { dir: "in" | "out"; min: number }> }) {
   const [mode, setMode] = useState<"high" | "low" | "pos">("high");
   const all = [...home, ...away];
 
   // 정렬 리스트 (평점 있는 선수만)
   const ratedSorted = all.filter(p => p.avg !== null)
     .sort((a, b) => mode === "low" ? (a.avg! - b.avg!) : (b.avg! - a.avg!));
+
+  // 교체 배지 (→들어옴 / ←나감 + 분)
+  function SubBadge({ pid }: { pid: string }) {
+    const s = subInfo[pid];
+    if (!s) return null;
+    return (
+      <span className={`text-[9px] font-extrabold text-white rounded px-1 py-0.5 ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+        {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
+      </span>
+    );
+  }
 
   function Row({ p, rank }: { p: Player; rank: number }) {
     const isHome = p.team === homeTeam;
@@ -444,8 +469,10 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick }:
         className="w-full flex items-center gap-2.5 px-3.5 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 text-left">
         <span className={`w-5 text-center text-[13px] font-extrabold ${top ? "text-amber-500" : "text-gray-300"}`}>{rank}</span>
         <span className={`w-2 h-2 rounded-full shrink-0 ${isHome ? "bg-blue-500" : "bg-red-500"}`} />
-        <span className="flex-1 text-[14px] font-medium text-gray-900 truncate">
-          {p.name} <span className="text-[10px] text-gray-400">{p.role}</span>
+        <span className="flex-1 text-[14px] font-medium text-gray-900 truncate flex items-center gap-1.5">
+          <span className="truncate">{p.name}</span>
+          <span className="text-[10px] text-gray-400">{p.role}</span>
+          <SubBadge pid={p.playerId} />
         </span>
         <span className={`text-[16px] font-extrabold w-11 text-right ${top ? "text-amber-500" : p.avg! < 4 ? "text-red-500" : "text-gray-900"}`}>{p.avg}</span>
       </button>
