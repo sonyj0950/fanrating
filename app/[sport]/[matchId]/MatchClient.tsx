@@ -58,6 +58,7 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
   const [showAll, setShowAll] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [subOpen, setSubOpen] = useState(false);
   const [editPos, setEditPos] = useState(false);
   const isAdmin = (session?.user as any)?.role === "admin";
 
@@ -257,6 +258,12 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
           </button>
         )}
         {isAdmin && match.sport === "kleague" && (
+          <button onClick={() => setSubOpen(!subOpen)}
+            className="text-sm px-3 py-1 border rounded bg-amber-50 text-amber-700">
+            🔁 교체 정보 입력
+          </button>
+        )}
+        {isAdmin && match.sport === "kleague" && (
           <button onClick={() => setEditPos(!editPos)}
             className={`text-sm px-3 py-1 border rounded ${editPos ? "bg-amber-500 text-white border-amber-500" : "bg-amber-50 text-amber-700"}`}>
             {editPos ? "✓ 위치 편집 종료" : "✋ 선수 위치 편집"}
@@ -273,6 +280,12 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       {manageOpen && isAdmin && seg !== "mine" && (
         <LineupManager players={players} onChanged={() => router.refresh()} />
+      )}
+
+      {subOpen && isAdmin && (
+        <SubstitutionEditor matchId={match.id} players={rawPlayers}
+          homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          onChanged={() => router.refresh()} />
       )}
 
       <div className="mb-6">
@@ -314,6 +327,87 @@ export default function MatchClient({ match, players: rawPlayers, agg }:
 
       {addOpen && <AddPlayerModal matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
         onClose={() => { setAddOpen(false); router.refresh(); }}/>}
+    </div>
+  );
+}
+
+// 관리자: 교체 정보 입력
+function SubstitutionEditor({ matchId, players, homeTeam, awayTeam, onChanged }:
+  { matchId: string; players: Player[]; homeTeam: string; awayTeam: string; onChanged: () => void }) {
+  type Row = { minute: string; outPlayerId: string; inPlayerId: string };
+  const [rows, setRows] = useState<Row[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  // 선수 옵션 (playerId 기준, 중복 제거)
+  const opts = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { id: string; label: string }[] = [];
+    for (const p of players) {
+      if (seen.has(p.playerId)) continue;
+      seen.add(p.playerId);
+      const side = p.team === homeTeam ? "🔵" : p.team === awayTeam ? "🔴" : "";
+      list.push({ id: p.playerId, label: `${side} ${p.name}` });
+    }
+    return list;
+  }, [players, homeTeam, awayTeam]);
+
+  useEffect(() => {
+    fetch(`/api/substitution/${matchId}`).then(r => r.json()).then((subs: any[]) => {
+      setRows(subs.map(s => ({ minute: String(s.minute), outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId })));
+    }).catch(() => {});
+  }, [matchId]);
+
+  const add = () => setRows([...rows, { minute: "", outPlayerId: "", inPlayerId: "" }]);
+  const del = (i: number) => setRows(rows.filter((_, x) => x !== i));
+  const upd = (i: number, k: keyof Row, v: string) =>
+    setRows(rows.map((r, x) => x === i ? { ...r, [k]: v } : r));
+
+  async function save() {
+    setBusy(true); setMsg("");
+    const res = await fetch(`/api/substitution/${matchId}`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ subs: rows.map(r => ({ minute: Number(r.minute) || 0, outPlayerId: r.outPlayerId, inPlayerId: r.inPlayerId })) }),
+    });
+    setBusy(false);
+    if (!res.ok) { setMsg("저장 실패"); return; }
+    setMsg("저장 완료!");
+    onChanged();
+  }
+
+  return (
+    <div className="mb-4 bg-amber-50/60 border border-amber-200 rounded-xl p-3.5">
+      <h3 className="text-sm font-bold text-amber-800 mb-0.5">🔁 교체 정보 입력</h3>
+      <p className="text-[11px] text-amber-600 mb-3">"분 · 나간 선수(OUT) → 들어온 선수(IN)"를 등록하면 마커·리스트에 교체 표시가 나타납니다.</p>
+
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-1.5 mb-2 flex-wrap">
+          <input value={r.minute} onChange={e => upd(i, "minute", e.target.value)}
+            inputMode="numeric" placeholder="분" className="w-12 border rounded px-2 py-1.5 text-sm text-center" />
+          <span className="text-[11px] text-gray-400">분</span>
+          <select value={r.outPlayerId} onChange={e => upd(i, "outPlayerId", e.target.value)}
+            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-white">
+            <option value="">나간 선수(OUT)</option>
+            {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <span className="text-green-600 font-extrabold">→</span>
+          <select value={r.inPlayerId} onChange={e => upd(i, "inPlayerId", e.target.value)}
+            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-white">
+            <option value="">들어온 선수(IN)</option>
+            {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <button onClick={() => del(i)} className="text-red-500 font-bold px-1.5">✕</button>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-3 mt-2">
+        <button onClick={add} className="text-sm text-blue-600 font-semibold">+ 교체 추가</button>
+        {msg && <span className="text-xs text-amber-700">{msg}</span>}
+        <button onClick={save} disabled={busy}
+          className="ml-auto text-sm px-4 py-1.5 rounded-lg bg-amber-600 text-white font-semibold disabled:opacity-40">
+          {busy ? "저장중" : "교체 정보 저장"}
+        </button>
+      </div>
     </div>
   );
 }
