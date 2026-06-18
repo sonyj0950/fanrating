@@ -37,7 +37,7 @@ export default async function MatchPage({ params }: any) {
   const players = m.players.map(mp => ({
     mpId: mp.id, playerId: mp.playerId,
     name: mp.player.name, team: mp.player.team,
-    role: mp.role || mp.player.position || "",
+    role: mp.role != null ? mp.role : (mp.player.position || ""),
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
     posX: mp.posX ?? null,

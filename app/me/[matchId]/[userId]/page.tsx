@@ -67,7 +67,7 @@ export default async function SharePage({ params }: any) {
     playerId: mp.playerId,
     name: mp.player.name,
     team: mp.player.team,
-    role: mp.role || mp.player.position || "",
+    role: mp.role != null ? mp.role : (mp.player.position || ""),
     isDefault: mp.isDefault,
     segment: mp.segment || "all",
     posX: mp.posX ?? null,
