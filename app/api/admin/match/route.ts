@@ -26,11 +26,19 @@ export async function POST(req: Request) {
   });
 
   const lines = (b.players || "").split("\n").map((l:string)=>l.trim()).filter(Boolean);
+  const teamCount: Record<string, number> = {}; // 팀별 등록 순번 (선발 11명 판정용)
   for (const line of lines) {
     const parts = line.split(",").map((s:string)=>s.trim());
     const [name, team, position, role, prio, half] = parts;
     if (!name || !team) continue;
-    const isDefault = (prio || "").toUpperCase() === "P" || b.sport !== "kbo";
+    const n = (teamCount[team] = (teamCount[team] ?? 0) + 1);
+    // 우선순위(P) 있으면 선발. 없으면: 축구는 팀별 처음 11명만 선발(나머지 후보), 야구는 후보 기본
+    const hasPrio = (prio || "").toUpperCase() === "P";
+    const isDefault = hasPrio
+      ? true
+      : b.sport === "kleague" ? n <= 11
+      : b.sport === "kbo" ? false
+      : true;
     // 6번째 필드: 출전 구간 (전/전반 → first, 후/후반 → second, 그 외 → 전·후반)
     const h = (half || "").trim();
     const segment = ["전", "전반"].includes(h) ? "first"

@@ -581,6 +581,17 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
     onChanged();
   }
 
+  async function setStarter(p: Player, isDefault: boolean) {
+    setBusy(p.mpId);
+    const res = await fetch(`/api/match-player/${p.mpId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ isDefault }),
+    });
+    setBusy(null);
+    if (!res.ok) { alert("변경 실패"); return; }
+    onChanged();
+  }
+
   async function remove(p: Player) {
     if (!confirm(`${p.name} 선수를 명단에서 제거할까요? 이 경기의 해당 선수 평점도 삭제됩니다.`)) return;
     setBusy(p.mpId);
@@ -595,15 +606,26 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
 
   return (
     <div className="border rounded-lg bg-amber-50/50 p-3 mb-4 text-sm">
-      <p className="font-semibold mb-2">⚙️ 전/후반 명단 관리 <span className="font-normal text-xs text-gray-500">— 출전 구간을 바꾸면 전반/후반 탭에 해당 선수만 표시됩니다</span></p>
-      {Object.keys(byTeam).map(team => (
+      <p className="font-semibold mb-2">⚙️ 명단 관리 <span className="font-normal text-xs text-gray-500">— 선발/후보와 출전 구간을 바꿀 수 있습니다</span></p>
+      {Object.keys(byTeam).map(team => {
+        const starters = byTeam[team].filter(p => p.isDefault !== false).length;
+        return (
         <div key={team} className="mb-3">
-          <p className="text-xs font-semibold text-gray-500 mb-1">{team}</p>
+          <p className="text-xs font-semibold text-gray-500 mb-1">{team} <span className="text-gray-400">· 선발 {starters}명</span></p>
           <div className="space-y-1">
-            {byTeam[team].map(p => (
+            {byTeam[team].map(p => {
+              const isStarter = p.isDefault !== false;
+              return (
               <div key={p.mpId} className="flex items-center gap-2 bg-white border rounded px-2 py-1.5">
-                <span className="flex-1 truncate">{p.name} <span className="text-xs text-gray-400">{p.role}</span></span>
-                <div className="flex rounded overflow-hidden border">
+                <span className="flex-1 truncate min-w-0">{p.name} <span className="text-xs text-gray-400">{p.role}</span></span>
+                {/* 선발/후보 토글 */}
+                <div className="flex rounded overflow-hidden border shrink-0">
+                  <button disabled={busy === p.mpId} onClick={() => setStarter(p, true)}
+                    className={`px-2 py-0.5 text-xs ${isStarter ? "bg-green-600 text-white" : "bg-white hover:bg-gray-50"}`}>선발</button>
+                  <button disabled={busy === p.mpId} onClick={() => setStarter(p, false)}
+                    className={`px-2 py-0.5 text-xs ${!isStarter ? "bg-gray-700 text-white" : "bg-white hover:bg-gray-50"}`}>후보</button>
+                </div>
+                <div className="flex rounded overflow-hidden border shrink-0">
                   {SEGS.map(s => (
                     <button key={s.key} disabled={busy === p.mpId}
                       onClick={() => setSegment(p, s.key)}
@@ -616,10 +638,12 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
                 <button disabled={busy === p.mpId} onClick={() => remove(p)}
                   className="text-xs text-red-500 hover:underline shrink-0">제거</button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1451,7 +1475,7 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
     const role = starter ? (GROUP_DEFAULT[group] ?? "CM") : "";
     const res = await fetch("/api/match-player", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId, name: name.trim(), team, role, segment }),
+      body: JSON.stringify({ matchId, name: name.trim(), team, role, segment, isDefault: starter }),
     });
     const j = await res.json();
     if (!res.ok) { setMsg(j.error); return; }

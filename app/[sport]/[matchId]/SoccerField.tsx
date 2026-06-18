@@ -40,6 +40,7 @@ function place(players: Player[], side: Side, flipped: boolean): { placed: Place
 
   // 커스텀 위치가 있으면 그대로 사용 (flip 시 상하/좌우 반전)
   for (const p of players) {
+    if (p.isDefault === false) { bench.push(p); continue; } // 후보/교체 → 벤치
     if (p.posX != null && p.posY != null) {
       const left = flipped ? 100 - p.posX : p.posX;
       const top = flipped ? 100 - p.posY : p.posY;
