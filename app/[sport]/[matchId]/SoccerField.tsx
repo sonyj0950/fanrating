@@ -71,9 +71,12 @@ function place(players: Player[], side: Side, flipped: boolean): { placed: Place
   return { placed, bench };
 }
 
-// 같은 자리(좌표 근접) 마커들을 묶어서 스택으로. 대표=평점높은순, 동점이면 선발(isDefault) 우선.
+// 같은 자리(좌표 근접) 마커들을 묶어서 스택으로.
+// 대표 선정: (1) 해당 구간에 실제로 뛴 선수 우선(전반=선발/아웃, 후반=교체 인)
+//            (2) 평점 높은 순 (3) 선발 우선
 interface Stack { id: string; left: number; top: number; members: Placed[]; }
-function buildStacks(placed: Placed[]): Stack[] {
+function buildStacks(placed: Placed[], seg?: string,
+  subInfo: Record<string, { dir: "in" | "out"; min: number }> = {}): Stack[] {
   const stacks: Stack[] = [];
   const TH = 6; // % 거리 임계값
   for (const p of placed) {
@@ -81,8 +84,25 @@ function buildStacks(placed: Placed[]): Stack[] {
     if (hit) hit.members.push(p);
     else stacks.push({ id: p.player.mpId, left: p.left, top: p.top, members: [p] });
   }
+  // 구간별 "실제 출전" 우선순위 (낮을수록 대표에 가까움)
+  const segRank = (pl: Player): number => {
+    const s = subInfo[pl.playerId];
+    if (seg === "second") {                 // 후반: 교체로 들어온 선수가 주전
+      if (s?.dir === "in") return 0;
+      if (s?.dir === "out") return 2;        // 후반에 빠진 선수는 뒤로
+      return 1;
+    }
+    if (seg === "first") {                   // 전반: 선발(나중에 빠진 선수)이 주전
+      if (s?.dir === "out") return 0;
+      if (s?.dir === "in") return 2;         // 전반엔 안 뛴 교체 인 선수는 뒤로
+      return 1;
+    }
+    return 1;                                // 총평/나의평점: 구간 우선 없음
+  };
   for (const s of stacks) {
     s.members.sort((a, b) => {
+      const ra = segRank(a.player), rb = segRank(b.player);
+      if (ra !== rb) return ra - rb;                       // 구간 실제 출전 우선
       const av = a.player.avg ?? -1, bv = b.player.avg ?? -1;
       if (bv !== av) return bv - av;                       // 평점 높은 순
       if (a.player.isDefault !== b.player.isDefault) return a.player.isDefault ? -1 : 1; // 선발 우선
@@ -204,7 +224,7 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
 export default function SoccerField({
   home, away, homeStaff = [], awayStaff = [], officials = [],
   homeTeam, awayTeam, flip = false, onPick, editMode = false, onMove,
-  subs = [], subInfo = {},
+  subs = [], subInfo = {}, seg,
 }: {
   home: Player[]; away: Player[];
   homeStaff?: Player[]; awayStaff?: Player[]; officials?: Player[];
@@ -215,6 +235,7 @@ export default function SoccerField({
   onMove?: (mpId: string, x: number, y: number, role?: string) => void; // 드래그 종료 시 좌표(%)+포지션 저장
   subs?: { minute: number; outPlayerId: string; inPlayerId: string }[];
   subInfo?: Record<string, { dir: "in" | "out"; min: number }>;
+  seg?: string; // 현재 탭 (full/first/second/mine) — 구간별 대표 선정용
 }) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null); // 펼쳐진 스택 id (한 번에 하나)
@@ -232,8 +253,8 @@ export default function SoccerField({
     }
     return copy;
   }
-  const homeStacks = useMemo(() => buildStacks(mergeSubs(homeP.placed)), [homeP, subs]);
-  const awayStacks = useMemo(() => buildStacks(mergeSubs(awayP.placed)), [awayP, subs]);
+  const homeStacks = useMemo(() => buildStacks(mergeSubs(homeP.placed), seg, subInfo), [homeP, subs, seg, subInfo]);
+  const awayStacks = useMemo(() => buildStacks(mergeSubs(awayP.placed), seg, subInfo), [awayP, subs, seg, subInfo]);
 
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;

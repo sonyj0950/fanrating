@@ -319,7 +319,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             homeTeam={match.homeTeam} awayTeam={match.awayTeam}
             flip={seg === "second"} /* 후반: 진영 반대 (총평은 전반 기준 유지) */
             onPick={setOpen}
-            subs={subs} subInfo={subInfo}
+            subs={subs} subInfo={subInfo} seg={seg}
             editMode={editPos && isAdmin && seg !== "mine"}
             onMove={savePosition}/>
         )}
