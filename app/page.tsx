@@ -43,7 +43,7 @@ function MatchCard({ m }: { m: any }) {
 
         {m.pog && (
           <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-gray-100 text-[12px]">
-            <span className="text-amber-500 font-bold">🏆 POG</span>
+            <span className="text-amber-500 font-bold">🏆 MOM</span>
             <span className="text-gray-900 font-semibold">{m.pog.name}</span>
             <span className="text-amber-500">⭐ {m.pog.avg}</span>
             {m.ratingCount ? <span className="text-gray-400">· 평점 {m.ratingCount}</span> : null}

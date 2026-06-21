@@ -221,7 +221,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {pog && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
-          🏆 <b>POG/POM</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
+          🏆 <b>MOM</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
         </div>
       )}
 
@@ -464,18 +464,30 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
 
   function Row({ p, rank }: { p: Player; rank: number }) {
     const isHome = p.team === homeTeam;
-    const top = mode === "high" && rank === 1;
+    const v = p.avg!;
+    // 순위 메달색 (높은순 1~3위만)
+    const medal = mode === "high" && rank <= 3;
+    const rkClass = !medal ? "text-gray-300"
+      : rank === 1 ? "bg-amber-400 text-white" : rank === 2 ? "bg-gray-400 text-white" : "bg-amber-700/70 text-white";
+    // 점수 배지색
+    const worst = mode === "low" && rank === 1;
+    const best = mode === "high" && rank === 1;
+    const scClass = best ? "bg-amber-400 text-white shadow-md shadow-amber-400/40"
+      : worst ? "bg-red-500 text-white shadow-md shadow-red-500/40"
+      : v < 4 ? "bg-red-50 text-red-500"
+      : v >= 7 ? "bg-green-50 text-green-600"
+      : "bg-gray-100 text-gray-700";
     return (
       <button onClick={() => onPick(p)}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 text-left">
-        <span className={`w-5 text-center text-[13px] font-extrabold ${top ? "text-amber-500" : "text-gray-300"}`}>{rank}</span>
-        <span className={`w-2 h-2 rounded-full shrink-0 ${isHome ? "bg-blue-500" : "bg-red-500"}`} />
-        <span className="flex-1 text-[14px] font-medium text-gray-900 truncate flex items-center gap-1.5">
-          <span className="truncate">{p.name}</span>
-          <span className="text-[10px] text-gray-400">{p.role}</span>
+        className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-gray-50 first:border-t-0 hover:bg-gray-50 text-left">
+        <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg ${rkClass}`}>{rank}</span>
+        <span className={`w-1 self-stretch rounded-full shrink-0 ${isHome ? "bg-blue-500" : "bg-red-500"}`} />
+        <span className="flex-1 min-w-0 flex items-center gap-1.5">
+          <span className="text-[14.5px] font-bold text-gray-900 truncate">{p.name}</span>
+          {p.role && <span className="text-[10px] font-bold text-gray-400 bg-gray-100 rounded px-1 py-px shrink-0">{p.role}</span>}
           <SubBadge pid={p.playerId} />
         </span>
-        <span className={`text-[16px] font-extrabold w-11 text-right ${top ? "text-amber-500" : p.avg! < 4 ? "text-red-500" : "text-gray-900"}`}>{p.avg}</span>
+        <span className={`w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] ${scClass}`}>{v}</span>
       </button>
     );
   }
@@ -583,7 +595,9 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
 
         {/* 캡처용 푸터 */}
         <div className="flex items-center justify-center gap-2 bg-gray-900 text-white text-[12px] font-semibold py-2.5">
-          {pog && <span>🏆 POG {pog.name} {pog.avg}</span>}
+          {mode === "low"
+            ? (ratedSorted[0] && <span>⚠️ WORST {ratedSorted[0].name} {ratedSorted[0].avg}</span>)
+            : (pog && <span>🏆 MOM {pog.name} {pog.avg}</span>)}
           <span className="text-gray-500">·</span>
           <span>fanarena<span className="text-gray-400">.kr</span></span>
         </div>
