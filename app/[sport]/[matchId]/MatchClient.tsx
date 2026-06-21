@@ -436,6 +436,7 @@ function posGroup(role: string | undefined): "GK" | "DF" | "MF" | "FW" | null {
   return "FW"; // FW, SS, ST
 }
 const GROUP_LABEL: Record<string, string> = { GK: "GK · 골키퍼", DF: "DF · 수비수", MF: "MF · 미드필더", FW: "FW · 공격수" };
+const GROUP_ICON: Record<string, string> = { GK: "🧤", DF: "🛡️", MF: "⚙️", FW: "🎯" };
 const GROUP_ORDER = ["GK", "DF", "MF", "FW"] as const;
 
 // 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
@@ -479,39 +480,57 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     );
   }
 
-  // 포지션 비교: 그룹별로 양 팀 평점 높은 순 나란히
+  // 포지션 비교: 그룹별로 양 팀 평점 높은 순 나란히 (가시성 개선)
   function posCompare() {
     const sortByAvg = (a: Player, b: Player) => (b.avg ?? -1) - (a.avg ?? -1);
+
+    // 한쪽 셀 렌더
+    const Cell = ({ p, side, win }: { p?: Player; side: "home" | "away"; win: boolean }) => {
+      const rated = p && p.avg !== null;
+      const isHome = side === "home";
+      const base = `flex-1 relative flex items-center gap-2 px-3 py-2.5 overflow-hidden ${isHome ? "justify-end" : "flex-row-reverse justify-end"}`;
+      if (!p) return <div className={base}><span className="text-[13px] text-gray-300 italic">—</span></div>;
+      return (
+        <button onClick={() => onPick(p)} className={base}>
+          {win && (
+            <span className={`absolute inset-y-0 w-2/3 opacity-[0.13] ${isHome
+              ? "right-0 bg-gradient-to-l from-blue-500 to-transparent"
+              : "left-0 bg-gradient-to-r from-red-500 to-transparent"}`} />
+          )}
+          <span className={`relative z-10 text-[13.5px] truncate max-w-[88px] ${
+            win ? (isHome ? "font-extrabold text-blue-700" : "font-extrabold text-red-600") : "font-semibold text-gray-700"}`}>{p.name}</span>
+          <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 ${
+            win ? (isHome ? "bg-blue-500 text-white shadow-md shadow-blue-500/40" : "bg-red-500 text-white shadow-md shadow-red-500/40")
+                : rated ? "bg-gray-100 text-gray-700" : "bg-gray-50 text-gray-300"}`}>
+            {rated ? p.avg : "–"}
+          </span>
+        </button>
+      );
+    };
+
     return GROUP_ORDER.map(g => {
       const h = home.filter(p => posGroup(p.role) === g).sort(sortByAvg);
       const a = away.filter(p => posGroup(p.role) === g).sort(sortByAvg);
       const rows = Math.max(h.length, a.length);
       if (rows === 0) return null;
       return (
-        <div key={g} className="border-b-4 border-gray-100 last:border-0">
-          <div className="bg-gray-100 text-[11px] font-extrabold text-gray-500 px-3.5 py-1">{GROUP_LABEL[g]}</div>
+        <div key={g}>
+          <div className="flex items-center gap-1.5 bg-gray-100 text-[11px] font-extrabold text-gray-500 px-3.5 py-1.5 border-t border-gray-200">
+            <span>{GROUP_ICON[g]}</span>{GROUP_LABEL[g]}
+          </div>
           {Array.from({ length: rows }).map((_, i) => {
             const ph = h[i], pa = a[i];
             const hv = ph?.avg ?? null, av = pa?.avg ?? null;
             const hWin = hv !== null && av !== null && hv > av;
             const aWin = hv !== null && av !== null && av > hv;
+            const bothEmpty = hv === null && av === null;
             return (
-              <div key={i} className="flex items-stretch border-b border-gray-50 last:border-0 text-[13px]">
-                <button onClick={() => ph && onPick(ph)} disabled={!ph}
-                  className={`flex-1 flex items-center justify-end gap-1.5 px-2.5 py-2 ${hWin ? "bg-blue-50" : ""}`}>
-                  {ph ? <>
-                    <span className={`font-semibold truncate ${hWin ? "text-blue-700" : "text-gray-800"}`}>{ph.name}</span>
-                    <span className={`font-extrabold w-8 text-left ${hWin ? "text-blue-600" : "text-gray-400"}`}>{hv ?? "–"}{hWin ? "▲" : ""}</span>
-                  </> : <span className="text-gray-300 italic">—</span>}
-                </button>
-                <div className="w-10 shrink-0 flex items-center justify-center text-[9px] text-gray-300 font-bold border-x border-gray-100">VS</div>
-                <button onClick={() => pa && onPick(pa)} disabled={!pa}
-                  className={`flex-1 flex items-center gap-1.5 px-2.5 py-2 ${aWin ? "bg-red-50" : ""}`}>
-                  {pa ? <>
-                    <span className={`font-extrabold w-8 text-right ${aWin ? "text-red-600" : "text-gray-400"}`}>{aWin ? "▲" : ""}{av ?? "–"}</span>
-                    <span className={`font-semibold truncate ${aWin ? "text-red-700" : "text-gray-800"}`}>{pa.name}</span>
-                  </> : <span className="text-gray-300 italic">—</span>}
-                </button>
+              <div key={i} className={`flex items-stretch border-t border-gray-50 min-h-[52px] ${bothEmpty ? "opacity-50" : ""}`}>
+                <Cell p={ph} side="home" win={hWin} />
+                <div className="w-8 shrink-0 flex items-center justify-center border-x border-gray-100">
+                  <span className="text-[12px]">{hWin || aWin ? "👑" : <span className="text-[8px] font-extrabold text-gray-300">VS</span>}</span>
+                </div>
+                <Cell p={pa} side="away" win={aWin} />
               </div>
             );
           })}
@@ -541,6 +560,18 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
           <span className="text-[13px] font-extrabold text-gray-900">📊 평점 {mode === "pos" ? "포지션 비교" : "순위"}</span>
           <span className="text-[11px] text-gray-400 font-semibold">{isMine ? "나의 평점" : "총평"}{mode === "low" ? " · 낮은 순" : mode === "high" ? " · 높은 순" : ""}</span>
         </div>
+
+        {mode === "pos" && (
+          <div className="flex items-center bg-gray-900 text-white px-3.5 py-2.5">
+            <div className="flex-1 flex items-center gap-1.5 text-[13px] font-extrabold">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />{homeTeam}
+            </div>
+            <span className="text-[10px] font-bold text-gray-400 px-2">VS</span>
+            <div className="flex-1 flex items-center justify-end gap-1.5 text-[13px] font-extrabold">
+              {awayTeam}<span className="w-2 h-2 rounded-full bg-red-500" />
+            </div>
+          </div>
+        )}
 
         {mode === "pos" ? (
           posCompare()
