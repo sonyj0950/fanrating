@@ -234,13 +234,13 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         <div className="flex gap-1 mb-4 border-b overflow-x-auto">
           {segments.map(s => (
             <button key={s.key} onClick={() => setSeg(s.key)}
-              className={`px-4 py-2 whitespace-nowrap ${seg===s.key?"border-b-2 border-blue-600 font-semibold text-blue-600":""}`}>
+              className={`px-4 py-2 whitespace-nowrap ${seg===s.key?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
               {s.label}
             </button>
           ))}
           {session && (
             <button onClick={() => setSeg("mine")}
-              className={`px-4 py-2 whitespace-nowrap ${seg==="mine"?"border-b-2 border-blue-600 font-semibold text-blue-600":""}`}>
+              className={`px-4 py-2 whitespace-nowrap ${seg==="mine"?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
               ⭐ 나의 평점
             </button>
           )}
@@ -259,7 +259,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setAddOpen(true)} className="text-sm px-3 py-1 border rounded bg-blue-50 text-blue-700">
+          <button onClick={() => setAddOpen(true)} className="text-sm px-3 py-1 border rounded bg-amber-50 text-gray-900">
             + 선수 추가
           </button>
         )}
@@ -414,7 +414,7 @@ function SubstitutionEditor({ matchId, players, homeTeam, awayTeam, onChanged }:
       ))}
 
       <div className="flex items-center gap-3 mt-2">
-        <button onClick={add} className="text-sm text-blue-600 font-semibold">+ 교체 추가</button>
+        <button onClick={add} className="text-sm text-gray-900 font-semibold">+ 교체 추가</button>
         {msg && <span className="text-xs text-amber-700">{msg}</span>}
         <button onClick={save} disabled={busy}
           className="ml-auto text-sm px-4 py-1.5 rounded-lg bg-amber-600 text-white font-semibold disabled:opacity-40">
@@ -481,7 +481,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
       <button onClick={() => onPick(p)}
         className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-gray-50 first:border-t-0 hover:bg-gray-50 text-left">
         <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg ${rkClass}`}>{rank}</span>
-        <span className={`w-1 self-stretch rounded-full shrink-0 ${isHome ? "bg-blue-500" : "bg-red-500"}`} />
+        <span className={`w-1 self-stretch rounded-full shrink-0 ${isHome ? "bg-amber-500" : "bg-red-500"}`} />
         <span className="flex-1 min-w-0 flex items-center gap-1.5">
           <span className="text-[14.5px] font-bold text-gray-900 truncate">{p.name}</span>
           {p.role && <span className="text-[10px] font-bold text-gray-400 bg-gray-100 rounded px-1 py-px shrink-0">{p.role}</span>}
@@ -510,9 +510,9 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
               : "left-0 bg-gradient-to-r from-red-500 to-transparent"}`} />
           )}
           <span className={`relative z-10 text-[13.5px] truncate max-w-[88px] ${
-            win ? (isHome ? "font-extrabold text-blue-700" : "font-extrabold text-red-600") : "font-semibold text-gray-700"}`}>{p.name}</span>
+            win ? (isHome ? "font-extrabold text-gray-900" : "font-extrabold text-red-600") : "font-semibold text-gray-700"}`}>{p.name}</span>
           <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 ${
-            win ? (isHome ? "bg-blue-500 text-white shadow-md shadow-blue-500/40" : "bg-red-500 text-white shadow-md shadow-red-500/40")
+            win ? (isHome ? "bg-amber-500 text-white shadow-md shadow-blue-500/40" : "bg-red-500 text-white shadow-md shadow-red-500/40")
                 : rated ? "bg-gray-100 text-gray-700" : "bg-gray-50 text-gray-300"}`}>
             {rated ? p.avg : "–"}
           </span>
@@ -554,7 +554,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
   const btn = (k: "high" | "low" | "pos", label: string) => (
     <button onClick={() => setMode(k)}
       className={`flex-1 text-[12px] font-bold py-2 rounded-lg border transition ${
-        mode === k ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-gray-200 text-gray-500"}`}>
+        mode === k ? "bg-gray-900 border-gray-900 text-white" : "bg-white border-gray-200 text-gray-500"}`}>
       {label}
     </button>
   );
@@ -576,7 +576,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
         {mode === "pos" && (
           <div className="flex items-center bg-gray-900 text-white px-3.5 py-2.5">
             <div className="flex-1 flex items-center gap-1.5 text-[13px] font-extrabold">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />{homeTeam}
+              <span className="w-2 h-2 rounded-full bg-amber-500" />{homeTeam}
             </div>
             <span className="text-[10px] font-bold text-gray-400 px-2">VS</span>
             <div className="flex-1 flex items-center justify-end gap-1.5 text-[13px] font-extrabold">
@@ -675,7 +675,7 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
                     <button key={s.key} disabled={busy === p.mpId}
                       onClick={() => setSegment(p, s.key)}
                       className={`px-2 py-0.5 text-xs ${ (p.segment || "all") === s.key
-                        ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-50"}`}>
+                        ? "bg-gray-900 text-white" : "bg-white hover:bg-gray-50"}`}>
                       {s.label}
                     </button>
                   ))}
@@ -697,7 +697,7 @@ function StatusBadge({ status, dark = false }: { status: string; dark?: boolean 
   const light: Record<string, { label: string; cls: string }> = {
     scheduled: { label: "예정", cls: "bg-gray-100 text-gray-600" },
     live: { label: "진행중", cls: "bg-red-100 text-red-600" },
-    finished: { label: "종료", cls: "bg-blue-100 text-blue-700" },
+    finished: { label: "종료", cls: "bg-blue-100 text-gray-900" },
   };
   const darkMap: Record<string, { label: string; cls: string; live?: boolean }> = {
     scheduled: { label: "예정", cls: "border border-[#39415a] text-[#9aa6bd]" },
@@ -720,7 +720,7 @@ function StatusBadge({ status, dark = false }: { status: string; dark?: boolean 
 // 이긴 팀 점수는 파란색, 진 팀/무승부는 회색
 function scoreWin(mine: number | null, other: number | null): string {
   if (mine == null || other == null) return "text-gray-300";
-  return mine > other ? "text-blue-600" : "text-gray-300";
+  return mine > other ? "text-gray-900" : "text-gray-300";
 }
 
 // 관리자: 경기 진행 상태 변경 (예정 → 진행중 → 종료)
@@ -757,7 +757,7 @@ function ScoreEditor({ matchId, homeTeam, awayTeam, homeScore, awayScore, onChan
         className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
       <span className="font-medium">{awayTeam}</span>
       <button onClick={save} disabled={busy || !changed}
-        className="ml-auto text-xs px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40">
+        className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>
     </div>
@@ -789,7 +789,7 @@ function StatusSwitcher({ matchId, status, onChanged }:
       <div className="flex rounded overflow-hidden border">
         {OPTS.map(o => (
           <button key={o.key} disabled={busy} onClick={() => setStatus(o.key)}
-            className={`px-3 py-1 text-xs ${status === o.key ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-50"}`}>
+            className={`px-3 py-1 text-xs ${status === o.key ? "bg-gray-900 text-white" : "bg-white hover:bg-gray-50"}`}>
             {o.label}
           </button>
         ))}
@@ -821,7 +821,7 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
 
   // 팀 기준 색상 (홈=파랑, 원정=빨강 — 팀 평균 막대와 통일)
   const teamColor = (team: string) =>
-    team === homeTeam ? "bg-blue-500" : team === awayTeam ? "bg-red-500" : "bg-gray-400";
+    team === homeTeam ? "bg-amber-500" : team === awayTeam ? "bg-red-500" : "bg-gray-400";
   const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - 1) / 9) * 100))}%`; // 1~10 범위를 0~100%로
 
   if (rated.length === 0) return null;
@@ -841,7 +841,7 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
             <div>
               <p className="text-xs font-semibold text-gray-500 mb-2">팀 평균 평점</p>
               <div className="space-y-2">
-                {[{ t: homeTeam, d: homeA, c: "bg-blue-500" }, { t: awayTeam, d: awayA, c: "bg-red-500" }].map(({ t, d, c }) => (
+                {[{ t: homeTeam, d: homeA, c: "bg-amber-500" }, { t: awayTeam, d: awayA, c: "bg-red-500" }].map(({ t, d, c }) => (
                   <div key={t} className="flex items-center gap-2">
                     <span className="w-20 shrink-0 text-xs truncate">{t}</span>
                     <div className="flex-1 bg-gray-100 rounded h-5 relative">
@@ -867,7 +867,7 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-500">선수 평점 순위 (베스트 → 워스트)</p>
               <div className="flex gap-2 text-[10px] text-gray-400">
-                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />{homeTeam}</span>
+                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />{homeTeam}</span>
                 <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" />{awayTeam}</span>
               </div>
             </div>
@@ -922,17 +922,17 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
   }
 
   return (
-    <div className="flex items-center justify-between mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-      <p className="text-sm font-semibold text-blue-800">
+    <div className="flex items-center justify-between mb-3 bg-amber-50 border border-gray-200 rounded-lg px-3 py-2">
+      <p className="text-sm font-semibold text-gray-900">
         ⭐ 나의 평점
         {count > 0 && data?.top
-          ? <span className="font-normal text-blue-600"> · 내 최고 평점 <b className="text-blue-800">{data.top.name}</b> ⭐{data.top.score}</span>
+          ? <span className="font-normal text-gray-900"> · 내 최고 평점 <b className="text-gray-900">{data.top.name}</b> ⭐{data.top.score}</span>
           : count > 0
-          ? <span className="font-normal text-blue-600"> · {count}명 평가</span>
+          ? <span className="font-normal text-gray-900"> · {count}명 평가</span>
           : <span className="font-normal text-blue-500"> · 선수를 눌러 평점을 남겨보세요</span>}
       </p>
       {count > 0 && (
-        <button onClick={share} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white shrink-0">
+        <button onClick={share} className="text-sm px-3 py-1.5 rounded bg-gray-900 text-white shrink-0">
           {copied ? "✓ 복사됨" : "🔗 공유"}
         </button>
       )}
@@ -1193,7 +1193,7 @@ function MatchRecord({ matchId, record }: { matchId: string; record?: string | n
         <span className="font-semibold">⚽ 골 · 어시스트 기록</span>
         {isAdmin && !editing && (
           <button onClick={() => { setText(record || ""); setEditing(true); }}
-            className="text-xs text-blue-600 hover:underline">{record ? "수정" : "+ 입력"}</button>
+            className="text-xs text-gray-900 hover:underline">{record ? "수정" : "+ 입력"}</button>
         )}
       </div>
       {editing ? (
@@ -1204,7 +1204,7 @@ function MatchRecord({ matchId, record }: { matchId: string; record?: string | n
           <div className="flex gap-2 justify-end mt-1">
             <button onClick={() => setEditing(false)} className="px-3 py-1 border rounded text-xs">취소</button>
             <button onClick={save} disabled={saving}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-xs disabled:opacity-40">저장</button>
+              className="px-3 py-1 bg-gray-900 text-white rounded text-xs disabled:opacity-40">저장</button>
           </div>
         </div>
       ) : record ? (
@@ -1313,7 +1313,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                       <button key={s.key} type="button" disabled={locked}
                         onClick={() => setSeg(s.key)}
                         title={locked ? "아직 입력할 수 없는 구간입니다." : ""}
-                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-blue-600 text-white":"bg-gray-100"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
+                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-gray-900 text-white":"bg-gray-100"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
                         {locked ? "🔒 " : ""}{s.label}
                       </button>
                     );
@@ -1330,7 +1330,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                   <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setScore(n)}
-                        className={`h-10 rounded border text-sm ${score===n?"bg-blue-600 text-white":"bg-white"}`}>
+                        className={`h-10 rounded border text-sm ${score===n?"bg-gray-900 text-white":"bg-white"}`}>
                         {n}
                       </button>
                     ))}
@@ -1345,7 +1345,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-gray-500">{comment.length}자</span>
                     <button onClick={submit} disabled={score===null}
-                      className="bg-blue-600 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
+                      className="bg-gray-900 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
                   </div>
                   {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}
                 </>
@@ -1457,7 +1457,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
       <div className="mt-1 flex items-center gap-3">
         <button
           onClick={() => loggedIn ? setReplyOpen(!replyOpen) : alert("로그인이 필요합니다.")}
-          className="text-xs text-gray-400 hover:text-blue-600">
+          className="text-xs text-gray-400 hover:text-gray-900">
           💬 답글{replies.length > 0 ? ` ${replies.length}` : ""}
         </button>
         {!c.mine && (
@@ -1493,7 +1493,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
             onKeyDown={e => { if (e.key === "Enter") submitReply(); }}
             placeholder="답글 입력" className="flex-1 border rounded px-2 py-1 text-sm"/>
           <button onClick={submitReply} disabled={busy || !replyText.trim()}
-            className="text-xs px-3 bg-blue-600 text-white rounded disabled:opacity-40">등록</button>
+            className="text-xs px-3 bg-gray-900 text-white rounded disabled:opacity-40">등록</button>
         </div>
       )}
     </div>
@@ -1543,11 +1543,11 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
         {/* 선발 / 후보 토글 */}
         <div className="flex gap-2">
           <button type="button" onClick={() => setStarter(true)}
-            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${starter ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500"}`}>
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${starter ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500"}`}>
             ⚽ 선발 (피치)
           </button>
           <button type="button" onClick={() => setStarter(false)}
-            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${!starter ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500"}`}>
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${!starter ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500"}`}>
             🔁 후보/교체
           </button>
         </div>
@@ -1576,7 +1576,7 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
         {msg && <p className="text-red-500 text-sm">{msg}</p>}
         <div className="flex gap-2 justify-end">
           <button onClick={onClose} className="px-4 py-1.5 border rounded">취소</button>
-          <button onClick={submit} className="px-4 py-1.5 bg-blue-600 text-white rounded">추가</button>
+          <button onClick={submit} className="px-4 py-1.5 bg-gray-900 text-white rounded">추가</button>
         </div>
       </div>
     </div>

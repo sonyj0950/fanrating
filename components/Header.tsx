@@ -7,7 +7,7 @@ export default function Header() {
   const isAdmin = (session?.user as any)?.role === "admin";
 
   return (
-    <header className="bg-white border-b sticky top-0 z-40">
+    <header className="bg-white border-b-2 border-gray-900 sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <svg width="34" height="34" viewBox="0 0 38 38" aria-hidden="true">
@@ -42,7 +42,7 @@ export default function Header() {
                 className="px-2 sm:px-3 py-1.5 rounded border">로그아웃</button>
             </>
           ) : (
-            <Link href="/login" className="px-2 sm:px-3 py-1.5 rounded bg-blue-600 text-white">로그인</Link>
+            <Link href="/login" className="px-2 sm:px-3 py-1.5 rounded bg-gray-900 text-white">로그인</Link>
           )}
         </nav>
       </div>
