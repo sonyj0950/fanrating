@@ -9,17 +9,20 @@ export default function Header() {
   return (
     <header className="bg-white border-b sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
-        <Link href="/" className="flex items-center gap-1.5 font-bold text-base sm:text-lg tracking-tight shrink-0">
-          <svg width="26" height="26" viewBox="0 0 120 120" aria-hidden="true">
-            <ellipse cx="60" cy="60" rx="58" ry="58" fill="#0a0a0a"/>
-            <ellipse cx="60" cy="64" rx="40" ry="34" fill="#ffffff"/>
-            <line x1="60" y1="32" x2="60" y2="96" stroke="#1a1a1a" strokeWidth="3"/>
-            <circle cx="60" cy="64" r="11" fill="none" stroke="#1a1a1a" strokeWidth="3"/>
-            <path d="M30 18 L42 40 L24 40 Z" fill="#ffffff"/>
-            <path d="M90 18 L96 40 L78 40 Z" fill="#ffffff"/>
-            <path d="M60 57 l2.3 4.7 5.2 .7 -3.8 3.7 .9 5.2 -4.6 -2.5 -4.6 2.5 .9 -5.2 -3.8 -3.7 5.2 -.7 Z" fill="#0a0a0a"/>
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <svg width="34" height="34" viewBox="0 0 38 38" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="35" height="35" rx="11" fill="#f4efe2" stroke="#1a1a1a" strokeWidth="2"/>
+            <text x="16.5" y="27.5" textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize="25" fontWeight="800"
+              fill="#1a1a1a" stroke="#1a1a1a" strokeWidth="1.3" strokeLinejoin="round" paintOrder="stroke">F</text>
+            <g transform="translate(29,10) scale(0.46)">
+              <path d="M0,-8 L1.8,-2.5 L7.6,-2.5 L2.9,1 L4.7,6.5 L0,3.2 L-4.7,6.5 L-2.9,1 L-7.6,-2.5 L-1.8,-2.5 Z"
+                fill="#f5b301" stroke="#1a1a1a" strokeWidth="0.5"/>
+            </g>
           </svg>
-          <span>fanarena<span className="text-gray-400">.</span>kr</span>
+          <span className="font-extrabold text-lg sm:text-xl tracking-tight text-gray-900"
+            style={{ WebkitTextStroke: "0.4px #111827", letterSpacing: "-0.5px" }}>
+            fanarena<span className="text-gray-400" style={{ WebkitTextStroke: "0.4px #9ca3af" }}>.kr</span>
+          </span>
         </Link>
         <nav className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
           {isAdmin && (
