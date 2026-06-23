@@ -50,8 +50,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex justify-center gap-3">
               <a href="/terms" className="hover:text-gray-600 underline">이용약관</a>
               <a href="/privacy" className="hover:text-gray-600 underline">개인정보 처리방침</a>
+              <a href="/disclaimer" className="hover:text-gray-600 underline">면책 조항</a>
             </div>
-            <p>fanarena.kr은 KBO·한국프로축구연맹·LCK 및 각 구단·선수와 무관한 비공식 팬 사이트입니다.</p>
+            <p>fanarena.kr은 KBO·한국프로축구연맹·라이엇 게임즈·LCK 및 각 구단·선수와 무관한 비공식 팬 사이트이며, 어떤 단체로부터도 후원·보증받지 않습니다. 모든 상표·저작권은 각 권리자에게 있습니다.</p>
             <p className="text-gray-400">© 2026 fanarena.kr · All rights reserved.</p>
           </footer>
         </Providers>

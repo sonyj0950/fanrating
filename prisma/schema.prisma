@@ -50,9 +50,10 @@ model Match {
 model Substitution {
   id          String  @id @default(cuid())
   matchId     String
-  minute      Int     // 교체 시각 (분)
+  minute      Int     // 교체 시각 (분) — ⚾ KBO에서는 이닝으로 재사용
   outPlayerId String  // 나간 선수 (Player.id)
   inPlayerId  String  // 들어온 선수 (Player.id)
+  kind        String? // ⚾ KBO 교체 종류: 대타 | 대주자 | 투수교체 | 수비교체
   match       Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
   @@index([matchId])
 }
@@ -105,12 +106,14 @@ model DiscussionReport {
 }
 
 model Player {
-  id       String        @id @default(cuid())
-  name     String
-  team     String
-  position String?
-  matches  MatchPlayer[]
-  ratings  Rating[]
+  id           String        @id @default(cuid())
+  name         String
+  team         String
+  position     String?
+  isPitcher    Boolean? // ⚾ KBO: 투수 true / 타자 false (그 외 종목은 null)
+  rosterActive Boolean       @default(true) // ⚾ KBO 1군 등록 여부 (월요일 로스터 갱신 시 토글)
+  matches      MatchPlayer[]
+  ratings      Rating[]
 }
 
 model MatchPlayer {
@@ -125,6 +128,7 @@ model MatchPlayer {
   posX      Float?  // 관리자 커스텀 위치 (%) — null이면 포지션 코드 기준 자동 배치
   posY      Float?
   champions Json?   // 🎮 LCK 세트별 챔피언 — { "set1": "Vayne", "set2": "Kaisa", ... }
+  battingOrder Int? // ⚾ KBO 타순 1~9 (투수·벤치는 null)
 
   @@unique([matchId, playerId])
 }
