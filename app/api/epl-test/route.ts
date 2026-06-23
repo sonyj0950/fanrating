@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { teamKo, playerKo, posKo, parseGrid, gridsToPositions } from "@/lib/eplMapping";
+import { importFixture } from "@/lib/eplImport";
 
 // API-Football EPL 데이터 테스트용 — DB에 저장하지 않고, 받아온 내용을 그대로 보여줍니다.
 // 키는 서버 환경변수(API_FOOTBALL_KEY)에서만 읽으므로 외부에 노출되지 않습니다.
@@ -149,106 +149,16 @@ export async function POST(req: Request) {
   if (!fixtureId) return NextResponse.json({ error: "fixtureId 필요" }, { status: 400 });
 
   try {
-    // 1) 경기 기본 정보
-    const fxData = await af(`/fixtures?id=${fixtureId}`);
-    const f = (fxData.response || [])[0];
-    if (!f) return NextResponse.json({ error: "경기를 찾을 수 없음" }, { status: 404 });
-
-    const homeEn = f.teams?.home?.name;
-    const awayEn = f.teams?.away?.name;
-    const homeKo = teamKo(homeEn);
-    const awayKo = teamKo(awayEn);
-    const statusShort = f.fixture?.status?.short;
-    const finished = ["FT", "AET", "PEN"].includes(statusShort);
-
-    // 이미 등록된 경기면 중복 생성 방지 (같은 sport+팀+날짜)
-    const date = new Date(f.fixture?.date);
-    const existing = await prisma.match.findFirst({
-      where: { sport: "epl", homeTeam: homeKo, awayTeam: awayKo, date },
-    });
-    if (existing) {
-      return NextResponse.json({ error: "이미 등록된 경기입니다.", id: existing.id }, { status: 409 });
+    const r = await importFixture(fixtureId);
+    if (!r.ok) {
+      if (r.reason === "exists")
+        return NextResponse.json({ error: "이미 등록된 경기입니다.", id: r.id }, { status: 409 });
+      if (r.reason === "notfound")
+        return NextResponse.json({ error: r.message }, { status: 404 });
+      return NextResponse.json({ error: r.message }, { status: 500 });
     }
-
-    const match = await prisma.match.create({
-      data: {
-        sport: "epl",
-        date,
-        homeTeam: homeKo,
-        awayTeam: awayKo,
-        homeScore: f.goals?.home ?? null,
-        awayScore: f.goals?.away ?? null,
-        status: finished ? "finished" : "scheduled",
-      },
-    });
-
-    // 2) 라인업 (선발 + 후보)
-    const luData = await af(`/fixtures/lineups?fixture=${fixtureId}`);
-    let playerCount = 0;
-    for (const t of (luData.response || [])) {
-      const teamKoName = teamKo(t.team?.name);
-      const side: "home" | "away" = (teamKo(t.team?.name) === homeKo) ? "home" : "away";
-
-      // 선발: grid로 포메이션 좌표 계산
-      const starters = (t.startXI || []);
-      const grids = starters.map((it: any) => parseGrid(it.player?.grid));
-      const positions = gridsToPositions(grids, side);
-
-      const saveOne = async (item: any, isDefault: boolean, pos?: { posX: number; posY: number } | null) => {
-        const p = item.player || {};
-        const nameKo = playerKo(p.name);
-        const position = posKo(p.pos);
-        let player = await prisma.player.findFirst({ where: { name: nameKo, team: teamKoName } });
-        if (!player) player = await prisma.player.create({ data: { name: nameKo, team: teamKoName, position } });
-        await prisma.matchPlayer.upsert({
-          where: { matchId_playerId: { matchId: match.id, playerId: player.id } },
-          create: {
-            matchId: match.id, playerId: player.id, role: position, isDefault, segment: "all",
-            posX: pos?.posX ?? null, posY: pos?.posY ?? null,
-          },
-          update: {
-            isDefault, role: position,
-            posX: pos?.posX ?? null, posY: pos?.posY ?? null,
-          },
-        });
-        playerCount++;
-      };
-
-      for (let i = 0; i < starters.length; i++) await saveOne(starters[i], true, positions[i]);
-      for (const sub of (t.substitutes || [])) await saveOne(sub, false, null); // 후보는 좌표 없음
-    }
-
-    // 3) 교체 정보 (끝난 경기만) — subst 이벤트: player=OUT(나간), assist=IN(들어온)
-    let subCount = 0;
-    if (finished) {
-      const evData = await af(`/fixtures/events?fixture=${fixtureId}`);
-      const teamKoByApiName: Record<string, string> = {
-        [homeEn]: homeKo, [awayEn]: awayKo,
-      };
-      for (const ev of (evData.response || [])) {
-        if (ev.type !== "subst") continue;
-        const minute = ev.time?.elapsed ?? 0;
-        const teamKoName = teamKoByApiName[ev.team?.name] ?? teamKo(ev.team?.name);
-        const outName = playerKo(ev.player?.name);  // 나간 선수 (API: player = OUT)
-        const inName = playerKo(ev.assist?.name);   // 들어온 선수 (API: assist = IN)
-        if (!inName || !outName) continue;
-        const inP = await prisma.player.findFirst({ where: { name: inName, team: teamKoName } });
-        const outP = await prisma.player.findFirst({ where: { name: outName, team: teamKoName } });
-        if (!inP || !outP) continue; // 라인업에 없는 선수면 건너뜀
-        await prisma.substitution.create({
-          data: { matchId: match.id, minute, outPlayerId: outP.id, inPlayerId: inP.id },
-        });
-        subCount++;
-      }
-    }
-
     return NextResponse.json({
-      ok: true,
-      id: match.id,
-      match: `${homeKo} ${f.goals?.home ?? "-"} : ${f.goals?.away ?? "-"} ${awayKo}`,
-      players: playerCount,
-      subs: subCount,
-      url: `/epl/${match.id}`,
+      ok: true, id: r.id, match: r.match, players: r.players, subs: r.subs, url: r.url,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || "알 수 없는 오류" }, { status: 500 });
