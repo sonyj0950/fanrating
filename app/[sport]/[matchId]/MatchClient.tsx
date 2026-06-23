@@ -127,9 +127,10 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const segFiltered = players.filter(p =>
     baseSeg === "full" || !p.segment || p.segment === "all" || p.segment === baseSeg);
 
-  // 야구: 기본 우선선수만, "더보기" 시 전체 (나의 평점 탭에서는 전체 표시)
+  // 야구: 기본 우선선수만 + 교체 출전 선수(실제로 경기에 들어온 선수)는 항상 표시 → 평점 가능
+  const subInIds = new Set(subs.map(s => s.inPlayerId));
   const visiblePlayers0 = (match.sport === "kbo" && !showAll && !isMine)
-    ? segFiltered.filter(p => p.isDefault)
+    ? segFiltered.filter(p => p.isDefault || subInIds.has(p.playerId))
     : segFiltered;
 
   // mine 모드: avg를 내 점수로 교체 (안 매긴 선수는 null)

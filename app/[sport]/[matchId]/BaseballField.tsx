@@ -38,7 +38,8 @@ export default function BaseballField({ players, onPick }:
     );
   }
 
-  const pitchers = players.filter(p => p.battingOrder == null && (p.isPitcher || p.role === "투수"));
+  // 선발투수 = 타순 없고 role이 "투수"인 선발. 교체 투수(role 미지정)는 아래 교체·벤치로.
+  const pitchers = players.filter(p => p.battingOrder == null && p.role === "투수");
   const batters = players.filter(p => p.battingOrder != null)
     .sort((a, b) => (a.battingOrder as number) - (b.battingOrder as number));
   const used = new Set([...pitchers, ...batters].map(p => p.mpId));
