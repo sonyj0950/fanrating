@@ -71,11 +71,21 @@ export async function GET(req: Request) {
       });
     }
 
-    // 2) 기본: EPL 경기 목록. mode=last(최근 끝난) | next(다가오는), season 지정 가능
+    // 2) 기본: 시즌 전체를 받아 서버에서 최근 끝난/다가오는 10경기를 골라냄 (요청 1건)
     const mode = url.searchParams.get("mode") === "next" ? "next" : "last";
     const season = url.searchParams.get("season") || String(SEASON);
-    const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}&${mode}=10`);
-    const fixtures = (data.response || []).map((f: any) => ({
+    const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}`);
+    const all = (data.response || []);
+    const finished = all.filter((f: any) => ["FT", "AET", "PEN"].includes(f.fixture?.status?.short));
+    const upcoming = all.filter((f: any) => ["NS", "TBD"].includes(f.fixture?.status?.short));
+    const byDate = (arr: any[], desc: boolean) =>
+      [...arr].sort((a, b) => {
+        const ta = new Date(a.fixture?.date).getTime();
+        const tb = new Date(b.fixture?.date).getTime();
+        return desc ? tb - ta : ta - tb;
+      });
+    const picked = mode === "next" ? byDate(upcoming, false).slice(0, 10) : byDate(finished, true).slice(0, 10);
+    const fixtures = picked.map((f: any) => ({
       fixtureId: f.fixture?.id,
       date: f.fixture?.date,
       status: f.fixture?.status?.short,
@@ -87,7 +97,8 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({
-      count: data.results,
+      count: picked.length,
+      total: all.length,
       season,
       mode,
       fixtures,

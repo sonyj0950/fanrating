@@ -43,7 +43,7 @@ export default function EplTestPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "오류");
       setFixtures(data.fixtures || []);
-      setInfo(`시즌 ${data.season} · ${data.mode === "last" ? "최근 끝난 경기" : "다가오는 경기"} · ${data.count}건`);
+      setInfo(`시즌 ${data.season} · ${data.mode === "last" ? "최근 끝난 경기" : "다가오는 경기"} ${data.count}건 (시즌 전체 ${data.total}경기)`);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }
