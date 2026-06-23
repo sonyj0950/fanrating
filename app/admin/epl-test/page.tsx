@@ -90,17 +90,25 @@ export default function EplTestPage() {
       )}
 
       <div className="flex flex-wrap gap-2">
+        <button onClick={() => loadFixtures("last", "2023")} disabled={loading}
+          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          2023시즌
+        </button>
+        <button onClick={() => loadFixtures("last", "2022")} disabled={loading}
+          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          2022시즌
+        </button>
+        <button onClick={() => loadFixtures("last", "2021")} disabled={loading}
+          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          2021시즌
+        </button>
         <button onClick={() => loadFixtures("last", "2025")} disabled={loading}
-          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
-          2025시즌 최근 경기
-        </button>
-        <button onClick={() => loadFixtures("last", "2026")} disabled={loading}
-          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
-          2026시즌 최근 경기
-        </button>
-        <button onClick={() => loadFixtures("next", "2026")} disabled={loading}
           className="px-4 py-2 rounded border border-gray-900 text-gray-900 font-semibold disabled:opacity-40">
-          2026시즌 다가오는 경기
+          2025시즌
+        </button>
+        <button onClick={() => loadFixtures("last", "2024")} disabled={loading}
+          className="px-4 py-2 rounded border border-gray-900 text-gray-900 font-semibold disabled:opacity-40">
+          2024시즌
         </button>
       </div>
       {loading && <p className="text-sm text-gray-500">불러오는 중…</p>}
