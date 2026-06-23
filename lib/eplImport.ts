@@ -106,6 +106,32 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
   };
 }
 
+// 최근 끝난 EPL 경기들의 요약(id + 한글팀명 + 날짜) — 등록 여부를 DB에서 바로 확인하려고
+export type FixtureSummary = { id: number; homeKo: string; awayKo: string; date: Date };
+
+export async function recentFinishedFixtures(season: number, limit = 20): Promise<FixtureSummary[]> {
+  const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}`);
+  const all = data.response || [];
+  const finished = all.filter((f: any) => ["FT", "AET", "PEN"].includes(f.fixture?.status?.short));
+  finished.sort((a: any, b: any) =>
+    new Date(b.fixture?.date).getTime() - new Date(a.fixture?.date).getTime());
+  return finished.slice(0, limit).map((f: any) => ({
+    id: f.fixture?.id,
+    homeKo: teamKo(f.teams?.home?.name),
+    awayKo: teamKo(f.teams?.away?.name),
+    date: new Date(f.fixture?.date),
+  }));
+}
+
+// 경기가 이미 등록됐는지 (API 호출 없이 DB만)
+export async function isMatchRegistered(s: FixtureSummary): Promise<boolean> {
+  const existing = await prisma.match.findFirst({
+    where: { sport: "epl", homeTeam: s.homeKo, awayTeam: s.awayKo, date: s.date },
+    select: { id: true },
+  });
+  return !!existing;
+}
+
 // 최근 끝난 EPL 경기들의 fixtureId 목록 (시즌 전체에서 서버 슬라이스)
 export async function recentFinishedFixtureIds(season: number, limit = 10): Promise<number[]> {
   const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}`);
