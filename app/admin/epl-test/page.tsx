@@ -23,6 +23,18 @@ export default function EplTestPage() {
   const [selected, setSelected] = useState<number | null>(null);
 
   const [info, setInfo] = useState("");
+  const [seasons, setSeasons] = useState<any[] | null>(null);
+
+  async function loadSeasons() {
+    setLoading(true); setError(""); setSeasons(null); setFixtures(null); setLineups(null);
+    try {
+      const res = await fetch("/api/epl-test?action=seasons");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "오류");
+      setSeasons(data.seasons || []);
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  }
 
   async function loadFixtures(mode: string, season: string) {
     setLoading(true); setError(""); setLineups(null); setSelected(null); setInfo("");
@@ -55,6 +67,27 @@ export default function EplTestPage() {
           API-Football에서 EPL 데이터를 받아오는지 확인합니다. (DB에 저장하지 않음)
         </p>
       </div>
+
+      <button onClick={loadSeasons} disabled={loading}
+        className="px-4 py-2 rounded bg-amber-500 text-gray-900 font-bold disabled:opacity-40">
+        ⭐ 먼저 확인: 내 키로 받을 수 있는 EPL 시즌
+      </button>
+
+      {seasons && (
+        <div className="border border-gray-300 rounded-xl overflow-hidden">
+          <div className="bg-gray-900 text-white text-sm font-bold px-3 py-2">
+            이용 가능한 EPL 시즌 {seasons.length}개
+          </div>
+          {seasons.map((s, i) => (
+            <div key={i} className="px-3 py-2 border-t border-gray-100 text-sm flex items-center gap-2">
+              <span className="font-bold text-gray-900">{s.year}/{(s.year+1)%100}</span>
+              <span className="text-gray-400 text-xs">{s.start} ~ {s.end}</span>
+              {s.current && <span className="text-xs bg-amber-100 text-amber-800 rounded px-1.5">진행중</span>}
+              {s.lineups && <span className="text-xs bg-gray-100 text-gray-600 rounded px-1.5">라인업O</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <button onClick={() => loadFixtures("last", "2025")} disabled={loading}

@@ -28,8 +28,23 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const fixtureId = url.searchParams.get("fixtureId");
+  const action = url.searchParams.get("action");
 
   try {
+    // 0) 우리 키로 접근 가능한 EPL 시즌 목록 확인
+    if (action === "seasons") {
+      const data = await af(`/leagues?id=${EPL_LEAGUE}`);
+      const league = (data.response || [])[0];
+      const seasons = (league?.seasons || []).map((s: any) => ({
+        year: s.year,
+        start: s.start,
+        end: s.end,
+        current: s.current,
+        lineups: s.coverage?.fixtures?.lineups,
+      }));
+      return NextResponse.json({ count: seasons.length, seasons });
+    }
+
     // 1) 특정 경기의 라인업 조회
     if (fixtureId) {
       const data = await af(`/fixtures/lineups?fixture=${fixtureId}`);
