@@ -42,7 +42,9 @@ export async function GET(req: Request) {
         if (r.ok) {
           imported++;
           log.push(`등록: ${r.match} (선수 ${r.players}, 교체 ${r.subs})`);
-        } else if (r.reason === "exists") {
+          continue;
+        }
+        if (r.reason === "exists") {
           skipped++;
         } else {
           failed++;

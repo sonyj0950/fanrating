@@ -16,7 +16,7 @@ export async function af(path: string) {
 }
 
 export type ImportResult =
-  | { ok: true; id: string; match: string; players: number; subs: number; url: string }
+  | { ok: true; reason: "ok"; id: string; match: string; players: number; subs: number; url: string }
   | { ok: false; reason: "exists" | "notfound" | "error"; message: string; id?: string };
 
 // 경기 1개(fixtureId)를 받아 DB에 등록. 이미 있으면 exists 반환.
@@ -100,7 +100,7 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
   }
 
   return {
-    ok: true, id: match.id,
+    ok: true, reason: "ok", id: match.id,
     match: `${homeKo} ${f.goals?.home ?? "-"} : ${f.goals?.away ?? "-"} ${awayKo}`,
     players: playerCount, subs: subCount, url: `/epl/${match.id}`,
   };
