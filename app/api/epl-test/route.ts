@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { teamKo, playerKo, posKo } from "@/lib/eplMapping";
+import { teamKo, playerKo, posKo, parseGrid, gridsToPositions } from "@/lib/eplMapping";
 
 // API-Football EPL 데이터 테스트용 — DB에 저장하지 않고, 받아온 내용을 그대로 보여줍니다.
 // 키는 서버 환경변수(API_FOOTBALL_KEY)에서만 읽으므로 외부에 노출되지 않습니다.
@@ -160,23 +160,35 @@ export async function POST(req: Request) {
     let playerCount = 0;
     for (const t of (luData.response || [])) {
       const teamKoName = teamKo(t.team?.name);
-      const addPlayers = async (arr: any[], isDefault: boolean) => {
-        for (const item of (arr || [])) {
-          const p = item.player || {};
-          const nameKo = playerKo(p.name);
-          const position = posKo(p.pos);
-          let player = await prisma.player.findFirst({ where: { name: nameKo, team: teamKoName } });
-          if (!player) player = await prisma.player.create({ data: { name: nameKo, team: teamKoName, position } });
-          await prisma.matchPlayer.upsert({
-            where: { matchId_playerId: { matchId: match.id, playerId: player.id } },
-            create: { matchId: match.id, playerId: player.id, role: position, isDefault, segment: "all" },
-            update: { isDefault, role: position },
-          });
-          playerCount++;
-        }
+      const side: "home" | "away" = (teamKo(t.team?.name) === homeKo) ? "home" : "away";
+
+      // 선발: grid로 포메이션 좌표 계산
+      const starters = (t.startXI || []);
+      const grids = starters.map((it: any) => parseGrid(it.player?.grid));
+      const positions = gridsToPositions(grids, side);
+
+      const saveOne = async (item: any, isDefault: boolean, pos?: { posX: number; posY: number } | null) => {
+        const p = item.player || {};
+        const nameKo = playerKo(p.name);
+        const position = posKo(p.pos);
+        let player = await prisma.player.findFirst({ where: { name: nameKo, team: teamKoName } });
+        if (!player) player = await prisma.player.create({ data: { name: nameKo, team: teamKoName, position } });
+        await prisma.matchPlayer.upsert({
+          where: { matchId_playerId: { matchId: match.id, playerId: player.id } },
+          create: {
+            matchId: match.id, playerId: player.id, role: position, isDefault, segment: "all",
+            posX: pos?.posX ?? null, posY: pos?.posY ?? null,
+          },
+          update: {
+            isDefault, role: position,
+            posX: pos?.posX ?? null, posY: pos?.posY ?? null,
+          },
+        });
+        playerCount++;
       };
-      await addPlayers(t.startXI, true);   // 선발
-      await addPlayers(t.substitutes, false); // 후보
+
+      for (let i = 0; i < starters.length; i++) await saveOne(starters[i], true, positions[i]);
+      for (const sub of (t.substitutes || [])) await saveOne(sub, false, null); // 후보는 좌표 없음
     }
 
     // 3) 교체 정보 (끝난 경기만) — subst 이벤트: player=IN, assist=OUT

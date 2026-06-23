@@ -123,3 +123,41 @@ export function posKo(pos: string | null | undefined): string {
     default: return "";
   }
 }
+
+// API-Football grid("row:col")를 우리 피치 좌표(posX/posY, flip=false 기준)로 변환
+// grid: row 1 = 자기 골대 쪽, 위로 갈수록 증가 / col = 왼→오
+// side: "home"(하단) | "away"(상단)
+function toPitchLocal(x: number, y: number, side: "home" | "away") {
+  if (side === "home") return { posX: x, posY: 99 - y * 0.49 };
+  return { posX: 100 - x, posY: 1 + y * 0.49 };
+}
+
+// 한 팀 선발의 grid 배열을 받아 각 선수의 posX/posY를 계산
+// rows: [{row, col}], 반환: 같은 순서의 [{posX, posY}|null]
+export function gridsToPositions(
+  grids: ({ row: number; col: number } | null)[],
+  side: "home" | "away"
+): ({ posX: number; posY: number } | null)[] {
+  const valid = grids.filter((g): g is { row: number; col: number } => !!g);
+  if (!valid.length) return grids.map(() => null);
+  const maxRow = Math.max(...valid.map(g => g.row));
+  // 행별 인원 수
+  const perRow: Record<number, number> = {};
+  for (const g of valid) perRow[g.row] = (perRow[g.row] || 0) + 1;
+  return grids.map(g => {
+    if (!g) return null;
+    const colsInRow = perRow[g.row] || 1;
+    const x = (g.col / (colsInRow + 1)) * 100;                 // 왼→오 균등 분배
+    const y = maxRow > 1 ? ((g.row - 1) / (maxRow - 1)) * 90 + 5 : 50; // 골대→상대
+    return toPitchLocal(x, y, side);
+  });
+}
+
+export function parseGrid(grid: string | null | undefined): { row: number; col: number } | null {
+  if (!grid || typeof grid !== "string") return null;
+  const m = grid.split(":");
+  if (m.length !== 2) return null;
+  const row = parseInt(m[0], 10), col = parseInt(m[1], 10);
+  if (isNaN(row) || isNaN(col)) return null;
+  return { row, col };
+}
