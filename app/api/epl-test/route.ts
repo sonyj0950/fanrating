@@ -33,6 +33,33 @@ export async function GET(req: Request) {
   const action = url.searchParams.get("action");
 
   try {
+    // 진단: 등록된 경기의 선수/교체 ID가 맞물리는지 확인
+    if (action === "inspect") {
+      const matchId = url.searchParams.get("matchId");
+      if (!matchId) return NextResponse.json({ error: "matchId 필요" }, { status: 400 });
+      const mps = await prisma.matchPlayer.findMany({
+        where: { matchId }, include: { player: true },
+      });
+      const subsRows = await prisma.substitution.findMany({ where: { matchId } });
+      const idSet = new Set(mps.map(mp => mp.playerId));
+      const starters = mps.filter(mp => mp.isDefault).map(mp => mp.playerId);
+      const starterSet = new Set(starters);
+      const subsCheck = subsRows.map(s => ({
+        minute: s.minute,
+        out: s.outPlayerId, outName: mps.find(m => m.playerId === s.outPlayerId)?.player.name ?? "(없음)",
+        outIsStarter: starterSet.has(s.outPlayerId),
+        outInMatch: idSet.has(s.outPlayerId),
+        in: s.inPlayerId, inName: mps.find(m => m.playerId === s.inPlayerId)?.player.name ?? "(없음)",
+        inIsBench: idSet.has(s.inPlayerId) && !starterSet.has(s.inPlayerId),
+        inInMatch: idSet.has(s.inPlayerId),
+      }));
+      return NextResponse.json({
+        players: mps.length, starters: starters.length, subs: subsRows.length,
+        subsCheck,
+        startersWithPos: mps.filter(mp => mp.isDefault && mp.posX != null).length,
+      });
+    }
+
     // 0) 우리 키로 접근 가능한 EPL 시즌 목록 확인
     if (action === "seasons") {
       const data = await af(`/leagues?id=${EPL_LEAGUE}`);

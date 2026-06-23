@@ -25,6 +25,19 @@ export default function EplTestPage() {
   const [info, setInfo] = useState("");
   const [seasons, setSeasons] = useState<any[] | null>(null);
   const [importMsg, setImportMsg] = useState("");
+  const [inspectId, setInspectId] = useState("");
+  const [inspectData, setInspectData] = useState<any>(null);
+
+  async function runInspect() {
+    if (!inspectId.trim()) return;
+    setInspectData("loading");
+    try {
+      const res = await fetch(`/api/epl-test?action=inspect&matchId=${inspectId.trim()}`);
+      const data = await res.json();
+      if (!res.ok) { setInspectData({ error: data.error }); return; }
+      setInspectData(data);
+    } catch (e: any) { setInspectData({ error: e.message }); }
+  }
 
   async function importFixture(fixtureId: number) {
     setImportMsg("등록 중…");
@@ -134,6 +147,38 @@ export default function EplTestPage() {
           {importMsg}
         </div>
       )}
+
+      <div className="border border-gray-300 rounded-xl p-3 space-y-2">
+        <div className="text-sm font-bold text-gray-900">🔍 교체 진단 (경기 ID 입력)</div>
+        <div className="text-xs text-gray-500">경기페이지 주소 /epl/<b>여기부분</b> 을 붙여넣으세요</div>
+        <div className="flex gap-2">
+          <input value={inspectId} onChange={e => setInspectId(e.target.value)}
+            placeholder="예: clxxxx..." className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm" />
+          <button onClick={runInspect} className="px-3 py-1.5 rounded bg-gray-900 text-white text-sm font-semibold">진단</button>
+        </div>
+        {inspectData === "loading" && <p className="text-xs text-gray-500">확인 중…</p>}
+        {inspectData && inspectData !== "loading" && inspectData.error && (
+          <p className="text-xs text-red-600">오류: {inspectData.error}</p>
+        )}
+        {inspectData && inspectData !== "loading" && !inspectData.error && (
+          <div className="text-xs space-y-1">
+            <div className="font-semibold">
+              선수 {inspectData.players} · 선발 {inspectData.starters}(좌표있음 {inspectData.startersWithPos}) · 교체기록 {inspectData.subs}건
+            </div>
+            <div className="space-y-0.5">
+              {inspectData.subsCheck.map((s: any, i: number) => (
+                <div key={i} className={`rounded px-1.5 py-1 ${s.outIsStarter && s.inIsBench ? "bg-green-50" : "bg-red-50"}`}>
+                  {s.minute}분 — OUT {s.outName} {s.outIsStarter ? "✅선발" : s.outInMatch ? "⚠️후보아님" : "❌경기에없음"}
+                  {" / "}IN {s.inName} {s.inIsBench ? "✅후보" : s.inInMatch ? "⚠️선발임" : "❌경기에없음"}
+                </div>
+              ))}
+            </div>
+            <div className="text-gray-500 mt-1">
+              초록=정상(끌어올림 가능), 빨강=문제. ❌경기에없음 이 있으면 이름 매칭 실패입니다.
+            </div>
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
