@@ -46,42 +46,82 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
     },
   });
 
-  // 라인업 (선발 grid 좌표 + 후보)
+  // 라인업 (선발 grid 좌표 + 후보) — DB 왕복 최소화를 위해 한 번에 묶어서 처리
   const luData = await af(`/fixtures/lineups?fixture=${fixtureId}`);
-  let playerCount = 0;
+  type LItem = { name: string; team: string; position: string; isDefault: boolean; posX: number | null; posY: number | null };
+  const items: LItem[] = [];
   for (const t of (luData.response || [])) {
     const teamKoName = teamKo(t.team?.name);
     const side: "home" | "away" = teamKoName === homeKo ? "home" : "away";
     const starters = (t.startXI || []);
     const grids = starters.map((it: any) => parseGrid(it.player?.grid));
     const positions = gridsToPositions(grids, side);
-
-    const saveOne = async (item: any, isDefault: boolean, pos?: { posX: number; posY: number } | null) => {
-      const p = item.player || {};
-      const nameKo = playerKo(p.name);
-      const position = posKo(p.pos);
-      let player = await prisma.player.findFirst({ where: { name: nameKo, team: teamKoName } });
-      if (!player) player = await prisma.player.create({ data: { name: nameKo, team: teamKoName, position } });
-      await prisma.matchPlayer.upsert({
-        where: { matchId_playerId: { matchId: match.id, playerId: player.id } },
-        create: {
-          matchId: match.id, playerId: player.id, role: position, isDefault, segment: "all",
-          posX: pos?.posX ?? null, posY: pos?.posY ?? null,
-        },
-        update: { isDefault, role: position, posX: pos?.posX ?? null, posY: pos?.posY ?? null },
+    starters.forEach((it: any, i: number) => {
+      items.push({
+        name: playerKo(it.player?.name), team: teamKoName, position: posKo(it.player?.pos),
+        isDefault: true, posX: positions[i]?.posX ?? null, posY: positions[i]?.posY ?? null,
       });
-      playerCount++;
-    };
-
-    for (let i = 0; i < starters.length; i++) await saveOne(starters[i], true, positions[i]);
-    for (const sub of (t.substitutes || [])) await saveOne(sub, false, null);
+    });
+    for (const sub of (t.substitutes || [])) {
+      items.push({
+        name: playerKo(sub.player?.name), team: teamKoName, position: posKo(sub.player?.pos),
+        isDefault: false, posX: null, posY: null,
+      });
+    }
   }
 
-  // 교체 (끝난 경기만) — subst 이벤트: player=OUT(나간), assist=IN(들어온)
+  const key = (team: string, name: string) => `${team}|${name}`;
+  // 유니크 (팀,이름) 목록
+  const uniq = new Map<string, { name: string; team: string; position: string }>();
+  for (const it of items) {
+    const k = key(it.team, it.name);
+    if (it.name && !uniq.has(k)) uniq.set(k, { name: it.name, team: it.team, position: it.position });
+  }
+  const pairs = [...uniq.values()];
+  const idMap = new Map<string, string>();
+
+  // 1) 기존 선수 한 번에 조회
+  if (pairs.length) {
+    const existing = await prisma.player.findMany({
+      where: { OR: pairs.map(p => ({ name: p.name, team: p.team })) },
+      select: { id: true, name: true, team: true },
+    });
+    for (const p of existing) idMap.set(key(p.team, p.name), p.id);
+  }
+  // 2) 없는 선수만 한 번에 생성 후, id 다시 조회
+  const toCreate = pairs.filter(p => !idMap.has(key(p.team, p.name)));
+  if (toCreate.length) {
+    await prisma.player.createMany({
+      data: toCreate.map(p => ({ name: p.name, team: p.team, position: p.position })),
+    });
+    const created = await prisma.player.findMany({
+      where: { OR: toCreate.map(p => ({ name: p.name, team: p.team })) },
+      select: { id: true, name: true, team: true },
+    });
+    for (const p of created) idMap.set(key(p.team, p.name), p.id);
+  }
+
+  // 3) matchPlayer 한 번에 생성 (새 경기라 충돌 없음, playerId 중복만 제거)
+  const seen = new Set<string>();
+  const mpData: any[] = [];
+  for (const it of items) {
+    const pid = idMap.get(key(it.team, it.name));
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+    mpData.push({
+      matchId: match.id, playerId: pid, role: it.position, isDefault: it.isDefault, segment: "all",
+      posX: it.posX, posY: it.posY,
+    });
+  }
+  if (mpData.length) await prisma.matchPlayer.createMany({ data: mpData });
+  const playerCount = mpData.length;
+
+  // 교체 (끝난 경기만) — subst: player=OUT(나간), assist=IN(들어온). idMap으로 DB 조회 없이 매핑
   let subCount = 0;
   if (finished) {
     const evData = await af(`/fixtures/events?fixture=${fixtureId}`);
     const teamKoByApiName: Record<string, string> = { [homeEn]: homeKo, [awayEn]: awayKo };
+    const subData: any[] = [];
     for (const ev of (evData.response || [])) {
       if (ev.type !== "subst") continue;
       const minute = ev.time?.elapsed ?? 0;
@@ -89,14 +129,13 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
       const outName = playerKo(ev.player?.name);
       const inName = playerKo(ev.assist?.name);
       if (!inName || !outName) continue;
-      const inP = await prisma.player.findFirst({ where: { name: inName, team: teamKoName } });
-      const outP = await prisma.player.findFirst({ where: { name: outName, team: teamKoName } });
-      if (!inP || !outP) continue;
-      await prisma.substitution.create({
-        data: { matchId: match.id, minute, outPlayerId: outP.id, inPlayerId: inP.id },
-      });
-      subCount++;
+      const outId = idMap.get(key(teamKoName, outName));
+      const inId = idMap.get(key(teamKoName, inName));
+      if (!outId || !inId) continue;
+      subData.push({ matchId: match.id, minute, outPlayerId: outId, inPlayerId: inId });
     }
+    if (subData.length) await prisma.substitution.createMany({ data: subData });
+    subCount = subData.length;
   }
 
   return {

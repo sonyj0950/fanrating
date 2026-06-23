@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const dry = url.searchParams.get("dry") === "1";
-  const maxPerRun = Number(url.searchParams.get("max") || "1");
+  const maxPerRun = Number(url.searchParams.get("max") || "3");
   const season = Number(process.env.EPL_SEASON || "2024");
 
   const t0 = Date.now();
