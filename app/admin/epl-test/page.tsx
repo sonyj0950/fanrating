@@ -22,13 +22,16 @@ export default function EplTestPage() {
   const [lineups, setLineups] = useState<Lineup[] | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
-  async function loadFixtures() {
-    setLoading(true); setError(""); setLineups(null); setSelected(null);
+  const [info, setInfo] = useState("");
+
+  async function loadFixtures(mode: string, season: string) {
+    setLoading(true); setError(""); setLineups(null); setSelected(null); setInfo("");
     try {
-      const res = await fetch("/api/epl-test");
+      const res = await fetch(`/api/epl-test?mode=${mode}&season=${season}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "오류");
       setFixtures(data.fixtures || []);
+      setInfo(`시즌 ${data.season} · ${data.mode === "last" ? "최근 끝난 경기" : "다가오는 경기"} · ${data.count}건`);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }
@@ -53,10 +56,22 @@ export default function EplTestPage() {
         </p>
       </div>
 
-      <button onClick={loadFixtures} disabled={loading}
-        className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
-        {loading ? "불러오는 중…" : "① 다가오는 EPL 경기 받아오기"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => loadFixtures("last", "2025")} disabled={loading}
+          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          2025시즌 최근 경기
+        </button>
+        <button onClick={() => loadFixtures("last", "2026")} disabled={loading}
+          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          2026시즌 최근 경기
+        </button>
+        <button onClick={() => loadFixtures("next", "2026")} disabled={loading}
+          className="px-4 py-2 rounded border border-gray-900 text-gray-900 font-semibold disabled:opacity-40">
+          2026시즌 다가오는 경기
+        </button>
+      </div>
+      {loading && <p className="text-sm text-gray-500">불러오는 중…</p>}
+      {info && <p className="text-xs text-gray-500">{info}</p>}
 
       {error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">

@@ -56,8 +56,10 @@ export async function GET(req: Request) {
       });
     }
 
-    // 2) 기본: 다가오는/최근 EPL 경기 목록 (다음 10경기)
-    const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${SEASON}&next=10`);
+    // 2) 기본: EPL 경기 목록. mode=last(최근 끝난) | next(다가오는), season 지정 가능
+    const mode = url.searchParams.get("mode") === "next" ? "next" : "last";
+    const season = url.searchParams.get("season") || String(SEASON);
+    const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}&${mode}=10`);
     const fixtures = (data.response || []).map((f: any) => ({
       fixtureId: f.fixture?.id,
       date: f.fixture?.date,
@@ -71,6 +73,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       count: data.results,
+      season,
+      mode,
       fixtures,
     });
   } catch (e: any) {
