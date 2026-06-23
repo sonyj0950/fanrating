@@ -45,6 +45,8 @@ export default async function MatchPage({ params }: any) {
     avg: null as number | null,
     count: 0,
     champions: (mp.champions as Record<string, string> | null) ?? undefined,
+    battingOrder: mp.battingOrder ?? null,
+    isPitcher: mp.player.isPitcher ?? null,
   }));
 
   const aggClean: Record<string, Record<string, { avg: number; count: number }>> = {};
@@ -64,7 +66,7 @@ export default async function MatchPage({ params }: any) {
         setResults: (m.setResults as Record<string, string> | null) ?? null }}
       players={players}
       agg={aggClean}
-      subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId }))}
+      subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId, kind: s.kind ?? null }))}
     />
   );
 }

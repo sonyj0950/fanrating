@@ -49,7 +49,7 @@ function applyAgg(players: Player[], agg: Agg, seg: string): Player[] {
   });
 }
 
-type Sub = { minute: number; outPlayerId: string; inPlayerId: string };
+type Sub = { minute: number; outPlayerId: string; inPlayerId: string; kind?: string | null };
 
 export default function MatchClient({ match, players: rawPlayers, agg, subs = [] }:
   { match: any; players: Player[]; agg: Agg; subs?: Sub[] }) {
@@ -147,6 +147,9 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const away = fieldPlayers.filter(p => p.team === match.awayTeam);
   const homeStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.homeTeam);
   const awayStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.awayTeam);
+
+  // 교체 기록 표시용 선수 이름 조회 (야구)
+  const nameOf = (id: string) => rawPlayers.find(p => p.playerId === id)?.name ?? "?";
 
   // LCK 강조: 세트 탭 → POG(해당 세트 최고 평점), 총평 → POM(이긴 팀 최고 평점)
   const lckHighlight: Highlight = useMemo(() => {
@@ -354,6 +357,23 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         {match.sport === "lck" && (
           <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
             onPick={setOpen} seg={seg} highlight={lckHighlight}/>
+        )}
+
+        {match.sport === "kbo" && subs.length > 0 && (
+          <div className="mt-4 bg-white border rounded-lg p-3">
+            <div className="text-sm font-semibold mb-2">🔁 교체 기록</div>
+            <div className="space-y-1">
+              {subs.slice().sort((a, b) => a.minute - b.minute).map((s, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  {s.minute ? <span className="text-[11px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 shrink-0">{s.minute}회</span> : null}
+                  {s.kind && <span className="text-xs text-gray-500 w-16 shrink-0">{s.kind}</span>}
+                  <span className="truncate">{nameOf(s.outPlayerId)}</span>
+                  <span className="text-gray-400 shrink-0">→</span>
+                  <span className="truncate">{nameOf(s.inPlayerId)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
