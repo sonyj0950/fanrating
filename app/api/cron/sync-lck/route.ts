@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { recentCompletedMatches, isMatchRegistered, importMatch } from "@/lib/lckImport";
+import { recentCompletedMatches, registeredLineupStatus, importMatch } from "@/lib/lckImport";
 
 // LCK 자동 동기화 (LoL Esports API)
 // ?dry=1  : 최근 경기 목록만 받고 등록은 안 함
-// ?max=N  : 이번 실행에 등록할 최대 경기 수 (기본 3)
+// ?max=N  : 이번 실행에 등록/갱신할 최대 경기 수 (기본 3)
 // 보안: CRON_SECRET 설정 시 ?key=<CRON_SECRET> 또는 Authorization: Bearer 필요
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+// 챔피언이 비어 등록된 경기를 다시 갱신 시도할 최대 기간 (이 기간 지나면 포기 — livestats 영구 미제공 방지)
+const RESYNC_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -29,7 +32,7 @@ export async function GET(req: Request) {
   const t0 = Date.now();
   const timing: Record<string, number> = {};
   const log: string[] = [];
-  let imported = 0, skipped = 0, failed = 0;
+  let imported = 0, resynced = 0, skipped = 0, failed = 0;
 
   try {
     const tFetch = Date.now();
@@ -46,18 +49,29 @@ export async function GET(req: Request) {
     }
 
     for (const m of matches) {
-      if (imported >= maxPerRun) {
+      if (imported + resynced >= maxPerRun) {
         log.push(`한도(${maxPerRun}경기) 도달 — 나머지는 다음 실행에서`);
         break;
       }
-      if (await isMatchRegistered(m)) { skipped++; continue; }
+      // 등록 상태 확인: 미등록이면 신규 등록, 등록됐지만 챔피언이 비었으면(최근 경기만) 재갱신.
+      const st = await registeredLineupStatus(m);
+      if (st && st.complete) { skipped++; continue; }
+      if (st && !st.complete && Date.now() - m.date.getTime() > RESYNC_MAX_AGE_MS) {
+        // 라인업이 비었지만 너무 오래된 경기 — livestats 영구 미제공으로 보고 재시도 포기
+        skipped++; continue;
+      }
       try {
         const tImp = Date.now();
         const r = await importMatch(m.id, { date: m.date, state: "completed" });
         timing.lastImportMs = Date.now() - tImp;
         if (r.ok) {
-          imported++;
-          log.push(`등록: ${r.match} (선수 ${r.players}, ${timing.lastImportMs}ms)${r.warning ? " ⚠️ " + r.warning : ""}`);
+          if (r.reason === "updated") {
+            resynced++;
+            log.push(`갱신: ${r.match} (선수 ${r.players}, ${timing.lastImportMs}ms)${r.warning ? " ⚠️ " + r.warning : ""}`);
+          } else {
+            imported++;
+            log.push(`등록: ${r.match} (선수 ${r.players}, ${timing.lastImportMs}ms)${r.warning ? " ⚠️ " + r.warning : ""}`);
+          }
         } else if (r.reason === "exists") {
           skipped++;
         } else {
@@ -69,7 +83,7 @@ export async function GET(req: Request) {
     }
 
     timing.totalMs = Date.now() - t0;
-    return NextResponse.json({ ok: true, checked: matches.length, imported, skipped, failed, timing, log });
+    return NextResponse.json({ ok: true, checked: matches.length, imported, resynced, skipped, failed, timing, log });
   } catch (e: any) {
     timing.totalMs = Date.now() - t0;
     return NextResponse.json({ ok: false, error: e.message, timing, log }, { status: 500 });

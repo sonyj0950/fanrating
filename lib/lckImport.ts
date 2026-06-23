@@ -76,6 +76,22 @@ export async function isMatchRegistered(s: MatchSummary): Promise<boolean> {
   return !!ex;
 }
 
+// 등록된 LCK 경기의 라인업이 "완성"인지 (선수가 있고, 모든 선수에 챔피언이 채워졌는지).
+// livestats 지연/누락으로 챔피언이 비어 등록된 경우 complete=false → cron이 다음 폴링에서 재갱신.
+// 반환: null(미등록) | { id, complete }
+export async function registeredLineupStatus(
+  s: MatchSummary,
+): Promise<{ id: string; complete: boolean } | null> {
+  const m = await prisma.match.findFirst({
+    where: { sport: "lck", homeTeam: s.homeKo, awayTeam: s.awayKo, date: s.date },
+    select: { id: true, players: { select: { champions: true } } },
+  });
+  if (!m) return null;
+  const hasChamp = (c: any) => c && typeof c === "object" && Object.keys(c).length > 0;
+  const complete = m.players.length > 0 && m.players.every(p => hasChamp(p.champions));
+  return { id: m.id, complete };
+}
+
 // LoL Esports 경기 상태 → 우리 status
 function mapState(state?: string): "scheduled" | "live" | "finished" {
   if (state === "completed") return "finished";

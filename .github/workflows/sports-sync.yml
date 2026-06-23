@@ -1,0 +1,49 @@
+name: 경기 자동 동기화 (EPL + LCK, 종료 후 몇 분 내 반영)
+
+# 원리: Vercel Hobby는 cron을 하루 1번만 허용 → GitHub Actions를 외부 스케줄러로 써서
+# sync-epl / sync-lck 엔드포인트를 자주 호출한다. 두 엔드포인트 모두 멱등(이미 등록된 경기는 skip)이라
+# 몇 번을 호출해도 중복 등록되지 않는다.
+#
+# 비용: private 저장소의 무료 Actions 한도는 월 2,000분(전체 합산). 한 번 실행은 호출 개수와 무관하게
+# 약 1분으로 과금되므로, EPL+LCK를 "한 잡"에서 같이 호출해 비용을 아낀다.
+#   - 10분 간격 × UTC 10~19시(10시간) = 60회/일 ≈ 1,860분/월 (한도 내)
+# 시간대: LCK는 KST 낮~저녁(UTC 10~16시), EPL은 KST 밤~새벽(UTC 14~22시)에 끝난다.
+#   → 두 종목 종료대를 함께 덮는 UTC 10~19시 창으로 설정.
+#   → 이 창을 벗어난 드문 경기(EPL 새벽 늦은 경기 등)는 각 종목의 Vercel 일 1회 cron이 backstop으로 보완.
+
+on:
+  schedule:
+    - cron: "*/10 10-19 * * *"
+  workflow_dispatch: {} # 수동 실행 버튼
+
+# 앞 실행이 늦어져도 겹치지 않게
+concurrency:
+  group: sports-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: ${{ secrets.APP_BASE_URL }}    # 예: https://fanrating.vercel.app
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}  # Vercel 환경변수와 동일한 값
+    steps:
+      - name: EPL 동기화
+        run: |
+          echo "▶ sync-epl"
+          code=$(curl -sS -o /tmp/epl.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/sync-epl?max=6")
+          echo "HTTP ${code}"; cat /tmp/epl.json; echo
+          test "${code}" -ge 200 -a "${code}" -lt 300
+
+      - name: LCK 동기화
+        if: always() # EPL 단계가 실패해도 LCK는 실행
+        run: |
+          echo "▶ sync-lck"
+          code=$(curl -sS -o /tmp/lck.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/sync-lck?max=6")
+          echo "HTTP ${code}"; cat /tmp/lck.json; echo
+          test "${code}" -ge 200 -a "${code}" -lt 300
