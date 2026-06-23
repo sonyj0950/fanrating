@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import AdminForm from "./AdminForm";
 import LckImportPanel from "./LckImportPanel";
+import RosterPanel from "./RosterPanel";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -11,6 +12,7 @@ export default async function AdminPage() {
   return (
     <div>
       <h1 className="text-xl font-bold mb-4">⚙️ 경기 등록</h1>
+      <RosterPanel />
       <LckImportPanel />
       <h2 className="text-sm font-bold text-gray-500 mb-2">✍️ 직접 등록 (모든 종목)</h2>
       <AdminForm />
