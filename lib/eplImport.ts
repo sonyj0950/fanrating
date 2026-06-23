@@ -77,7 +77,7 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
     const k = key(it.team, it.name);
     if (it.name && !uniq.has(k)) uniq.set(k, { name: it.name, team: it.team, position: it.position });
   }
-  const pairs = [...uniq.values()];
+  const pairs = Array.from(uniq.values());
   const idMap = new Map<string, string>();
 
   // 1) 기존 선수 한 번에 조회
