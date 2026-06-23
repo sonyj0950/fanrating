@@ -5,7 +5,7 @@ import DeleteMatchButton from "@/components/DeleteMatchButton";
 export const dynamic = "force-dynamic";
 
 const SPORT_LABEL: Record<string, string> = {
-  kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LCK",
+  kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LCK", epl: "⚽ EPL",
 };
 
 function StatusBadge({ status }: { status: string }) {

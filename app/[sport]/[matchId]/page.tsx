@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
 
-const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK" };
+const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK", epl: "EPL" };
 
 export async function generateMetadata({ params }: any) {
   const m = await prisma.match.findUnique({ where: { id: params.matchId } });

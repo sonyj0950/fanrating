@@ -11,7 +11,7 @@ import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 
 function segmentsFor(sport: string) {
-  if (sport === "kleague") return [
+  if (sport === "kleague" || sport === "epl") return [
     { key: "full", label: "총평" },
     { key: "first", label: "전반" },
     { key: "second", label: "후반" },
@@ -212,7 +212,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         <SeedBanner matchId={match.id} seed={match.seed} isAdmin={isAdmin}
           loggedIn={!!session} onChanged={() => router.refresh()} />
       )}
-      {isAdmin && match.sport === "kleague" && (
+      {isAdmin && (match.sport === "kleague" || match.sport === "epl") && (
         <button onClick={regenSeed}
           className="text-xs px-2 py-1 mb-4 border rounded bg-white text-gray-500 hover:bg-gray-50">
           🔄 토론거리 자동 생성/갱신
@@ -263,25 +263,25 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             + 선수 추가
           </button>
         )}
-        {isAdmin && match.sport === "kleague" && (
+        {isAdmin && (match.sport === "kleague" || match.sport === "epl") && (
           <button onClick={() => setManageOpen(!manageOpen)}
             className="text-sm px-3 py-1 border rounded bg-amber-50 text-amber-700">
             ⚙️ 전/후반 명단 관리
           </button>
         )}
-        {isAdmin && match.sport === "kleague" && (
+        {isAdmin && (match.sport === "kleague" || match.sport === "epl") && (
           <button onClick={() => setSubOpen(!subOpen)}
             className="text-sm px-3 py-1 border rounded bg-amber-50 text-amber-700">
             🔁 교체 정보 입력
           </button>
         )}
-        {isAdmin && match.sport === "kleague" && (
+        {isAdmin && (match.sport === "kleague" || match.sport === "epl") && (
           <button onClick={() => setEditPos(!editPos)}
             className={`text-sm px-3 py-1 border rounded ${editPos ? "bg-amber-500 text-white border-amber-500" : "bg-amber-50 text-amber-700"}`}>
             {editPos ? "✓ 위치 편집 종료" : "✋ 선수 위치 편집"}
           </button>
         )}
-        {isAdmin && match.sport === "kleague" && editPos && (
+        {isAdmin && (match.sport === "kleague" || match.sport === "epl") && editPos && (
           <button onClick={resetPositions}
             className="text-sm px-3 py-1 border rounded bg-white text-gray-600">
             ↺ 위치 초기화
@@ -313,7 +313,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             </div>
           </div>
         )}
-        {match.sport === "kleague" && (
+        {(match.sport === "kleague" || match.sport === "epl") && (
           <SoccerField key={seg} home={home} away={away}
             homeStaff={homeStaff} awayStaff={awayStaff} officials={officials}
             homeTeam={match.homeTeam} awayTeam={match.awayTeam}
@@ -329,7 +329,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       </div>
 
       {/* 평점 리스트 (캡처용) — 축구만, 현재 탭 기준 */}
-      {match.sport === "kleague" && (home.length > 0 || away.length > 0) && (
+      {(match.sport === "kleague" || match.sport === "epl") && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
           isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} />
       )}
