@@ -109,8 +109,8 @@ export const EPL_PLAYER_KO: Record<string, string> = {
 };
 
 export function playerKo(name: string): string {
-  if (!name) return name;
-  return EPL_PLAYER_KO[name.trim()] ?? name.trim();
+  // 선수 이름은 전부 영어로 통일 (한글 변환하지 않음)
+  return (name || "").trim();
 }
 
 // API-Football 포지션(G/D/M/F) → 우리 그룹(GK/DF/MF/FW)

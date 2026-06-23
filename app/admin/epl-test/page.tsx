@@ -36,7 +36,7 @@ export default function EplTestPage() {
       });
       const data = await res.json();
       if (!res.ok) { setImportMsg(`실패: ${data.error}${data.id ? ` (이미 등록됨)` : ""}`); return; }
-      setImportMsg(`등록 완료! ${data.match} · 선수 ${data.players}명 · 경기페이지 ${data.url}`);
+      setImportMsg(`등록 완료! ${data.match} · 선수 ${data.players}명 · 교체 ${data.subs ?? 0}건 · 경기페이지 ${data.url}`);
     } catch (e: any) { setImportMsg(`실패: ${e.message}`); }
   }
 

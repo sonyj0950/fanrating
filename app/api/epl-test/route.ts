@@ -179,11 +179,36 @@ export async function POST(req: Request) {
       await addPlayers(t.substitutes, false); // 후보
     }
 
+    // 3) 교체 정보 (끝난 경기만) — subst 이벤트: player=IN, assist=OUT
+    let subCount = 0;
+    if (finished) {
+      const evData = await af(`/fixtures/events?fixture=${fixtureId}`);
+      const teamKoByApiName: Record<string, string> = {
+        [homeEn]: homeKo, [awayEn]: awayKo,
+      };
+      for (const ev of (evData.response || [])) {
+        if (ev.type !== "subst") continue;
+        const minute = ev.time?.elapsed ?? 0;
+        const teamKoName = teamKoByApiName[ev.team?.name] ?? teamKo(ev.team?.name);
+        const inName = playerKo(ev.player?.name);   // 들어온 선수
+        const outName = playerKo(ev.assist?.name);  // 나간 선수
+        if (!inName || !outName) continue;
+        const inP = await prisma.player.findFirst({ where: { name: inName, team: teamKoName } });
+        const outP = await prisma.player.findFirst({ where: { name: outName, team: teamKoName } });
+        if (!inP || !outP) continue; // 라인업에 없는 선수면 건너뜀
+        await prisma.substitution.create({
+          data: { matchId: match.id, minute, outPlayerId: outP.id, inPlayerId: inP.id },
+        });
+        subCount++;
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       id: match.id,
       match: `${homeKo} ${f.goals?.home ?? "-"} : ${f.goals?.away ?? "-"} ${awayKo}`,
       players: playerCount,
+      subs: subCount,
       url: `/epl/${match.id}`,
     });
   } catch (e: any) {
