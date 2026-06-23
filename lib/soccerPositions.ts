@@ -96,6 +96,8 @@ export function normalizeRole(role?: string | null): string | null {
   // 공백 제거 후 한글 별칭 매칭
   const compact = raw.replace(/\s+/g, "");
   if (ALIASES[compact]) return ALIASES[compact];
+  // 큰 그룹 코드(GK/DF/MF/FW)는 대표 세부 포지션으로 변환 (DF→CB, MF→CM, FW→ST)
+  if (GROUP_DEFAULT[upper]) return GROUP_DEFAULT[upper];
   // 문자열 안에 코드가 포함된 경우 (예: "선발 ST", "CM/수비형") — 긴 코드 우선
   const byLen = [...POSITIONS].sort((a, b) => b.code.length - a.code.length);
   const found = byLen.find(p => upper.includes(p.code));
