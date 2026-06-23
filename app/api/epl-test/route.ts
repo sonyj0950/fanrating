@@ -218,7 +218,7 @@ export async function POST(req: Request) {
       for (const sub of (t.substitutes || [])) await saveOne(sub, false, null); // 후보는 좌표 없음
     }
 
-    // 3) 교체 정보 (끝난 경기만) — subst 이벤트: player=IN, assist=OUT
+    // 3) 교체 정보 (끝난 경기만) — subst 이벤트: player=OUT(나간), assist=IN(들어온)
     let subCount = 0;
     if (finished) {
       const evData = await af(`/fixtures/events?fixture=${fixtureId}`);
@@ -229,8 +229,8 @@ export async function POST(req: Request) {
         if (ev.type !== "subst") continue;
         const minute = ev.time?.elapsed ?? 0;
         const teamKoName = teamKoByApiName[ev.team?.name] ?? teamKo(ev.team?.name);
-        const inName = playerKo(ev.player?.name);   // 들어온 선수
-        const outName = playerKo(ev.assist?.name);  // 나간 선수
+        const outName = playerKo(ev.player?.name);  // 나간 선수 (API: player = OUT)
+        const inName = playerKo(ev.assist?.name);   // 들어온 선수 (API: assist = IN)
         if (!inName || !outName) continue;
         const inP = await prisma.player.findFirst({ where: { name: inName, team: teamKoName } });
         const outP = await prisma.player.findFirst({ where: { name: outName, team: teamKoName } });
