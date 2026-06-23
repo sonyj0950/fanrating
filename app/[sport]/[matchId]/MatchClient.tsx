@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BaseballField from "./BaseballField";
 import SoccerField from "./SoccerField";
-import LckLineup from "./LckLineup";
+import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import type { Player, Agg } from "./types";
@@ -148,6 +148,24 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const homeStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.homeTeam);
   const awayStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.awayTeam);
 
+  // LCK 강조: 세트 탭 → POG(해당 세트 최고 평점), 총평 → POM(이긴 팀 최고 평점)
+  const lckHighlight: Highlight = useMemo(() => {
+    if (match.sport !== "lck" || isMine) return null;
+    const rated = fieldPlayers.filter(p => p.avg !== null);
+    if (rated.length === 0) return null;
+    if (seg === "full") {
+      const hs = match.homeScore, as = match.awayScore;
+      if (hs == null || as == null || hs === as) return null; // 승팀 불명 → POM 없음
+      const winTeam = hs > as ? match.homeTeam : match.awayTeam;
+      const pool = rated.filter(p => p.team === winTeam);
+      if (pool.length === 0) return null;
+      const top = pool.reduce((b, p) => (p.avg! > b.avg! ? p : b));
+      return { playerId: top.playerId, kind: "POM" };
+    }
+    const top = rated.reduce((b, p) => (p.avg! > b.avg! ? p : b));
+    return { playerId: top.playerId, kind: "POG" };
+  }, [match.sport, seg, isMine, fieldPlayers, match.homeScore, match.awayScore, match.homeTeam, match.awayTeam]);
+
   // 교체 정보: playerId → 들어옴(in)/나감(out) + 시각
   const subInfo = useMemo(() => {
     const m: Record<string, { dir: "in" | "out"; min: number }> = {};
@@ -201,9 +219,14 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
-      {isAdmin && (
+      {isAdmin && match.sport !== "lck" && (
         <ScoreEditor matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
           homeScore={match.homeScore} awayScore={match.awayScore} onChanged={() => router.refresh()} />
+      )}
+
+      {isAdmin && match.sport === "lck" && (
+        <LckSetResults matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          initial={match.setResults || {}} onChanged={() => router.refresh()} />
       )}
 
       <MatchRecord matchId={match.id} record={match.record} />
@@ -232,12 +255,17 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {(segments.length > 1 || session) && (
         <div className="flex gap-1 mb-4 border-b overflow-x-auto">
-          {segments.map(s => (
+          {segments.map(s => {
+            const setWin = match.sport === "lck" && match.setResults ? match.setResults[s.key] : null;
+            return (
             <button key={s.key} onClick={() => setSeg(s.key)}
               className={`px-4 py-2 whitespace-nowrap ${seg===s.key?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
               {s.label}
+              {setWin && <span title={setWin === "home" ? match.homeTeam : match.awayTeam}
+                className={`ml-1 inline-block w-1.5 h-1.5 rounded-full align-middle ${setWin === "home" ? "bg-amber-500" : "bg-red-500"}`} />}
             </button>
-          ))}
+            );
+          })}
           {session && (
             <button onClick={() => setSeg("mine")}
               className={`px-4 py-2 whitespace-nowrap ${seg==="mine"?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
@@ -324,7 +352,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             onMove={savePosition}/>
         )}
         {match.sport === "lck" && (
-          <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam} onPick={setOpen}/>
+          <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+            onPick={setOpen} seg={seg} highlight={lckHighlight}/>
         )}
       </div>
 
@@ -332,6 +361,12 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {(match.sport === "kleague" || match.sport === "epl") && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
           isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} />
+      )}
+
+      {/* 라인 대결 비교 — LCK만, 현재 세트 탭 기준 */}
+      {match.sport === "lck" && seg !== "mine" && (home.length > 0 || away.length > 0) && (
+        <LckMatchup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          onPick={setOpen} seg={seg} highlight={lckHighlight} />
       )}
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
@@ -760,6 +795,59 @@ function ScoreEditor({ matchId, homeTeam, awayTeam, homeScore, awayScore, onChan
         className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>
+    </div>
+  );
+}
+
+// 관리자: LCK 세트별 승팀 입력 (세트 종료 후 직접 지정 → 총 스코어 자동 동기화)
+function LckSetResults({ matchId, homeTeam, awayTeam, initial, onChanged }:
+  { matchId: string; homeTeam: string; awayTeam: string;
+    initial: Record<string, string>; onChanged: () => void }) {
+  const [results, setResults] = useState<Record<string, string>>(initial || {});
+  const [busy, setBusy] = useState(false);
+  const SETS = ["set1", "set2", "set3", "set4", "set5"];
+
+  async function setWin(setKey: string, side: "home" | "away") {
+    const next = { ...results };
+    if (next[setKey] === side) delete next[setKey]; else next[setKey] = side;
+    setResults(next);
+    setBusy(true);
+    const res = await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ setResults: next }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert("저장 실패"); return; }
+    onChanged();
+  }
+
+  const hw = Object.values(results).filter(v => v === "home").length;
+  const aw = Object.values(results).filter(v => v === "away").length;
+
+  return (
+    <div className="mb-3 bg-gray-50 border rounded px-3 py-2.5 text-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-gray-500 text-xs">🎮 세트별 승팀</span>
+        <span className="ml-auto font-semibold">{homeTeam} {hw} : {aw} {awayTeam}</span>
+      </div>
+      <div className="space-y-1.5">
+        {SETS.map((sk, i) => (
+          <div key={sk} className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 w-10 shrink-0">{i + 1}세트</span>
+            <div className="flex rounded overflow-hidden border flex-1">
+              <button disabled={busy} onClick={() => setWin(sk, "home")}
+                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "home" ? "bg-amber-500 text-white" : "bg-white hover:bg-gray-50"}`}>
+                {homeTeam}
+              </button>
+              <button disabled={busy} onClick={() => setWin(sk, "away")}
+                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "away" ? "bg-red-500 text-white" : "bg-white hover:bg-gray-50"}`}>
+                {awayTeam}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-400 mt-2">같은 버튼을 다시 누르면 미정으로 돌아갑니다. 승팀을 정하면 위 스코어가 자동 반영됩니다.</p>
     </div>
   );
 }

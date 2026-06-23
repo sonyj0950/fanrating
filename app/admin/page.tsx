@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import AdminForm from "./AdminForm";
+import LckImportPanel from "./LckImportPanel";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -10,6 +11,8 @@ export default async function AdminPage() {
   return (
     <div>
       <h1 className="text-xl font-bold mb-4">⚙️ 경기 등록</h1>
+      <LckImportPanel />
+      <h2 className="text-sm font-bold text-gray-500 mb-2">✍️ 직접 등록 (모든 종목)</h2>
       <AdminForm />
       <p className="text-xs text-gray-500 mt-3">
         ※ 경기 삭제는 홈 화면 또는 각 경기 페이지의 🗑 버튼으로 할 수 있습니다.

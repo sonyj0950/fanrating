@@ -56,6 +56,21 @@ export async function PATCH(req: Request, { params }: any) {
   // 관리자가 토론 주제(시드)를 직접 수정/삭제
   if (typeof b.seed === "string") data.seed = b.seed.trim().slice(0, 300) || null;
 
+  // 🎮 LCK 세트별 승팀 (관리자 입력) — { "set1": "home" | "away", ... }
+  if ("setResults" in b) {
+    const sr: Record<string, string> = {};
+    const raw = b.setResults && typeof b.setResults === "object" ? b.setResults : {};
+    for (const k of Object.keys(raw)) {
+      if (/^set[1-5]$/.test(k) && (raw[k] === "home" || raw[k] === "away")) sr[k] = raw[k];
+    }
+    data.setResults = Object.keys(sr).length ? sr : null;
+    // 총 스코어(세트 승수) 자동 동기화
+    const homeWins = Object.values(sr).filter(v => v === "home").length;
+    const awayWins = Object.values(sr).filter(v => v === "away").length;
+    data.homeScore = homeWins;
+    data.awayScore = awayWins;
+  }
+
   // 시드 강제 재생성 요청
   if (b.regenSeed === true) {
     const ok = await maybeGenerateSeed(params.id);

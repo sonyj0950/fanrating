@@ -38,6 +38,7 @@ model Match {
   status    String        @default("scheduled") // scheduled | live | finished
   record    String? // ⚽ 골·어시스트 기록 (줄 단위 텍스트)
   seed      String? // 🔥 자동 생성된 토론거리 (경기 종료 후)
+  setResults Json? // 🎮 LCK 세트별 승팀 (관리자 입력) — { "set1": "home" | "away", ... }
   createdAt DateTime      @default(now())
   players   MatchPlayer[]
   ratings   Rating[]
@@ -123,6 +124,7 @@ model MatchPlayer {
   segment   String  @default("all") // 출전: all | first(전반) | second(후반)
   posX      Float?  // 관리자 커스텀 위치 (%) — null이면 포지션 코드 기준 자동 배치
   posY      Float?
+  champions Json?   // 🎮 LCK 세트별 챔피언 — { "set1": "Vayne", "set2": "Kaisa", ... }
 
   @@unique([matchId, playerId])
 }
