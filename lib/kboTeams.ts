@@ -12,3 +12,9 @@ export function classifyPitcher(position?: string | null): boolean {
   const p = (position || "").trim();
   return /투|선발|마무리|불펜|중계|셋업|좌완|우완/.test(p);
 }
+
+// 타자 수비 포지션 (라인업 빌더 드롭다운)
+export const KBO_BATTER_POSITIONS = ["포수", "1루수", "2루수", "3루수", "유격수", "좌익수", "중견수", "우익수", "지명타자"] as const;
+
+// 교체 종류
+export const KBO_SUB_KINDS = ["대타", "대주자", "투수교체", "수비교체"] as const;
