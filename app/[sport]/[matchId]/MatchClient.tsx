@@ -232,7 +232,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
           initial={match.setResults || {}} onChanged={() => router.refresh()} />
       )}
 
-      <MatchRecord matchId={match.id} record={match.record} />
+      <MatchRecord matchId={match.id} record={match.record} sport={match.sport} />
 
       {match.status === "finished" && (match.seed || isAdmin) && (
         <SeedBanner matchId={match.id} seed={match.seed} isAdmin={isAdmin}
@@ -1272,13 +1272,29 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
   );
 }
 
-function MatchRecord({ matchId, record }: { matchId: string; record?: string | null }) {
+const RECORD_META: Record<string, { title: string; placeholder: string }> = {
+  kbo: {
+    title: "⚾ 주요 기록 (홈런 · 타점 등)",
+    placeholder: "한 줄에 하나씩 입력\n예) 3회 오스틴 2점 홈런\n7회 김현수 결승 적시타\n9회 유영찬 세이브",
+  },
+  lck: {
+    title: "🎮 주요 기록",
+    placeholder: "한 줄에 하나씩 입력\n예) 1세트 페이커 펜타킬\n2세트 오너 갱킹 주도",
+  },
+  default: {
+    title: "⚽ 골 · 어시스트 기록",
+    placeholder: "한 줄에 하나씩 입력\n예) 23' 손흥민 (도움: 이강인)\n67' 주민규 (PK)",
+  },
+};
+
+function MatchRecord({ matchId, record, sport }: { matchId: string; record?: string | null; sport?: string }) {
   const { data: session } = useSession();
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === "admin";
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(record || "");
   const [saving, setSaving] = useState(false);
+  const meta = RECORD_META[sport || ""] ?? RECORD_META.default;
 
   // 기록도 없고 관리자도 아니면 표시하지 않음
   if (!record && !isAdmin) return null;
@@ -1298,7 +1314,7 @@ function MatchRecord({ matchId, record }: { matchId: string; record?: string | n
   return (
     <div className="bg-white border rounded p-3 mb-4 text-sm max-w-md">
       <div className="flex justify-between items-center mb-1">
-        <span className="font-semibold">⚽ 골 · 어시스트 기록</span>
+        <span className="font-semibold">{meta.title}</span>
         {isAdmin && !editing && (
           <button onClick={() => { setText(record || ""); setEditing(true); }}
             className="text-xs text-gray-900 hover:underline">{record ? "수정" : "+ 입력"}</button>
@@ -1308,7 +1324,7 @@ function MatchRecord({ matchId, record }: { matchId: string; record?: string | n
         <div>
           <textarea value={text} onChange={e => setText(e.target.value)}
             className="w-full border rounded p-2 h-24 text-sm"
-            placeholder={"한 줄에 하나씩 입력\n예) 23' 손흥민 (도움: 이강인)\n67' 주민규 (PK)"}/>
+            placeholder={meta.placeholder}/>
           <div className="flex gap-2 justify-end mt-1">
             <button onClick={() => setEditing(false)} className="px-3 py-1 border rounded text-xs">취소</button>
             <button onClick={save} disabled={saving}
