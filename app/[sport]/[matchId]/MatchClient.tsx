@@ -378,10 +378,10 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         )}
       </div>
 
-      {/* 평점 리스트 (캡처용) — 축구만, 현재 탭 기준 */}
-      {(match.sport === "kleague" || match.sport === "epl") && (home.length > 0 || away.length > 0) && (
+      {/* 평점 리스트 (캡처용) — 축구·야구, 현재 탭 기준 */}
+      {(match.sport === "kleague" || match.sport === "epl" || match.sport === "kbo") && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} />
+          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} sport={match.sport} />
       )}
 
       {/* 라인 대결 비교 — LCK만, 현재 세트 탭 기준 */}
@@ -495,13 +495,33 @@ const GROUP_LABEL: Record<string, string> = { GK: "GK · 골키퍼", DF: "DF · 
 const GROUP_ICON: Record<string, string> = { GK: "🧤", DF: "🛡️", MF: "⚙️", FW: "🎯" };
 const GROUP_ORDER = ["GK", "DF", "MF", "FW"] as const;
 
+// ⚾ 야구 포지션 그룹 (포지션 비교용)
+function baseballPosGroup(role: string | undefined, isPitcher?: boolean | null): string | null {
+  const r = (role || "").trim();
+  if (isPitcher || /투수|선발|마무리|불펜|중계|셋업/.test(r)) return "P";
+  if (/포수/.test(r)) return "C";
+  if (/1루|2루|3루|유격|내야/.test(r)) return "IF";
+  if (/좌익|중견|우익|외야/.test(r)) return "OF";
+  if (/지명/.test(r)) return "DH";
+  return null;
+}
+const BB_GROUP_LABEL: Record<string, string> = { P: "투수", C: "포수", IF: "내야수", OF: "외야수", DH: "지명타자" };
+const BB_GROUP_ICON: Record<string, string> = { P: "⚾", C: "🧤", IF: "🔷", OF: "🟢", DH: "🏏" };
+const BB_GROUP_ORDER = ["P", "C", "IF", "OF", "DH"] as const;
+
 // 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
-function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {} }:
+function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {}, sport }:
   { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string;
     isMine: boolean; pog: Player | null; onPick: (p: Player) => void;
-    subInfo?: Record<string, { dir: "in" | "out"; min: number }> }) {
+    subInfo?: Record<string, { dir: "in" | "out"; min: number }>; sport?: string }) {
   const [mode, setMode] = useState<"high" | "low" | "pos">("high");
   const all = [...home, ...away];
+  // 포지션 그룹: 야구는 투수/포수/내야/외야/지명, 그 외(축구)는 GK/DF/MF/FW
+  const isBaseball = sport === "kbo";
+  const groupOf = (p: Player) => isBaseball ? baseballPosGroup(p.role, p.isPitcher) : posGroup(p.role);
+  const GORDER: readonly string[] = isBaseball ? BB_GROUP_ORDER : GROUP_ORDER;
+  const GLABEL = isBaseball ? BB_GROUP_LABEL : GROUP_LABEL;
+  const GICON = isBaseball ? BB_GROUP_ICON : GROUP_ICON;
 
   // 정렬 리스트 (평점 있는 선수만)
   const ratedSorted = all.filter(p => p.avg !== null)
@@ -513,7 +533,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     if (!s) return null;
     return (
       <span className={`text-[9px] font-extrabold text-white rounded px-1 py-0.5 ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
-        {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
+        {s.dir === "in" ? "→" : "←"}{s.min}{sport === "kbo" ? "회" : "'"}
       </span>
     );
   }
@@ -576,15 +596,15 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
       );
     };
 
-    return GROUP_ORDER.map(g => {
-      const h = home.filter(p => posGroup(p.role) === g).sort(sortByAvg);
-      const a = away.filter(p => posGroup(p.role) === g).sort(sortByAvg);
+    return GORDER.map(g => {
+      const h = home.filter(p => groupOf(p) === g).sort(sortByAvg);
+      const a = away.filter(p => groupOf(p) === g).sort(sortByAvg);
       const rows = Math.max(h.length, a.length);
       if (rows === 0) return null;
       return (
         <div key={g}>
           <div className="flex items-center gap-1.5 bg-gray-100 text-[11px] font-extrabold text-gray-500 px-3.5 py-1.5 border-t border-gray-200">
-            <span>{GROUP_ICON[g]}</span>{GROUP_LABEL[g]}
+            <span>{GICON[g]}</span>{GLABEL[g]}
           </div>
           {Array.from({ length: rows }).map((_, i) => {
             const ph = h[i], pa = a[i];
