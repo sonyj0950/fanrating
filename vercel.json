@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/sync-epl",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/sync-lck",
-      "schedule": "30 3 * * *"
     }
   ]
 }
