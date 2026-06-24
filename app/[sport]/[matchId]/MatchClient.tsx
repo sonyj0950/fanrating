@@ -248,7 +248,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {pog && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
-          🏆 <b>MOM</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
+          🏆 <b>{match.sport === "kbo" ? "MVP" : "MOM"}</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
         </div>
       )}
 
@@ -673,7 +673,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
         <div className="flex items-center justify-center gap-2 bg-gray-900 text-white text-[12px] font-semibold py-2.5">
           {mode === "low"
             ? (ratedSorted[0] && <span>⚠️ WORST {ratedSorted[0].name} {ratedSorted[0].avg}</span>)
-            : (pog && <span>🏆 MOM {pog.name} {pog.avg}</span>)}
+            : (pog && <span>🏆 {sport === "kbo" ? "MVP" : "MOM"} {pog.name} {pog.avg}</span>)}
           <span className="text-gray-500">·</span>
           <span>fanarena<span className="text-gray-400">.kr</span></span>
         </div>
