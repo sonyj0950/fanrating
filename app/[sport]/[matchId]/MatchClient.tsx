@@ -62,6 +62,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const [manageOpen, setManageOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
   const [editPos, setEditPos] = useState(false);
+  const [kboTeam, setKboTeam] = useState<"home" | "away">("home"); // ⚾ 야구: 수비 보여줄 팀
   const isAdmin = (session?.user as any)?.role === "admin";
 
   // 관리자: 선수 위치 드래그 저장
@@ -177,6 +178,13 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       if (s.inPlayerId && m[s.inPlayerId] === undefined) m[s.inPlayerId] = { dir: "in", min: s.minute };
       if (s.outPlayerId && m[s.outPlayerId] === undefined) m[s.outPlayerId] = { dir: "out", min: s.minute };
     }
+    return m;
+  }, [subs]);
+
+  // ⚾ 야구 교체 종류: 들어온 선수 playerId → kind(투수교체/대타/대주자/수비교체)
+  const subKind = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const s of subs) if (s.inPlayerId && s.kind) m[s.inPlayerId] = s.kind;
     return m;
   }, [subs]);
 
@@ -336,15 +344,26 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       <div className="mb-6">
         {match.sport === "kbo" && (
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-semibold mb-2">🏠 {match.homeTeam}</h3>
-              <BaseballField players={home} onPick={setOpen}/>
+          <div>
+            {/* 수비 볼 팀 전환 (야구는 한 번에 한 팀만 수비) */}
+            <div className="flex gap-2 mb-3 justify-center">
+              {(["home", "away"] as const).map(t => (
+                <button key={t} onClick={() => setKboTeam(t)}
+                  className={`text-sm px-4 py-1.5 rounded-full border transition
+                    ${kboTeam === t
+                      ? (t === "home" ? "bg-blue-600 text-white border-blue-600" : "bg-red-500 text-white border-red-500")
+                      : "bg-white text-gray-600 hover:bg-gray-50"}`}>
+                  {t === "home" ? `🏠 ${match.homeTeam}` : `✈️ ${match.awayTeam}`}
+                </button>
+              ))}
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">✈️ {match.awayTeam}</h3>
-              <BaseballField players={away} onPick={setOpen}/>
-            </div>
+            <BaseballField
+              players={kboTeam === "home" ? home : away}
+              isHome={kboTeam === "home"}
+              teamLabel={kboTeam === "home" ? match.homeTeam : match.awayTeam}
+              subInfo={subInfo} subKind={subKind}
+              highlightId={pog && pog.team === (kboTeam === "home" ? match.homeTeam : match.awayTeam) ? pog.playerId : null}
+              onPick={setOpen}/>
           </div>
         )}
         {(match.sport === "kleague" || match.sport === "epl") && (
