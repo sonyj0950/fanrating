@@ -6,6 +6,7 @@ import { KBO_TEAM_LABELS } from "@/lib/kboTeams";
 import AdminForm from "./AdminForm";
 import RosterPanel from "./RosterPanel";
 import TeamColorPanel from "./TeamColorPanel";
+import StandingsPanel from "./StandingsPanel";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -24,6 +25,7 @@ export default async function AdminPage() {
     <div>
       <h1 className="text-xl font-bold mb-4">⚙️ 경기 등록</h1>
       <RosterPanel />
+      <StandingsPanel />
       <TeamColorPanel />
 
       <div className="bg-white rounded p-4 shadow mb-6">

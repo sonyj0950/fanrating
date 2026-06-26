@@ -193,3 +193,20 @@ model TeamColor {
   team  String @id // Player.team / Match.homeTeam 과 같은 표준 팀 문자열
   color String     // hex (#RRGGBB)
 }
+
+// 리그 순위표 (EPL=자동/API, KBO·LCK=관리자 수동). 갱신 시 해당 league 행 전체 교체.
+model Standing {
+  id     String   @id @default(cuid())
+  league String // epl | kbo | lck | kleague
+  rank   Int
+  team   String
+  played Int?
+  win    Int?
+  draw   Int?
+  loss   Int?
+  points Int? // EPL 승점 (KBO/LCK는 null)
+  note   String? // 득실차(EPL)·게임차(KBO)·세트(LCK) 등 표시 보조
+  asOf   DateTime @default(now())
+
+  @@index([league])
+}

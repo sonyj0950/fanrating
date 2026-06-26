@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { importFixture, recentFinishedFixtures, isMatchRegistered } from "@/lib/eplImport";
+import { syncEplStandings } from "@/lib/standings";
 
 // EPL 자동 동기화 + 진단
 // ?dry=1  : 시즌 목록만 받고 등록은 안 함 (시즌 호출 속도 측정용)
@@ -72,8 +73,19 @@ export async function GET(req: Request) {
       }
     }
 
+    // 순위표 동기화 (실패해도 경기 등록 결과는 반환)
+    let standings = 0;
+    try {
+      const tStd = Date.now();
+      standings = await syncEplStandings(season);
+      timing.standingsMs = Date.now() - tStd;
+      log.push(`순위 ${standings}팀 갱신 (${timing.standingsMs}ms)`);
+    } catch (e: any) {
+      log.push(`순위 갱신 실패: ${e.message}`);
+    }
+
     timing.totalMs = Date.now() - t0;
-    return NextResponse.json({ ok: true, season, checked: fixtures.length, imported, skipped, failed, timing, log });
+    return NextResponse.json({ ok: true, season, checked: fixtures.length, imported, skipped, failed, standings, timing, log });
   } catch (e: any) {
     timing.totalMs = Date.now() - t0;
     return NextResponse.json({ ok: false, error: e.message, timing, log }, { status: 500 });
