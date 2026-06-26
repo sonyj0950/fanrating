@@ -223,6 +223,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
+      {isAdmin && <DateEditor matchId={match.id} date={match.date} onChanged={() => router.refresh()} />}
+
       {isAdmin && match.sport !== "lck" && (
         <ScoreEditor matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
           homeScore={match.homeScore} awayScore={match.awayScore} onChanged={() => router.refresh()} />
@@ -833,6 +835,40 @@ function ScoreEditor({ matchId, homeTeam, awayTeam, homeScore, awayScore, onChan
         className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
       <span className="font-medium">{awayTeam}</span>
       <button onClick={save} disabled={busy || !changed}
+        className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
+        {busy ? "저장중" : "저장"}
+      </button>
+    </div>
+  );
+}
+
+// 관리자: 경기 시간 수정 (datetime-local 입력을 KST로 저장)
+function DateEditor({ matchId, date, onChanged }:
+  { matchId: string; date: string | Date; onChanged: () => void }) {
+  // 저장된 시각(UTC)을 KST 벽시계로 변환해 datetime-local 기본값으로 사용
+  const toKstLocal = (d: string | Date) =>
+    new Date(new Date(d).getTime() + 9 * 3600 * 1000).toISOString().slice(0, 16);
+  const initial = toKstLocal(date);
+  const [v, setV] = useState<string>(initial);
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    const res = await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date: v }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert("저장 실패"); return; }
+    onChanged();
+  }
+
+  return (
+    <div className="flex items-center gap-2 mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
+      <span className="text-gray-500 text-xs">경기 시간</span>
+      <input type="datetime-local" value={v} onChange={e => setV(e.target.value)}
+        className="border rounded px-2 py-0.5" />
+      <button onClick={save} disabled={busy || v === initial || !v}
         className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>

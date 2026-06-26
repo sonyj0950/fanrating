@@ -50,6 +50,12 @@ export async function PATCH(req: Request, { params }: any) {
   if (typeof b.record === "string") data.record = b.record.trim() || null;
   if (typeof b.status === "string" && ["scheduled", "live", "finished"].includes(b.status))
     data.status = b.status;
+  // 경기 시간 수정 (datetime-local "YYYY-MM-DDTHH:mm"을 한국 시간(KST)으로 해석)
+  if (typeof b.date === "string" && b.date.trim()) {
+    const s = b.date.trim();
+    const d = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? new Date(s + ":00+09:00") : new Date(s);
+    if (!isNaN(d.getTime())) data.date = d;
+  }
   // 스코어 수정 (숫자면 저장, null이면 미정으로)
   if ("homeScore" in b) data.homeScore = b.homeScore === null ? null : Math.max(0, Math.min(99, Number(b.homeScore) || 0));
   if ("awayScore" in b) data.awayScore = b.awayScore === null ? null : Math.max(0, Math.min(99, Number(b.awayScore) || 0));
