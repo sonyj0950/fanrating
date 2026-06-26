@@ -136,6 +136,10 @@ export async function importFixture(fixtureId: number | string): Promise<ImportR
     }
     if (subData.length) await prisma.substitution.createMany({ data: subData });
     subCount = subData.length;
+
+    // 골 기록 자동 생성 (득점 시간·득점자·도움) → record 필드에 줄 단위 저장
+    const record = goalsRecordFromEvents(evData.response || []);
+    if (record) await prisma.match.update({ where: { id: match.id }, data: { record } });
   }
 
   return {
@@ -169,6 +173,57 @@ export async function isMatchRegistered(s: FixtureSummary): Promise<boolean> {
     select: { id: true },
   });
   return !!existing;
+}
+
+// /fixtures/events 응답에서 골 이벤트만 골라 "골·어시스트 기록" 텍스트로 변환
+export function goalsRecordFromEvents(events: any[]): string | null {
+  const goals: { sort: number; text: string }[] = [];
+  for (const ev of events) {
+    if (ev.type !== "Goal") continue;
+    const detail = ev.detail || "";
+    if (detail === "Missed Penalty") continue; // 실축 PK는 제외
+    const scorer = playerKo(ev.player?.name);
+    if (!scorer) continue;
+    const elapsed = ev.time?.elapsed ?? 0;
+    const extra = ev.time?.extra ?? 0;
+    const minuteLabel = extra ? `${elapsed}+${extra}'` : `${elapsed}'`;
+    const teamKoName = teamKo(ev.team?.name);
+    let suffix = "";
+    if (detail === "Penalty") suffix = " (PK)";
+    else if (detail === "Own Goal") suffix = " (자책골)";
+    else if (ev.assist?.name) suffix = ` (도움: ${playerKo(ev.assist.name)})`;
+    goals.push({ sort: elapsed + extra, text: `${minuteLabel} ${teamKoName} ${scorer}${suffix}` });
+  }
+  goals.sort((a, b) => a.sort - b.sort);
+  return goals.length ? goals.map(g => g.text).join("\n") : null;
+}
+
+// fixtureId로 골 기록 텍스트를 만들어 반환 (events API 1회 호출)
+export async function buildGoalsRecord(fixtureId: number | string): Promise<string | null> {
+  const evData = await af(`/fixtures/events?fixture=${fixtureId}`);
+  return goalsRecordFromEvents(evData.response || []);
+}
+
+// EPL 시즌 계산 (8월~다음해 5월 → 시작 연도). 한국시간 기준 월로 판단.
+export function seasonForDate(date: Date): number {
+  const y = date.getUTCFullYear();
+  const mon = date.getUTCMonth() + 1; // 1~12
+  return mon >= 7 ? y : y - 1;
+}
+
+// 저장된 경기(한글 팀명·날짜)에 해당하는 fixtureId를 API에서 찾기
+export async function findFixtureId(homeKo: string, awayKo: string, date: Date): Promise<number | null> {
+  const season = seasonForDate(date);
+  const data = await af(`/fixtures?league=${EPL_LEAGUE}&season=${season}`);
+  const target = date.getTime();
+  for (const f of (data.response || [])) {
+    if (teamKo(f.teams?.home?.name) === homeKo &&
+        teamKo(f.teams?.away?.name) === awayKo &&
+        new Date(f.fixture?.date).getTime() === target) {
+      return f.fixture?.id ?? null;
+    }
+  }
+  return null;
 }
 
 // 최근 끝난 EPL 경기들의 fixtureId 목록 (시즌 전체에서 서버 슬라이스)

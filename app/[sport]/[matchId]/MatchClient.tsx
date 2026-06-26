@@ -1351,6 +1351,7 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(record || "");
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const meta = RECORD_META[sport || ""] ?? RECORD_META.default;
 
   // 기록도 없고 관리자도 아니면 표시하지 않음
@@ -1368,14 +1369,34 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
     router.refresh();
   }
 
+  // EPL 자동 경기: 골 기록(득점 시간·득점자·도움)을 API에서 자동으로 불러오기
+  async function syncGoals() {
+    setSyncing(true);
+    const res = await fetch(`/api/admin/epl/sync-goals`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ matchId }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setSyncing(false);
+    if (!res.ok || j.ok === false) { alert(j.message || j.error || "불러오기 실패"); return; }
+    router.refresh();
+  }
+
   return (
     <div className="bg-white border rounded p-3 mb-4 text-sm max-w-md">
       <div className="flex justify-between items-center mb-1">
         <span className="font-semibold">{meta.title}</span>
-        {isAdmin && !editing && (
-          <button onClick={() => { setText(record || ""); setEditing(true); }}
-            className="text-xs text-gray-900 hover:underline">{record ? "수정" : "+ 입력"}</button>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && sport === "epl" && !editing && (
+            <button onClick={syncGoals} disabled={syncing}
+              className="text-xs text-blue-600 hover:underline disabled:opacity-40">
+              {syncing ? "불러오는 중…" : "⚽ 골 자동 불러오기"}</button>
+          )}
+          {isAdmin && !editing && (
+            <button onClick={() => { setText(record || ""); setEditing(true); }}
+              className="text-xs text-gray-900 hover:underline">{record ? "수정" : "+ 입력"}</button>
+          )}
+        </div>
       </div>
       {editing ? (
         <div>
