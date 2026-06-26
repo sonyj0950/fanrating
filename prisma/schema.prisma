@@ -187,3 +187,9 @@ model Report {
 
   @@unique([ratingId, userId])
 }
+
+// 구단 색상 오버라이드 (관리자가 공식색을 바꿨을 때만 행 존재. 없으면 공식색/폴백)
+model TeamColor {
+  team  String @id // Player.team / Match.homeTeam 과 같은 표준 팀 문자열
+  color String     // hex (#RRGGBB)
+}

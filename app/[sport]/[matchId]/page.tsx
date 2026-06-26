@@ -58,8 +58,14 @@ export default async function MatchPage({ params }: any) {
     }
   }
 
+  // 구단 색상 오버라이드 (해당 두 팀만)
+  const colorRows = await prisma.teamColor.findMany({ where: { team: { in: [m.homeTeam, m.awayTeam] } } });
+  const teamColors: Record<string, string> = {};
+  for (const c of colorRows) teamColors[c.team] = c.color;
+
   return (
     <MatchClient
+      teamColors={teamColors}
       match={{ id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
         homeScore: m.homeScore, awayScore: m.awayScore, date: m.date.toISOString(),
         record: m.record ?? null, status: m.status, seed: m.seed ?? null,

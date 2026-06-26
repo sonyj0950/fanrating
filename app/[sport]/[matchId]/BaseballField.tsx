@@ -1,5 +1,6 @@
 "use client";
 import type { Player } from "./types";
+import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 
 type SubInfo = Record<string, { dir: "in" | "out"; min: number }>;
 type SubKind = Record<string, string>; // playerId → 교체 종류(투수교체/대타/대주자/수비교체)
@@ -35,8 +36,8 @@ function SubBadge({ s }: { s?: { dir: "in" | "out"; min: number } }) {
 }
 
 // 필드 위 선수 마커 (평점 원 + 이름)
-function FieldMarker({ p, left, top, ring, highlight, onPick, sub }:
-  { p: Player; left: number; top: number; ring: string; highlight?: boolean;
+function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
+  { p: Player; left: number; top: number; color: string; highlight?: boolean;
     onPick: (p: Player) => void; sub?: { dir: "in" | "out"; min: number } }) {
   const rated = p.avg !== null;
   const posShort = POS_SHORT[p.role] ?? "";
@@ -45,7 +46,8 @@ function FieldMarker({ p, left, top, ring, highlight, onPick, sub }:
       style={{ left: `${left}%`, top: `${top}%` }}
       className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20">
       <span className="relative">
-        <span className={`min-w-[34px] h-[34px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white shadow-md ring-2 ${ring}
+        <span style={{ boxShadow: ringShadow(color) }}
+          className={`min-w-[34px] h-[34px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white
           ${highlight ? "outline outline-2 outline-yellow-400 outline-offset-1" : ""}
           flex items-center justify-center text-[13px] sm:text-[14px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} group-hover:scale-110 transition`}>
@@ -62,16 +64,16 @@ function FieldMarker({ p, left, top, ring, highlight, onPick, sub }:
 }
 
 // 옆/아래 칩(교체투수·후보)
-function Chip({ p, ring, sub, kind, onPick }:
-  { p: Player; ring: string; sub?: { dir: "in" | "out"; min: number }; kind?: string; onPick: (p: Player) => void }) {
+function Chip({ p, color, sub, kind, onPick }:
+  { p: Player; color: string; sub?: { dir: "in" | "out"; min: number }; kind?: string; onPick: (p: Player) => void }) {
   const rated = p.avg !== null;
   return (
     <button onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
       className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border bg-white
         hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition group">
       <SubBadge s={sub} />
-      <span className={`w-7 h-7 rounded-full bg-white shadow-sm ring-2 ${ring}
-        flex items-center justify-center text-[12px] font-extrabold
+      <span style={{ boxShadow: ringShadow(color) }}
+        className={`w-7 h-7 rounded-full bg-white flex items-center justify-center text-[12px] font-extrabold
         ${rated ? "text-gray-900" : "text-gray-300"} group-hover:scale-105 transition`}>
         {rated ? p.avg : "–"}
       </span>
@@ -85,13 +87,14 @@ function Chip({ p, ring, sub, kind, onPick }:
 // 야구 수비 필드 뷰: 선발투수+8명 수비를 다이아몬드에 배치,
 // 교체투수(불펜)는 옆, 후보(대타·대주자·수비교체)는 아래, 지명타자는 타석 옆 칩.
 export default function BaseballField({ players, onPick, isHome = true, teamLabel,
-  subInfo = {}, subKind = {}, highlightId }:
+  subInfo = {}, subKind = {}, highlightId, teamColors = {} }:
   { players: Player[]; onPick: (p: Player) => void; isHome?: boolean; teamLabel?: string;
-    subInfo?: SubInfo; subKind?: SubKind; highlightId?: string | null }) {
+    subInfo?: SubInfo; subKind?: SubKind; highlightId?: string | null; teamColors?: Record<string, string> }) {
   if (players.length === 0)
     return <p className="text-sm text-gray-400 bg-white border rounded p-4">등록된 선수가 없습니다.</p>;
 
-  const ring = isHome ? "ring-blue-500" : "ring-red-500";
+  // 구단색 (오버라이드 > 공식색 > 홈/원정 기본)
+  const color = teamColor(teamLabel, teamColors, isHome ? DEFAULT_HOME : DEFAULT_AWAY);
 
   // 타순 정보가 전혀 없으면(옛 방식 등록) 기존 2열 그리드로 표시
   const hasOrder = players.some(p => p.battingOrder != null);
@@ -185,7 +188,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
 
           {/* 수비수 마커 */}
           {placed.map(({ p, left, top }) => (
-            <FieldMarker key={p.mpId} p={p} left={left} top={top} ring={ring}
+            <FieldMarker key={p.mpId} p={p} left={left} top={top} color={color}
               highlight={p.playerId === highlightId} onPick={onPick} sub={subInfo[p.playerId]} />
           ))}
 
@@ -194,7 +197,8 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
               className="absolute left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10
                 flex items-center gap-1 bg-white/95 rounded-full pl-0.5 pr-1.5 py-0.5 shadow-md">
-              <span className={`w-7 h-7 rounded-full bg-white ring-2 ${ring} flex items-center justify-center
+              <span style={{ boxShadow: ringShadow(color) }}
+                className={`w-7 h-7 rounded-full bg-white flex items-center justify-center
                 text-[12px] font-extrabold ${dh.avg !== null ? "text-gray-900" : "text-gray-300"}`}>
                 {dh.avg !== null ? dh.avg : "–"}
               </span>
@@ -214,7 +218,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
               </p>
               <div className="flex flex-wrap gap-2">
                 {bench.map(p => (
-                  <Chip key={p.mpId} p={p} ring={ring} sub={subInfo[p.playerId]}
+                  <Chip key={p.mpId} p={p} color={color} sub={subInfo[p.playerId]}
                     kind={subKind[p.playerId]} onPick={onPick} />
                 ))}
               </div>

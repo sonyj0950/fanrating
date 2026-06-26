@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
+import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 
 type Side = "home" | "away";
 
@@ -132,13 +133,14 @@ function buildStacks(placed: Placed[], seg?: string,
   return stacks;
 }
 
-function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick, sub }:
+function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick, sub, teamColors = {} }:
   { p: Placed; homeTeam?: string; onPick: (pl: Player) => void;
     editMode?: boolean; onDragEnd?: (mpId: string, clientX: number, clientY: number) => void;
-    stackCount?: number; onStackClick?: () => void; sub?: { dir: "in" | "out"; min: number } }) {
+    stackCount?: number; onStackClick?: () => void; sub?: { dir: "in" | "out"; min: number };
+    teamColors?: Record<string, string> }) {
   const { player } = p;
-  // 팀별 테두리 색 통일 (홈=파랑, 원정=빨강)
-  const ring = player.team === homeTeam ? "ring-blue-500" : "ring-red-500";
+  // 팀별 테두리 색 (구단색 > 공식색 > 홈=파랑/원정=빨강)
+  const color = teamColor(player.team, teamColors, player.team === homeTeam ? DEFAULT_HOME : DEFAULT_AWAY);
   const rated = player.avg !== null;
   const short = displayName(player.name);
   const isShortened = short !== player.name;
@@ -187,7 +189,8 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
     >
       <span className="relative">
       <span
-        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white shadow-md ring-2 ${ring}
+        style={{ boxShadow: ringShadow(color) }}
+        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white
           flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold
           ${rated ? "text-gray-900" : "text-gray-400"} ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
@@ -243,7 +246,7 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
 export default function SoccerField({
   home, away, homeStaff = [], awayStaff = [], officials = [],
   homeTeam, awayTeam, flip = false, onPick, editMode = false, onMove,
-  subs = [], subInfo = {}, seg,
+  subs = [], subInfo = {}, seg, teamColors = {},
 }: {
   home: Player[]; away: Player[];
   homeStaff?: Player[]; awayStaff?: Player[]; officials?: Player[];
@@ -255,6 +258,7 @@ export default function SoccerField({
   subs?: { minute: number; outPlayerId: string; inPlayerId: string }[];
   subInfo?: Record<string, { dir: "in" | "out"; min: number }>;
   seg?: string; // 현재 탭 (full/first/second/mine) — 구간별 대표 선정용
+  teamColors?: Record<string, string>;         // 구단색 오버라이드
 }) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null); // 펼쳐진 스택 id (한 번에 하나)
@@ -305,12 +309,12 @@ export default function SoccerField({
     return stacks.map(s => {
       const isOpen = expanded === s.id;
       if (s.members.length === 1) {
-        return <Marker key={s.id} p={s.members[0]} homeTeam={homeTeam} onPick={onPick}
+        return <Marker key={s.id} p={s.members[0]} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick}
           editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[s.members[0].player.playerId]} />;
       }
       if (!isOpen) {
         const rep = s.members[0];
-        return <Marker key={s.id} p={rep} homeTeam={homeTeam} onPick={onPick}
+        return <Marker key={s.id} p={rep} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick}
           editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[rep.player.playerId]}
           stackCount={s.members.length - 1} onStackClick={() => setExpanded(s.id)} />;
       }
@@ -318,7 +322,7 @@ export default function SoccerField({
       return s.members.map((m, i) => {
         const off = (i - (k - 1) / 2) * 15;
         const left = Math.max(7, Math.min(93, s.left + off));
-        return <Marker key={m.player.mpId} p={{ ...m, left }} homeTeam={homeTeam}
+        return <Marker key={m.player.mpId} p={{ ...m, left }} homeTeam={homeTeam} teamColors={teamColors}
           onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[m.player.playerId]} />;
       });
     });
@@ -388,8 +392,8 @@ export default function SoccerField({
           {/* 선수 마커 (편집 모드는 개별 렌더로 드래그 유지) */}
           {editMode ? (
             <>
-              {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
-              {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
+              {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
+              {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
             </>
           ) : (
             <>
@@ -436,8 +440,8 @@ export default function SoccerField({
 
       {/* 팀 색 범례 */}
       <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-blue-500 inline-block" /> {homeTeam ?? "홈"}</span>
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white ring-2 ring-red-500 inline-block" /> {awayTeam ?? "원정"}</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(homeTeam, teamColors, DEFAULT_HOME)) }} /> {homeTeam ?? "홈"}</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(awayTeam, teamColors, DEFAULT_AWAY)) }} /> {awayTeam ?? "원정"}</span>
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
@@ -447,8 +451,10 @@ export default function SoccerField({
             🔁 후보/교체 <span className="font-normal text-gray-400">— 탭하면 평점 매기기</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <BenchColumn team={homeTeam ?? "홈"} list={homeR.bench} dot="bg-blue-500" onPick={onPick} subInfo={subInfo} />
-            <BenchColumn team={awayTeam ?? "원정"} list={awayR.bench} dot="bg-red-500" onPick={onPick} subInfo={subInfo} />
+            <BenchColumn team={homeTeam ?? "홈"} list={homeR.bench} onPick={onPick} subInfo={subInfo}
+              color={teamColor(homeTeam, teamColors, DEFAULT_HOME)} />
+            <BenchColumn team={awayTeam ?? "원정"} list={awayR.bench} onPick={onPick} subInfo={subInfo}
+              color={teamColor(awayTeam, teamColors, DEFAULT_AWAY)} />
           </div>
         </div>
       )}
@@ -456,14 +462,13 @@ export default function SoccerField({
   );
 }
 
-function BenchColumn({ team, list, dot, onPick, subInfo = {} }:
-  { team: string; list: Player[]; dot: string; onPick: (p: Player) => void;
+function BenchColumn({ team, list, color, onPick, subInfo = {} }:
+  { team: string; list: Player[]; color: string; onPick: (p: Player) => void;
     subInfo?: Record<string, { dir: "in" | "out"; min: number }> }) {
-  const ring = dot.includes("blue") ? "ring-blue-500" : "ring-red-500";
   return (
     <div>
       <p className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
-        <span className={`w-2 h-2 rounded-full ${dot} inline-block`} />{team}
+        <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />{team}
       </p>
       {list.length === 0 ? (
         <p className="text-[11px] text-gray-300">없음</p>
@@ -483,8 +488,8 @@ function BenchColumn({ team, list, dot, onPick, subInfo = {} }:
                     {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
                   </span>
                 )}
-                <span className={`w-7 h-7 rounded-full bg-white shadow-sm ring-2 ${ring}
-                  flex items-center justify-center text-[12px] font-extrabold
+                <span style={{ boxShadow: ringShadow(color) }}
+                  className={`w-7 h-7 rounded-full bg-white flex items-center justify-center text-[12px] font-extrabold
                   ${rated ? "text-gray-900" : "text-gray-300"} group-hover:scale-105 transition`}>
                   {rated ? p.avg : "–"}
                 </span>

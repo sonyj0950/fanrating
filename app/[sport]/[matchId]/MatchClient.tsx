@@ -51,8 +51,8 @@ function applyAgg(players: Player[], agg: Agg, seg: string): Player[] {
 
 type Sub = { minute: number; outPlayerId: string; inPlayerId: string; kind?: string | null };
 
-export default function MatchClient({ match, players: rawPlayers, agg, subs = [] }:
-  { match: any; players: Player[]; agg: Agg; subs?: Sub[] }) {
+export default function MatchClient({ match, players: rawPlayers, agg, subs = [], teamColors = {} }:
+  { match: any; players: Player[]; agg: Agg; subs?: Sub[]; teamColors?: Record<string, string> }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [seg, setSeg] = useState("full");
@@ -361,6 +361,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
               players={kboTeam === "home" ? home : away}
               isHome={kboTeam === "home"}
               teamLabel={kboTeam === "home" ? match.homeTeam : match.awayTeam}
+              teamColors={teamColors}
               subInfo={subInfo} subKind={subKind}
               highlightId={pog && pog.team === (kboTeam === "home" ? match.homeTeam : match.awayTeam) ? pog.playerId : null}
               onPick={setOpen}/>
@@ -369,7 +370,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         {(match.sport === "kleague" || match.sport === "epl") && (
           <SoccerField key={seg} home={home} away={away}
             homeStaff={homeStaff} awayStaff={awayStaff} officials={officials}
-            homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+            homeTeam={match.homeTeam} awayTeam={match.awayTeam} teamColors={teamColors}
             flip={seg === "second"} /* 후반: 진영 반대 (총평은 전반 기준 유지) */
             onPick={setOpen}
             subs={subs} subInfo={subInfo} seg={seg}
