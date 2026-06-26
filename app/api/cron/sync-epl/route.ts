@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { importFixture, recentFinishedFixtures, isMatchRegistered } from "@/lib/eplImport";
-import { syncEplStandings } from "@/lib/standings";
+import { importFixture, recentFinishedFixtures, isMatchRegistered, currentEplSeason } from "@/lib/eplImport";
+import { syncEplStandings, soccerInSeason } from "@/lib/standings";
 
 // EPL 자동 동기화 + 진단
 // ?dry=1  : 시즌 목록만 받고 등록은 안 함 (시즌 호출 속도 측정용)
@@ -28,7 +28,19 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const dry = url.searchParams.get("dry") === "1";
   const maxPerRun = Number(url.searchParams.get("max") || "3");
-  const season = Number(process.env.EPL_SEASON || "2024");
+  const force = url.searchParams.get("force") === "1";
+  const seasonParam = url.searchParams.get("season");
+
+  // 비시즌(6·7월)에는 자동 동기화를 멈춘다. 시즌(8월~익년 5월)이 시작되면 자동 재개.
+  // ?force=1 또는 ?season=YYYY 로 수동 강제 가능.
+  const kstMonth = new Date(Date.now() + 9 * 3600 * 1000).getUTCMonth() + 1;
+  if (!force && !seasonParam && !soccerInSeason(kstMonth)) {
+    return NextResponse.json({ ok: true, skipped: "off-season", kstMonth,
+      message: "EPL 비시즌 — 동기화 건너뜀 (시즌 시작 시 자동 재개)" });
+  }
+
+  // 시즌은 날짜에서 자동 산출(8월 개막 기준). ?season= 로 덮어쓰기 가능.
+  const season = seasonParam ? Number(seasonParam) : currentEplSeason();
 
   const t0 = Date.now();
   const timing: Record<string, number> = {};

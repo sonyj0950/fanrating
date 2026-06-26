@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseStandings, replaceStandings, syncEplStandings } from "@/lib/standings";
+import { currentEplSeason } from "@/lib/eplImport";
 
 // 순위 관리 (관리자 전용)
 // GET    ?league=kbo      : 해당 리그 순위 행
@@ -29,9 +30,9 @@ export async function POST(req: Request) {
   // EPL은 API 자동 — 수동 저장 대신 즉시 동기화
   if (league === "epl" || league === "kleague") {
     if (league === "epl") {
-      const season = Number(process.env.EPL_SEASON || "2024");
+      const season = currentEplSeason();
       const n = await syncEplStandings(season);
-      return NextResponse.json({ ok: true, auto: true, count: n });
+      return NextResponse.json({ ok: true, auto: true, season, count: n });
     }
   }
 

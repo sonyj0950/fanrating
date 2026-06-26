@@ -4,6 +4,13 @@ import { teamKo, playerKo, posKo, parseGrid, gridsToPositions } from "@/lib/eplM
 export const API_BASE = "https://v3.football.api-sports.io";
 export const EPL_LEAGUE = 39; // 프리미어리그
 
+// 현재 EPL 시즌(8월 개막 기준, KST). 예: 2025-08~2026-05 → 2025. 비시즌(6·7월)은 직전 시즌.
+export function currentEplSeason(now: Date = new Date()): number {
+  const kst = new Date(now.getTime() + 9 * 3600 * 1000);
+  const y = kst.getUTCFullYear(), m = kst.getUTCMonth() + 1;
+  return m >= 8 ? y : y - 1;
+}
+
 export async function af(path: string) {
   const key = process.env.API_FOOTBALL_KEY;
   if (!key) throw new Error("API_FOOTBALL_KEY 환경변수가 없습니다.");
