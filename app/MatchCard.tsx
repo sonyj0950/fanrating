@@ -1,9 +1,15 @@
 import Link from "next/link";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
+import { KBO_TEAM_LABELS } from "@/lib/kboTeams";
 
 export const SPORT_LABEL: Record<string, string> = {
   kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LCK", epl: "⚽ EPL",
 };
+
+// 표시용 팀명: KBO는 약칭(저장값) → 풀네임. 그 외 종목은 저장값 그대로.
+export function teamLabel(sport: string, team: string) {
+  return sport === "kbo" ? (KBO_TEAM_LABELS[team] ?? team) : team;
+}
 
 export function StatusBadge({ status }: { status: string }) {
   if (status === "live")
@@ -30,13 +36,13 @@ export function MatchCard({ m }: { m: any }) {
         </div>
 
         <div className="flex items-center justify-center gap-4 my-1">
-          <div className="flex-1 text-right font-bold text-gray-900 text-[15px] truncate">{m.homeTeam}</div>
+          <div className="flex-1 text-right font-bold text-gray-900 text-[15px] truncate">{teamLabel(m.sport, m.homeTeam)}</div>
           <div className="flex items-center gap-2.5 font-black text-2xl tracking-wide shrink-0">
             <span className={homeWin ? "text-gray-900" : "text-gray-300"}>{m.homeScore ?? "-"}</span>
             <span className="text-gray-300 text-base">:</span>
             <span className={awayWin ? "text-gray-900" : "text-gray-300"}>{m.awayScore ?? "-"}</span>
           </div>
-          <div className="flex-1 text-left font-bold text-gray-900 text-[15px] truncate">{m.awayTeam}</div>
+          <div className="flex-1 text-left font-bold text-gray-900 text-[15px] truncate">{teamLabel(m.sport, m.awayTeam)}</div>
         </div>
 
         {m.pog && (

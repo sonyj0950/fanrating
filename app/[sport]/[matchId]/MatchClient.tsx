@@ -7,6 +7,7 @@ import SoccerField from "./SoccerField";
 import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
+import { teamLabel } from "@/app/MatchCard";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
@@ -215,7 +216,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 text-center min-w-0">
-            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{match.homeTeam}</div>
+            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{teamLabel(match.sport, match.homeTeam)}</div>
             <div className="text-[10px] text-gray-400 tracking-widest mt-1">HOME</div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 font-black text-3xl sm:text-4xl tracking-wide shrink-0">
@@ -224,7 +225,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             <span className={scoreWin(match.awayScore, match.homeScore)}>{match.awayScore ?? "-"}</span>
           </div>
           <div className="flex-1 text-center min-w-0">
-            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{match.awayTeam}</div>
+            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{teamLabel(match.sport, match.awayTeam)}</div>
             <div className="text-[10px] text-gray-400 tracking-widest mt-1">AWAY</div>
           </div>
         </div>

@@ -9,7 +9,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "권한없음" }, { status: 403 });
 
   const b = await req.json();
-  if (!b.homeTeam || !b.awayTeam) return NextResponse.json({ error: "팀명 필수" }, { status: 400 });
+  const homeTeam = (b.homeTeam || "").trim();
+  const awayTeam = (b.awayTeam || "").trim();
+  if (!homeTeam || !awayTeam) return NextResponse.json({ error: "팀명 필수" }, { status: 400 });
 
   // datetime-local 입력("YYYY-MM-DDTHH:mm")을 한국 시간(KST)으로 해석
   const parseKST = (s: string) =>
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
   const match = await prisma.match.create({
     data: {
       sport: b.sport, date: parseKST(b.date),
-      homeTeam: b.homeTeam, awayTeam: b.awayTeam,
+      homeTeam, awayTeam,
       homeScore: b.homeScore ? Number(b.homeScore) : null,
       awayScore: b.awayScore ? Number(b.awayScore) : null,
       status: b.status,

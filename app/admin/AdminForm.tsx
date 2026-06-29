@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { POSITIONS_BY_LINE } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
+import { KBO_TEAMS, KBO_TEAM_LABELS } from "@/lib/kboTeams";
 
 export default function AdminForm() {
   const r = useRouter();
@@ -50,8 +51,23 @@ export default function AdminForm() {
         <option value="lck">LCK</option>
       </select>
       <input className="border rounded p-2" type="datetime-local" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/>
-      <input className="border rounded p-2" placeholder="홈팀" value={f.homeTeam} onChange={e=>setF({...f,homeTeam:e.target.value})}/>
-      <input className="border rounded p-2" placeholder="원정팀" value={f.awayTeam} onChange={e=>setF({...f,awayTeam:e.target.value})}/>
+      {f.sport === "kbo" ? (
+        <>
+          <select className="border rounded p-2" value={f.homeTeam} onChange={e=>setF({...f,homeTeam:e.target.value})}>
+            <option value="">홈팀 선택</option>
+            {KBO_TEAMS.map(t => <option key={t} value={t}>{KBO_TEAM_LABELS[t]}</option>)}
+          </select>
+          <select className="border rounded p-2" value={f.awayTeam} onChange={e=>setF({...f,awayTeam:e.target.value})}>
+            <option value="">원정팀 선택</option>
+            {KBO_TEAMS.map(t => <option key={t} value={t}>{KBO_TEAM_LABELS[t]}</option>)}
+          </select>
+        </>
+      ) : (
+        <>
+          <input className="border rounded p-2" placeholder="홈팀" value={f.homeTeam} onChange={e=>setF({...f,homeTeam:e.target.value})}/>
+          <input className="border rounded p-2" placeholder="원정팀" value={f.awayTeam} onChange={e=>setF({...f,awayTeam:e.target.value})}/>
+        </>
+      )}
       <input className="border rounded p-2" placeholder="홈 점수" value={f.homeScore} onChange={e=>setF({...f,homeScore:e.target.value})}/>
       <input className="border rounded p-2" placeholder="원정 점수" value={f.awayScore} onChange={e=>setF({...f,awayScore:e.target.value})}/>
       <select className="border rounded p-2 col-span-2" value={f.status} onChange={e=>setF({...f,status:e.target.value})}>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
+import { teamLabel } from "@/app/MatchCard";
 
 const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK", epl: "EPL" };
 
@@ -8,9 +9,10 @@ export async function generateMetadata({ params }: any) {
   const m = await prisma.match.findUnique({ where: { id: params.matchId } });
   if (!m) return { title: "경기를 찾을 수 없습니다 · fanarena.kr" };
   const label = SPORT_LABEL[m.sport] ?? "";
-  const score = `${m.homeTeam} ${m.homeScore ?? "-"} : ${m.awayScore ?? "-"} ${m.awayTeam}`;
+  const home = teamLabel(m.sport, m.homeTeam), away = teamLabel(m.sport, m.awayTeam);
+  const score = `${home} ${m.homeScore ?? "-"} : ${m.awayScore ?? "-"} ${away}`;
   const title = `${score} 팬 평점 · fanarena.kr`;
-  const description = `${label} ${m.homeTeam} vs ${m.awayTeam} 경기의 선수 평점을 매기고 의견을 나눠보세요.`;
+  const description = `${label} ${home} vs ${away} 경기의 선수 평점을 매기고 의견을 나눠보세요.`;
   return {
     title,
     description,
