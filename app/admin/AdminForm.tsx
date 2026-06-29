@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { POSITIONS_BY_LINE } from "@/lib/soccerPositions";
+import { ROUND_PRESETS } from "@/lib/roundPresets";
 
 export default function AdminForm() {
   const r = useRouter();
   const [f, setF] = useState({
     sport:"kbo", date: new Date(Date.now() + 9*3600*1000).toISOString().slice(0,16),
     homeTeam:"", awayTeam:"", homeScore:"", awayScore:"", status:"finished",
-    players: ""
+    round:"", players: ""
   });
   const [msg, setMsg] = useState("");
 
@@ -58,6 +59,26 @@ export default function AdminForm() {
         <option value="live">진행중</option>
         <option value="finished">종료</option>
       </select>
+      <input className="border rounded p-2 col-span-2"
+        placeholder="라운드/단계 (예: 프리미어리그 7라운드 · LCK 4라운드 · KBO 플레이오프 2차전)"
+        value={f.round} onChange={e=>setF({...f,round:e.target.value})}/>
+      {(ROUND_PRESETS[f.sport] ?? []).length > 0 && (
+        <div className="col-span-2 -mt-1 flex flex-wrap gap-1.5">
+          {ROUND_PRESETS[f.sport].map(p => (
+            <button type="button" key={p} onClick={()=>setF({...f,round:p})}
+              className={`text-xs px-2 py-1 rounded-full border transition ${
+                f.round === p ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}>
+              {p}
+            </button>
+          ))}
+          {f.round && (
+            <button type="button" onClick={()=>setF({...f,round:""})}
+              className="text-xs px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:bg-gray-50">
+              지우기
+            </button>
+          )}
+        </div>
+      )}
       <textarea className="border rounded p-2 col-span-2 h-40" placeholder={placeholder} value={f.players} onChange={e=>setF({...f,players:e.target.value})}/>
       {f.sport === "kleague" && (
         <details className="col-span-2 text-xs text-gray-600 bg-gray-50 border rounded p-2">

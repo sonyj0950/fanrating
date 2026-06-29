@@ -39,7 +39,7 @@ export default async function Home() {
   const slim = (m: any) => ({
     id: m.id, sport: m.sport, date: m.date.toISOString(),
     homeTeam: m.homeTeam, awayTeam: m.awayTeam, homeScore: m.homeScore, awayScore: m.awayScore,
-    status: m.status, pog: m.pog, ratingCount: m.ratingCount,
+    status: m.status, round: m.round ?? null, pog: m.pog, ratingCount: m.ratingCount,
   });
 
   const today = matches.filter(m => m.date >= start && m.date <= end).map(slim);

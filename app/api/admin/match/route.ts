@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       homeScore: b.homeScore ? Number(b.homeScore) : null,
       awayScore: b.awayScore ? Number(b.awayScore) : null,
       status: b.status,
+      round: typeof b.round === "string" && b.round.trim() ? b.round.trim().slice(0, 100) : null,
     },
   });
 

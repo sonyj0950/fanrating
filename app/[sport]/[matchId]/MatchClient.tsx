@@ -9,6 +9,7 @@ import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
+import { ROUND_PRESETS } from "@/lib/roundPresets";
 
 function segmentsFor(sport: string) {
   if (sport === "kleague" || sport === "epl") return [
@@ -199,8 +200,11 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {/* 스코어보드 (라이트) */}
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4 sm:p-5 mb-4">
         <div className="flex items-center justify-between mb-4">
-          <StatusBadge status={match.status} />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusBadge status={match.status} />
+            {match.round && <span className="text-xs font-medium text-gray-500 truncate">{match.round}</span>}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <ShareButton
               title={`${match.homeTeam} ${match.homeScore ?? "-"} : ${match.awayScore ?? "-"} ${match.awayTeam} 팬 평점`}
               text="fanarena.kr에서 선수 평점을 매겨보세요!"
@@ -232,6 +236,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {isAdmin && <StatusSwitcher matchId={match.id} status={match.status} onChanged={() => router.refresh()} />}
 
       {isAdmin && <DateEditor matchId={match.id} date={match.date} onChanged={() => router.refresh()} />}
+
+      {isAdmin && <RoundEditor matchId={match.id} sport={match.sport} round={match.round} onChanged={() => router.refresh()} />}
 
       {isAdmin && match.sport !== "lck" && (
         <ScoreEditor matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
@@ -892,6 +898,58 @@ function DateEditor({ matchId, date, onChanged }:
         className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>
+    </div>
+  );
+}
+
+// 관리자: 라운드/단계 라벨 수정 (예: "프리미어리그 7라운드", "KBO 플레이오프 2차전")
+function RoundEditor({ matchId, sport, round, onChanged }:
+  { matchId: string; sport: string; round: string | null; onChanged: () => void }) {
+  const initial = round ?? "";
+  const [v, setV] = useState<string>(initial);
+  const [busy, setBusy] = useState(false);
+  const presets = ROUND_PRESETS[sport] ?? [];
+
+  async function save() {
+    setBusy(true);
+    const res = await fetch(`/api/admin/match/${matchId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ round: v }),
+    });
+    setBusy(false);
+    if (!res.ok) { alert("저장 실패"); return; }
+    onChanged();
+  }
+
+  return (
+    <div className="mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-gray-500 text-xs shrink-0">라운드/단계</span>
+        <input type="text" value={v} onChange={e => setV(e.target.value)}
+          placeholder="예: 프리미어리그 7라운드"
+          className="border rounded px-2 py-0.5 flex-1 min-w-0" />
+        <button onClick={save} disabled={busy || v === initial}
+          className="ml-auto shrink-0 text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
+          {busy ? "저장중" : "저장"}
+        </button>
+      </div>
+      {presets.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {presets.map(p => (
+            <button type="button" key={p} onClick={() => setV(p)}
+              className={`text-xs px-2 py-1 rounded-full border transition ${
+                v === p ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"}`}>
+              {p}
+            </button>
+          ))}
+          {v && (
+            <button type="button" onClick={() => setV("")}
+              className="text-xs px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:bg-gray-100">
+              지우기
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

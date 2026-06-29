@@ -68,6 +68,7 @@ export default async function MatchPage({ params }: any) {
       teamColors={teamColors}
       match={{ id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
         homeScore: m.homeScore, awayScore: m.awayScore, date: m.date.toISOString(),
+        round: m.round ?? null,
         record: m.record ?? null, status: m.status, seed: m.seed ?? null,
         setResults: (m.setResults as Record<string, string> | null) ?? null }}
       players={players}

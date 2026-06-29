@@ -61,6 +61,8 @@ export async function PATCH(req: Request, { params }: any) {
   if ("awayScore" in b) data.awayScore = b.awayScore === null ? null : Math.max(0, Math.min(99, Number(b.awayScore) || 0));
   // 관리자가 토론 주제(시드)를 직접 수정/삭제
   if (typeof b.seed === "string") data.seed = b.seed.trim().slice(0, 300) || null;
+  // 라운드/단계 라벨 수정/삭제
+  if (typeof b.round === "string") data.round = b.round.trim().slice(0, 100) || null;
 
   // 🎮 LCK 세트별 승팀 (관리자 입력) — { "set1": "home" | "away", ... }
   if ("setResults" in b) {

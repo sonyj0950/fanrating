@@ -23,7 +23,8 @@ export function MatchCard({ m }: { m: any }) {
         <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-3">
           <span className="text-gray-700 font-semibold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
           <StatusBadge status={m.status} />
-          <span className="ml-auto">
+          {m.round && <span className="text-gray-500 font-medium truncate">{m.round}</span>}
+          <span className="ml-auto shrink-0">
             {new Date(m.date).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
