@@ -1,0 +1,430 @@
+/**
+ * 공유 카드 PNG 레이아웃 (next/og · satori)
+ *
+ * satori는 컬러 이모지·아이콘 폰트를 렌더하지 못하므로 텍스트 + 색 블록으로만 구성한다.
+ * 모든 컨테이너는 명시적 display:flex (satori 요구사항).
+ */
+import { readFileSync } from "fs";
+import { join } from "path";
+import type { ReactNode } from "react";
+import type { ShareCardData } from "./shareCard";
+import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "./teamColors";
+
+export const CARD_BG = "#0e1320";
+const BOX_BG = "#161d30";
+const BOX_BORDER = "#2a3550";
+const GOLD = "#f2c14e";
+const GREEN = "#4ade80";
+const RED = "#f87171";
+const MUTED = "#8a92ad";
+const SUBTLE = "#9fb0c0";
+
+let fontCache: { name: string; data: Buffer; weight: 400 | 700; style: "normal" }[] | null = null;
+
+export function loadShareFonts() {
+  if (fontCache) return fontCache;
+  const dir = join(process.cwd(), "public", "fonts");
+  fontCache = [
+    { name: "Pretendard", data: readFileSync(join(dir, "Pretendard-Regular.woff")), weight: 400, style: "normal" },
+    { name: "Pretendard", data: readFileSync(join(dir, "Pretendard-Bold.woff")), weight: 700, style: "normal" },
+  ];
+  return fontCache;
+}
+
+const SPORT_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
+  kleague: { label: "축구", bg: "#1f7a4d", fg: "#eafff3" },
+  epl: { label: "EPL", bg: "#1f7a4d", fg: "#eafff3" },
+  kbo: { label: "야구", bg: "#1f7a4d", fg: "#eafff3" },
+  lck: { label: "LCK", bg: "#5b4bc4", fg: "#efeaff" },
+};
+
+function fmt(n: number, d = 1) {
+  return n.toFixed(d);
+}
+
+// ─────────────────────────── 가로형 (1200 × 630) MOM 카드 ───────────────────────────
+export function LandscapeCard({ data: d }: { data: ShareCardData }) {
+  const badge = SPORT_BADGE[d.sport] ?? SPORT_BADGE.kleague;
+  const homeColor = teamColor(d.homeTeam, undefined, DEFAULT_HOME);
+  const awayColor = teamColor(d.awayTeam, undefined, DEFAULT_AWAY);
+
+  const smallBox = (label: string, main: ReactNode, flex = 1) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex,
+        background: BOX_BG,
+        border: `1px solid ${BOX_BORDER}`,
+        borderRadius: 12,
+        padding: "12px 16px",
+        marginRight: 12,
+      }}
+    >
+      <div style={{ fontSize: 18, color: MUTED }}>{label}</div>
+      <div style={{ fontSize: 26, color: "#fff", fontWeight: 700, marginTop: 4 }}>{main}</div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: 1200,
+        height: 630,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        background: CARD_BG,
+        color: "#e9edf6",
+        fontFamily: "Pretendard",
+        padding: "46px 52px",
+      }}
+    >
+      {/* 상단 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              background: badge.bg,
+              color: badge.fg,
+              fontSize: 22,
+              fontWeight: 700,
+              padding: "6px 18px",
+              borderRadius: 999,
+              marginRight: 16,
+            }}
+          >
+            {badge.label}
+          </div>
+          <div style={{ display: "flex", fontSize: 26, color: "#aeb6cc" }}>경기 종료 팬 평점</div>
+        </div>
+        <div style={{ display: "flex", fontSize: 22, color: MUTED }}>{d.dateText}</div>
+      </div>
+
+      {/* 스코어 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flex: 1 }}>
+          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.homeLabel}</div>
+          <div style={{ display: "flex", width: 110, height: 7, background: homeColor, borderRadius: 4, marginTop: 10 }} />
+        </div>
+        <div style={{ display: "flex", fontSize: 76, fontWeight: 700, color: "#fff", padding: "0 40px" }}>
+          {d.scoreLabel}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
+          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.awayLabel}</div>
+          <div style={{ display: "flex", width: 110, height: 7, background: awayColor, borderRadius: 4, marginTop: 10 }} />
+        </div>
+      </div>
+
+      {/* MOM */}
+      {d.mom && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: BOX_BG,
+            border: `1px solid ${BOX_BORDER}`,
+            borderRadius: 14,
+            padding: "16px 22px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              background: GOLD,
+              color: "#3a2c00",
+              fontSize: 20,
+              fontWeight: 700,
+              padding: "6px 16px",
+              borderRadius: 999,
+              marginRight: 20,
+            }}
+          >
+            {d.momWord}
+          </div>
+          <div style={{ display: "flex", fontSize: 36, fontWeight: 700, color: "#fff" }}>{d.mom.name}</div>
+          <div style={{ display: "flex", fontSize: 22, color: SUBTLE, marginLeft: 14 }}>
+            {d.mom.teamLabel}
+            {d.mom.role ? ` · ${d.mom.role}` : ""}
+          </div>
+          <div style={{ display: "flex", marginLeft: "auto", fontSize: 50, fontWeight: 700, color: GOLD }}>
+            {fmt(d.mom.avg)}
+          </div>
+        </div>
+      )}
+
+      {/* 하단 3박스 */}
+      <div style={{ display: "flex" }}>
+        {smallBox(`${d.homeLabel} 최고`, d.homeBest ? `${d.homeBest.name} ${fmt(d.homeBest.avg)}` : "-")}
+        {smallBox(`${d.awayLabel} 최고`, d.awayBest ? `${d.awayBest.name} ${fmt(d.awayBest.avg)}` : "-")}
+        {smallBox(
+          "팀 평균",
+          d.homeAvg != null && d.awayAvg != null
+            ? `${d.homeLabel} ${fmt(d.homeAvg)} · ${d.awayLabel} ${fmt(d.awayAvg)}`
+            : "-",
+          1.4,
+        )}
+      </div>
+
+      {/* 푸터 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: `1px solid #222a40`,
+          paddingTop: 14,
+        }}
+      >
+        <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: "#cfd6e6" }}>fanarena.kr</div>
+        <div style={{ display: "flex", fontSize: 20, color: MUTED }}>지금 평점 진행 중 · 당신의 점수는?</div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────── 세로형 LCK (1080 × 1320) 라인별 1:1 맞대결 ───────────────────────
+export function PortraitLckCard({ data: d }: { data: ShareCardData }) {
+  const homeColor = teamColor(d.homeTeam, undefined, "#e2012d");
+  const awayColor = teamColor(d.awayTeam, undefined, "#2f6bd8");
+  const lanes = (d.lckLanes ?? []).filter((l) => l.home || l.away);
+
+  const scoreBox = (v: number | null, bg: string) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 130,
+        height: 84,
+        background: bg,
+        borderRadius: 12,
+        fontSize: 46,
+        fontWeight: 700,
+        color: "#fff",
+      }}
+    >
+      {v != null ? fmt(v) : "-"}
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: 1080,
+        height: 1320,
+        display: "flex",
+        flexDirection: "column",
+        background: "#0a0e18",
+        color: "#e9edf6",
+        fontFamily: "Pretendard",
+        padding: "52px 56px",
+      }}
+    >
+      {/* 상단 */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", fontSize: 38, fontWeight: 700, color: "#fff" }}>fanarena</div>
+          <div style={{ display: "flex", fontSize: 20, color: "#7a8299", marginTop: 4 }}>팬 평점</div>
+        </div>
+        <div style={{ display: "flex", fontSize: 22, color: "#6f7790" }}>{d.dateText}</div>
+      </div>
+
+      {/* 팀 + 스코어 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 30 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#fff", marginRight: 14 }}>{d.homeLabel}</div>
+          <div style={{ display: "flex", width: 44, height: 44, background: homeColor, borderRadius: 10 }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 240 }}>
+          <div style={{ display: "flex", fontSize: 24, color: "#9aa3ba" }}>{d.competition}</div>
+          <div style={{ display: "flex", fontSize: 52, fontWeight: 700, color: "#fff", marginTop: 4 }}>{d.scoreLabel}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", width: 44, height: 44, background: awayColor, borderRadius: 10 }} />
+          <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#fff", marginLeft: 14 }}>{d.awayLabel}</div>
+        </div>
+      </div>
+
+      {/* 라인별 행 */}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 44 }}>
+        {lanes.map((l) => (
+          <div key={l.code} style={{ display: "flex", alignItems: "center", marginBottom: 26 }}>
+            <div style={{ display: "flex", flex: 1, justifyContent: "flex-end", fontSize: 34, color: "#fff", paddingRight: 22 }}>
+              {l.home?.name ?? "-"}
+            </div>
+            {scoreBox(l.home?.avg ?? null, "#e23744")}
+            <div style={{ display: "flex", width: 96, justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#8a92ad" }}>
+              {l.short}
+            </div>
+            {scoreBox(l.away?.avg ?? null, "#2f6bd8")}
+            <div style={{ display: "flex", flex: 1, justifyContent: "flex-start", fontSize: 34, color: "#fff", paddingLeft: 22 }}>
+              {l.away?.name ?? "-"}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 푸터 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: `1px solid #1c2438`,
+          paddingTop: 20,
+          marginTop: "auto",
+        }}
+      >
+        <div style={{ display: "flex", fontSize: 28, fontWeight: 700, color: "#5b9bf0" }}>fanarena.kr</div>
+        <div style={{ display: "flex", fontSize: 22, color: "#6f7790" }}>팬이 직접 매긴 평점</div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── 세로형 (1080 × 1320) BEST vs WORST ───────────────────────────
+export function PortraitCard({ data: d }: { data: ShareCardData }) {
+  const focusColor = teamColor(d.focusTeam, undefined, DEFAULT_HOME);
+
+  const bigBox = (
+    kind: "best" | "worst",
+    badgeText: string,
+    pick: { name: string; role: string; avg: number } | null,
+  ) => {
+    const accent = kind === "best" ? "#35d07f" : "#ef5350";
+    const fill = kind === "best" ? "#102619" : "#260f10";
+    const badgeBg = kind === "best" ? "#2ea043" : "#d64545";
+    const badgeFg = kind === "best" ? "#06240f" : "#2a0708";
+    const numColor = kind === "best" ? GREEN : RED;
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          border: `3px solid ${accent}`,
+          background: fill,
+          borderRadius: 20,
+          padding: "26px 30px",
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              display: "flex",
+              background: badgeBg,
+              color: badgeFg,
+              fontSize: 22,
+              fontWeight: 700,
+              padding: "6px 18px",
+              borderRadius: 999,
+            }}
+          >
+            {badgeText}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
+            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 10 }}>{pick?.role || ""}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", fontSize: 88, fontWeight: 700, color: numColor }}>
+              {pick ? fmt(pick.avg) : "-"}
+            </div>
+            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, paddingBottom: 16, marginLeft: 6 }}>/ 10</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const pill = (text: string) => (
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          background: "#2a3550",
+          color: "#cfd6e6",
+          fontSize: 24,
+          fontWeight: 700,
+          padding: "10px 24px",
+          borderRadius: 999,
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: 1080,
+        height: 1320,
+        display: "flex",
+        flexDirection: "column",
+        background: CARD_BG,
+        color: "#e9edf6",
+        fontFamily: "Pretendard",
+        padding: "56px 60px",
+      }}
+    >
+      {/* 헤더 */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#9aa3ba", letterSpacing: 3 }}>
+          FAN RATINGS · 팬 평점
+        </div>
+        <div style={{ display: "flex", width: 90, height: 3, background: "#46527a", marginTop: 14 }} />
+      </div>
+
+      {/* 스코어 + 대회 */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 30 }}>
+        <div style={{ display: "flex", fontSize: 44, fontWeight: 700, color: "#fff" }}>
+          {d.homeLabel} {d.scoreLabel} {d.awayLabel}
+        </div>
+        <div style={{ display: "flex", fontSize: 24, color: MUTED, marginTop: 12 }}>
+          {d.competition} · {d.dateText}
+        </div>
+      </div>
+
+      {/* focus 팀 */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 28 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", width: 18, height: 40, background: focusColor, borderRadius: 5, marginRight: 16 }} />
+          <div style={{ display: "flex", fontSize: 54, fontWeight: 700, color: "#fff" }}>{d.focusLabel}</div>
+        </div>
+        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, marginTop: 16 }}>
+          <span style={{ color: GOLD }}>최고 평점</span>
+          <span style={{ color: "#aeb6cc", padding: "0 10px" }}>vs</span>
+          <span style={{ color: GOLD }}>최저 평점</span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 34 }}>
+        {bigBox("best", "BEST · 최고", d.best)}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "16px 0" }}>
+          {pill(`평점 격차 ${d.gap != null ? fmt(d.gap) : "-"}`)}
+        </div>
+        {bigBox("worst", "WORST · 최저", d.worst)}
+        <div style={{ display: "flex", marginTop: 18 }}>{pill(`팀 평균 ${d.focusAvg != null ? d.focusAvg.toFixed(2) : "-"}`)}</div>
+      </div>
+
+      {/* 푸터 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: `1px solid #1e2740`,
+          paddingTop: 20,
+          marginTop: "auto",
+        }}
+      >
+        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#5b9bf0" }}>fanarena.kr</div>
+        <div style={{ display: "flex", fontSize: 22, color: MUTED }}>팬이 직접 매긴 평점</div>
+      </div>
+    </div>
+  );
+}

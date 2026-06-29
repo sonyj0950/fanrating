@@ -7,7 +7,9 @@ import SoccerField from "./SoccerField";
 import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
+import ShareCardPanel from "./ShareCardPanel";
 import { teamLabel } from "@/app/MatchCard";
+import type { ShareCardData } from "@/lib/shareCard";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
@@ -53,8 +55,8 @@ function applyAgg(players: Player[], agg: Agg, seg: string): Player[] {
 
 type Sub = { minute: number; outPlayerId: string; inPlayerId: string; kind?: string | null };
 
-export default function MatchClient({ match, players: rawPlayers, agg, subs = [], teamColors = {} }:
-  { match: any; players: Player[]; agg: Agg; subs?: Sub[]; teamColors?: Record<string, string> }) {
+export default function MatchClient({ match, players: rawPlayers, agg, subs = [], teamColors = {}, shareCard = null }:
+  { match: any; players: Player[]; agg: Agg; subs?: Sub[]; teamColors?: Record<string, string>; shareCard?: ShareCardData | null }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [seg, setSeg] = useState("full");
@@ -268,6 +270,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
           🏆 <b>{match.sport === "kbo" ? "MVP" : "MOM"}</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
         </div>
       )}
+
+      {shareCard && <ShareCardPanel data={shareCard} canPreview={isAdmin} />}
 
       {seg !== "mine" && (
         <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}

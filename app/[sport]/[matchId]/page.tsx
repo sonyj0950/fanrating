@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
 import { teamLabel } from "@/app/MatchCard";
+import { buildShareCardData } from "@/lib/shareCard";
 
 const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK", epl: "EPL" };
 
@@ -13,11 +14,19 @@ export async function generateMetadata({ params }: any) {
   const score = `${home} ${m.homeScore ?? "-"} : ${m.awayScore ?? "-"} ${away}`;
   const title = `${score} 팬 평점 · fanarena.kr`;
   const description = `${label} ${home} vs ${away} 경기의 선수 평점을 매기고 의견을 나눠보세요.`;
+  // 경기별 동적 카드 이미지 (가로). 링크 공유 시 X·카톡 썸네일로 노출.
+  const image = `https://fanarena.kr/api/share-card/${m.id}`;
   return {
     title,
     description,
-    openGraph: { title, description, type: "article", url: `https://fanarena.kr/${m.sport}/${m.id}` },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `https://fanarena.kr/${m.sport}/${m.id}`,
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
@@ -65,9 +74,24 @@ export default async function MatchPage({ params }: any) {
   const teamColors: Record<string, string> = {};
   for (const c of colorRows) teamColors[c.team] = c.color;
 
+  // 공유 카드 데이터 (평점 30개 이상·종료 시 노출). 이미 가진 쿼리로 계산.
+  const shareCard = buildShareCardData(
+    {
+      id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
+      homeLabel: teamLabel(m.sport, m.homeTeam), awayLabel: teamLabel(m.sport, m.awayTeam),
+      homeScore: m.homeScore, awayScore: m.awayScore, date: m.date, round: m.round ?? null, status: m.status,
+    },
+    m.players.map(mp => ({
+      playerId: mp.playerId, name: mp.player.name, team: mp.player.team,
+      role: (mp.role ?? mp.player.position ?? "") || "", isPitcher: mp.player.isPitcher ?? null,
+    })),
+    m.ratings.map(r => ({ playerId: r.playerId, score: r.score })),
+  );
+
   return (
     <MatchClient
       teamColors={teamColors}
+      shareCard={shareCard}
       match={{ id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
         homeScore: m.homeScore, awayScore: m.awayScore, date: m.date.toISOString(),
         round: m.round ?? null,
