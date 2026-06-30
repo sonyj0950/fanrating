@@ -84,6 +84,8 @@ export type ShareCardData = {
   mom: CardPick | null;
   homeBest: CardPick | null;
   awayBest: CardPick | null;
+  homeWorst: CardPick | null;
+  awayWorst: CardPick | null;
   homeAvg: number | null;
   awayAvg: number | null;
 
@@ -297,9 +299,10 @@ export function buildShareCardData(m: MatchMeta, players: PlayerMeta[], ratings:
   const homeBest = pick(homeStats, (a, b) => b.avg - a.avg || b.count - a.count);
   const awayBest = pick(awayStats, (a, b) => b.avg - a.avg || b.count - a.count);
 
-  // 세로 카드 focus = 홈팀
+  // 세로 카드 — 팀별 BEST/WORST
   const best = pick(homeStats, (a, b) => b.avg - a.avg || b.count - a.count);
   const worst = pick(homeStats, (a, b) => a.avg - b.avg || b.count - a.count);
+  const awayWorstStat = pick(awayStats, (a, b) => a.avg - b.avg || b.count - a.count);
 
   const homeAvg = teamMean(stats, m.homeTeam);
   const awayAvg = teamMean(stats, m.awayTeam);
@@ -309,6 +312,7 @@ export function buildShareCardData(m: MatchMeta, players: PlayerMeta[], ratings:
   const awayBestPick = toPick(awayBest, m);
   const bestPick = toPick(best, m);
   const worstPick = toPick(worst, m);
+  const awayWorstPick = toPick(awayWorstStat, m);
 
   const emoji = SPORT_EMOJI[m.sport] ?? "🏟";
   const momWord = momWordOf(m.sport);
@@ -380,6 +384,8 @@ export function buildShareCardData(m: MatchMeta, players: PlayerMeta[], ratings:
     mom: momPick,
     homeBest: homeBestPick,
     awayBest: awayBestPick,
+    homeWorst: worstPick,
+    awayWorst: awayWorstPick,
     homeAvg,
     awayAvg,
     focusTeam: m.homeTeam,

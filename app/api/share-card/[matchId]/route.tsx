@@ -24,6 +24,7 @@ async function flagDataUri(team: string): Promise<string | null> {
 export async function GET(req: Request, { params }: { params: { matchId: string } }) {
   const { searchParams } = new URL(req.url);
   const portrait = searchParams.get("v") === "portrait";
+  const team = searchParams.get("team") === "away" ? "away" : "home";
   const size = portrait ? { width: 1080, height: 1320 } : { width: 1200, height: 630 };
 
   try {
@@ -41,7 +42,7 @@ export async function GET(req: Request, { params }: { params: { matchId: string 
     const element = portrait
       ? data.sport === "lck"
         ? <PortraitLckCard data={data} flags={flags} />
-        : <PortraitCard data={data} flags={flags} />
+        : <PortraitCard data={data} team={team} flags={flags} />
       : <LandscapeCard data={data} flags={flags} />;
 
     return new ImageResponse(element, {

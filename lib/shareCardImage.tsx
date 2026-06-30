@@ -329,126 +329,95 @@ export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags
   );
 }
 
-// ─────────────────────────── 세로형 (1080 × 1320) BEST vs WORST ───────────────────────────
-export function PortraitCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
-  const homeColor = teamColor(d.homeTeam, undefined, DEFAULT_HOME);
-  const awayColor = teamColor(d.awayTeam, undefined, DEFAULT_AWAY);
+// ─────────────────── 세로형 (1080 × 1320) 팀별 BEST vs WORST (team당 1장) ───────────────────
+export function PortraitCard({ data: d, team = "home", flags }: { data: ShareCardData; team?: "home" | "away"; flags?: Flags }) {
+  const isHome = team === "home";
+  const teamKey = isHome ? d.homeTeam : d.awayTeam;
+  const label = isHome ? d.homeLabel : d.awayLabel;
+  const flagSrc = isHome ? flags?.home : flags?.away;
+  const accent = teamColor(teamKey, undefined, isHome ? DEFAULT_HOME : DEFAULT_AWAY);
+  const best = isHome ? d.homeBest : d.awayBest;
+  const worst = isHome ? d.homeWorst : d.awayWorst;
+  const avg = isHome ? d.homeAvg : d.awayAvg;
+  const gap = best && worst ? Math.round((best.avg - worst.avg) * 10) / 10 : null;
 
-  const teamBox = (
-    teamKey: string,
-    label: string,
-    flagSrc: string | null | undefined,
-    pick: CardPick | null,
-    accent: string,
-  ) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        border: `3px solid ${accent}`,
-        background: "#141a2b",
-        borderRadius: 20,
-        padding: "24px 30px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <TeamMark teamKey={teamKey} flagSrc={flagSrc} size={40} />
-        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#fff", marginLeft: 14 }}>{label}</div>
-        <div style={{ display: "flex", marginLeft: "auto", fontSize: 18, color: MUTED }}>최고 평점</div>
-      </div>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 58, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
-          <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 8 }}>{pick ? pickTag(pick) : ""}</div>
+  const bigBox = (kind: "best" | "worst", badgeText: string, pick: CardPick | null) => {
+    const ac = kind === "best" ? "#35d07f" : "#ef5350";
+    const fill = kind === "best" ? "#102619" : "#260f10";
+    const badgeBg = kind === "best" ? "#2ea043" : "#d64545";
+    const badgeFg = kind === "best" ? "#06240f" : "#2a0708";
+    const numColor = kind === "best" ? GREEN : RED;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", border: `3px solid ${ac}`, background: fill, borderRadius: 20, padding: "26px 30px" }}>
+        <div style={{ display: "flex" }}>
+          <div style={{ display: "flex", background: badgeBg, color: badgeFg, fontSize: 22, fontWeight: 700, padding: "6px 18px", borderRadius: 999 }}>
+            {badgeText}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, color: GOLD }}>{pick ? fmt(pick.avg) : "-"}</div>
-          <div style={{ display: "flex", fontSize: 24, color: SUBTLE, paddingBottom: 14, marginLeft: 6 }}>/ 10</div>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
+            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 10 }}>{pick ? pickTag(pick) : ""}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", fontSize: 88, fontWeight: 700, color: numColor }}>{pick ? fmt(pick.avg) : "-"}</div>
+            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, paddingBottom: 16, marginLeft: 6 }}>/ 10</div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const pill = (text: string) => (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <div
-        style={{
-          display: "flex",
-          background: "#2a3550",
-          color: "#cfd6e6",
-          fontSize: 24,
-          fontWeight: 700,
-          padding: "10px 24px",
-          borderRadius: 999,
-        }}
-      >
+      <div style={{ display: "flex", background: "#2a3550", color: "#cfd6e6", fontSize: 24, fontWeight: 700, padding: "10px 24px", borderRadius: 999 }}>
         {text}
       </div>
     </div>
   );
 
   return (
-    <div
-      style={{
-        width: 1080,
-        height: 1320,
-        display: "flex",
-        flexDirection: "column",
-        background: CARD_BG,
-        color: "#e9edf6",
-        fontFamily: "Pretendard",
-        padding: "56px 60px",
-      }}
-    >
+    <div style={{ width: 1080, height: 1320, display: "flex", flexDirection: "column", background: CARD_BG, color: "#e9edf6", fontFamily: "Pretendard", padding: "56px 60px" }}>
       {/* 헤더 */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#9aa3ba", letterSpacing: 3 }}>
-          FAN RATINGS · 팬 평점
-        </div>
+        <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: "#9aa3ba", letterSpacing: 3 }}>FAN RATINGS · 팬 평점</div>
         <div style={{ display: "flex", width: 90, height: 3, background: "#46527a", marginTop: 14 }} />
       </div>
 
       {/* 스코어 + 대회 */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 30 }}>
-        <div style={{ display: "flex", fontSize: 44, fontWeight: 700, color: "#fff" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 28 }}>
+        <div style={{ display: "flex", fontSize: 42, fontWeight: 700, color: "#fff" }}>
           {d.homeLabel} {d.scoreLabel} {d.awayLabel}
         </div>
-        <div style={{ display: "flex", fontSize: 24, color: MUTED, marginTop: 12 }}>
-          {d.competition} · {d.dateText}
+        <div style={{ display: "flex", fontSize: 24, color: MUTED, marginTop: 12 }}>{d.competition} · {d.dateText}</div>
+      </div>
+
+      {/* 대상 팀 */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 26 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", marginRight: 16 }}>
+            <TeamMark teamKey={teamKey} flagSrc={flagSrc} size={48} />
+          </div>
+          <div style={{ display: "flex", fontSize: 54, fontWeight: 700, color: "#fff" }}>{label}</div>
+        </div>
+        <div style={{ display: "flex", fontSize: 28, fontWeight: 700, marginTop: 14 }}>
+          <span style={{ color: GOLD }}>최고</span>
+          <span style={{ color: "#aeb6cc", padding: "0 10px" }}>vs</span>
+          <span style={{ color: GOLD }}>최저 평점</span>
         </div>
       </div>
 
-      {/* 타이틀 */}
-      <div style={{ display: "flex", justifyContent: "center", marginTop: 26 }}>
-        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, color: GOLD }}>팀별 최고 평점</div>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 28 }}>
-        {teamBox(d.homeTeam, d.homeLabel, flags?.home, d.homeBest, homeColor)}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 30 }}>
+        {bigBox("best", "BEST · 최고", best)}
         <div style={{ display: "flex", justifyContent: "center", padding: "14px 0" }}>
-          <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: "#5a6480" }}>VS</div>
+          {pill(`평점 격차 ${gap != null ? fmt(gap) : "-"}`)}
         </div>
-        {teamBox(d.awayTeam, d.awayLabel, flags?.away, d.awayBest, awayColor)}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 22 }}>
-          {pill(
-            d.homeAvg != null && d.awayAvg != null
-              ? `팀 평균   ${d.homeLabel} ${fmt(d.homeAvg)}   ·   ${d.awayLabel} ${fmt(d.awayAvg)}`
-              : "팀 평균 -",
-          )}
-        </div>
+        {bigBox("worst", "WORST · 최저", worst)}
+        <div style={{ display: "flex", marginTop: 20 }}>{pill(`${label} 팀 평균 ${avg != null ? avg.toFixed(2) : "-"}`)}</div>
       </div>
 
       {/* 푸터 */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderTop: `1px solid #1e2740`,
-          paddingTop: 20,
-          marginTop: "auto",
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid #1e2740`, paddingTop: 20, marginTop: "auto" }}>
         <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#5b9bf0" }}>fanarena.kr</div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED }}>팬이 직접 매긴 평점</div>
       </div>

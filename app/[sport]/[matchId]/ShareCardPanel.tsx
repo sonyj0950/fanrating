@@ -11,11 +11,15 @@ import type { ShareCardData } from "@/lib/shareCard";
 export default function ShareCardPanel({ data, canPreview = false }: { data: ShareCardData; canPreview?: boolean }) {
   const [open, setOpen] = useState(false);
   const [variant, setVariant] = useState<"landscape" | "portrait">("landscape");
+  const [team, setTeam] = useState<"home" | "away">("home");
   const [copied, setCopied] = useState<"x" | "insta" | null>(null);
 
   if (!data.eligible && !canPreview) return null;
 
-  const imgSrc = `/api/share-card/${data.matchId}${variant === "portrait" ? "?v=portrait" : ""}`;
+  // 세로(인스타)는 LCK=라인별 한 장, 그 외=팀별 한 장(홈/원정 선택)
+  const teamPicker = variant === "portrait" && data.sport !== "lck";
+  const qs = variant === "portrait" ? `?v=portrait${teamPicker ? `&team=${team}` : ""}` : "";
+  const imgSrc = `/api/share-card/${data.matchId}${qs}`;
   const caption = variant === "portrait" ? data.captionInsta : data.captionX;
 
   async function copy(which: "x" | "insta") {
@@ -53,10 +57,18 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
               title="세로 · 인스타용" />
           </div>
 
+          {/* 세로(팀별) — 팀 선택 */}
+          {teamPicker && (
+            <div className="flex gap-2 mb-3">
+              <FormatTab active={team === "home"} onClick={() => setTeam("home")} title={data.homeLabel} />
+              <FormatTab active={team === "away"} onClick={() => setTeam("away")} title={data.awayLabel} />
+            </div>
+          )}
+
           {/* 실제 PNG 미리보기 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            key={variant}
+            key={`${variant}-${team}`}
             src={imgSrc}
             alt="공유 카드 미리보기"
             className="w-full rounded-xl border border-[#222a40] bg-[#0e1320]"
@@ -88,7 +100,7 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             )}
             <a
               href={imgSrc}
-              download={`fanarena-${data.matchId}-${variant}.png`}
+              download={`fanarena-${data.matchId}-${variant}${teamPicker ? "-" + team : ""}.png`}
               className="text-xs px-3 py-1.5 rounded-lg border border-[#39415a] text-[#cfd5e2] hover:bg-white/5">
               🖼 이미지 저장
             </a>
