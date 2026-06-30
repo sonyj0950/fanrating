@@ -9,6 +9,9 @@ export const OFFICIAL_TEAM_COLORS: Record<string, string> = {
   T1: "#E2012D", 젠지: "#8A6D2F", 한화생명: "#FF6600", "디플러스 기아": "#0A4DA2",
   "KT 롤스터": "#D11C2A", "농심 레드포스": "#E4002B", DRX: "#2F5DA8",
   "BNK 피어엑스": "#0A8C8A", "한진 브리온": "#00543D", "광동 프릭스": "#E95513",
+  // LCK 약칭 별칭 (수동 입력에서 흔히 쓰는 영문 약칭. KT는 KBO와 충돌해 제외)
+  Gen: "#8A6D2F", "Gen.G": "#8A6D2F", GEN: "#8A6D2F", DK: "#0A4DA2", HLE: "#FF6600",
+  NS: "#E4002B", BRO: "#00543D", KDF: "#E95513", BFX: "#0A8C8A",
 };
 
 // 색이 없는 팀(주로 EPL·국대)용 홈/원정 기본 색 — 한 화면에 두 팀일 때 구분용

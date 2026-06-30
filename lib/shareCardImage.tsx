@@ -224,6 +224,8 @@ export function LandscapeCard({ data: d, flags }: { data: ShareCardData; flags?:
 // ─────────────────────── 세로형 LCK (1080 × 1320) 라인별 1:1 맞대결 ───────────────────────
 export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
   const lanes = (d.lckLanes ?? []).filter((l) => l.home || l.away);
+  const homeColor = teamColor(d.homeTeam, undefined, DEFAULT_HOME);
+  const awayColor = teamColor(d.awayTeam, undefined, DEFAULT_AWAY);
 
   const scoreBox = (v: number | null, bg: string) => (
     <div
@@ -292,11 +294,11 @@ export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags
             <div style={{ display: "flex", flex: 1, justifyContent: "flex-end", fontSize: 34, color: INK, paddingRight: 22 }}>
               {l.home?.name ?? "-"}
             </div>
-            {scoreBox(l.home?.avg ?? null, "#ef4444")}
+            {scoreBox(l.home?.avg ?? null, homeColor)}
             <div style={{ display: "flex", width: 96, justifyContent: "center", fontSize: 20, fontWeight: 700, color: MUTED }}>
               {l.short}
             </div>
-            {scoreBox(l.away?.avg ?? null, "#3b82f6")}
+            {scoreBox(l.away?.avg ?? null, awayColor)}
             <div style={{ display: "flex", flex: 1, justifyContent: "flex-start", fontSize: 34, color: INK, paddingLeft: 22 }}>
               {l.away?.name ?? "-"}
             </div>
