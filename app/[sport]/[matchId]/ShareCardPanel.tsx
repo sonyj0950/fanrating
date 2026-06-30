@@ -34,17 +34,17 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
   }
 
   return (
-    <div className="mb-4 rounded-2xl border border-[#2a3550] bg-[#0e1320] text-[#e9edf6] overflow-hidden">
+    <div className="mb-4 rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5">
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50">
         <span className="font-bold text-sm">
           📣 공유 카드 만들기
           {!data.eligible && canPreview && (
-            <span className="ml-2 text-[11px] font-medium text-amber-300">미리보기 · 평점 {data.totalRatings}/30</span>
+            <span className="ml-2 text-[11px] font-medium text-amber-600">미리보기 · 평점 {data.totalRatings}/30</span>
           )}
         </span>
-        <span className="text-[#8a92ad] text-xs">{open ? "접기 ▲" : "열기 ▼"}</span>
+        <span className="text-gray-400 text-xs">{open ? "접기 ▲" : "열기 ▼"}</span>
       </button>
 
       {open && (
@@ -71,20 +71,20 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             key={`${variant}-${team}`}
             src={imgSrc}
             alt="공유 카드 미리보기"
-            className="w-full rounded-xl border border-[#222a40] bg-[#0e1320]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50"
             style={{ aspectRatio: variant === "portrait" ? "1080 / 1320" : "1200 / 630" }}
           />
 
           {/* 캡션 — 관리자만 (공식 계정용 문구 관리) */}
           {canPreview && (
             <div className="mt-3">
-              <div className="text-[11px] text-[#8a92ad] mb-1">
-                {variant === "portrait" ? "인스타그램 캡션" : "X(트위터) 캡션"} <span className="text-amber-300">· 관리자 전용</span>
+              <div className="text-[11px] text-gray-500 mb-1">
+                {variant === "portrait" ? "인스타그램 캡션" : "X(트위터) 캡션"} <span className="text-amber-600">· 관리자 전용</span>
               </div>
               <textarea
                 readOnly
                 value={caption}
-                className="w-full h-40 text-[12px] leading-relaxed rounded-lg bg-[#161d30] border border-[#2a3550] text-[#cfd6e6] p-2.5 resize-none"
+                className="w-full h-40 text-[12px] leading-relaxed rounded-lg bg-gray-50 border border-gray-200 text-gray-700 p-2.5 resize-none"
               />
             </div>
           )}
@@ -94,18 +94,17 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             {canPreview && (
               <button
                 onClick={() => copy(variant === "portrait" ? "insta" : "x")}
-                className="text-xs px-3 py-1.5 rounded-lg bg-[#5b9bf0] text-[#06223f] font-bold hover:opacity-90">
+                className="text-xs px-3 py-1.5 rounded-lg bg-amber-500 text-white font-bold hover:bg-amber-600">
                 {copied ? "✓ 복사됨" : "📋 캡션 복사"}
               </button>
             )}
             <a
               href={imgSrc}
               download={`fanarena-${data.matchId}-${variant}${teamPicker ? "-" + team : ""}.png`}
-              className="text-xs px-3 py-1.5 rounded-lg border border-[#39415a] text-[#cfd5e2] hover:bg-white/5">
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
               🖼 이미지 저장
             </a>
             <ShareButton
-              dark
               title={`${data.homeLabel} ${data.scoreLabel} ${data.awayLabel} 팬 평점`}
               text="fanarena.kr에서 선수 평점을 매겨보세요!"
               path={`/${data.sport}/${data.matchId}`}
@@ -113,7 +112,7 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             />
           </div>
 
-          <p className="text-[10px] text-[#5a6480] mt-3 leading-relaxed">
+          <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
             인스타그램은 세로 이미지를 저장해 업로드하세요.
             X는 링크 공유 시 가로 카드가 자동으로 함께 표시됩니다.
             {canPreview && " 캡션은 관리자에게만 보입니다."}
@@ -130,8 +129,8 @@ function FormatTab({ active, onClick, title }: { active: boolean; onClick: () =>
       onClick={onClick}
       className={`flex-1 text-[12px] font-bold py-2 rounded-lg border transition ${
         active
-          ? "bg-[#5b4bc4] text-white border-[#5b4bc4]"
-          : "bg-[#161d30] text-[#aeb6cc] border-[#2a3550] hover:bg-white/5"
+          ? "bg-amber-500 text-white border-amber-500"
+          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
       }`}>
       {title}
     </button>
