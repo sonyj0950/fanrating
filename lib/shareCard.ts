@@ -12,6 +12,7 @@
  */
 
 import { LCK_LANES, normalizeLane } from "./lckLanes";
+import { sportPath } from "./sportUrl";
 
 // 카드 자동 노출 기준: 경기 총 평점 수가 이 값 이상이면 켠다.
 export const SHARE_MIN_TOTAL = 30;
@@ -105,7 +106,7 @@ export type ShareCardData = {
 };
 
 const SPORT_EMOJI: Record<string, string> = { kleague: "⚽", epl: "⚽", kbo: "⚾", lck: "🎮" };
-const SPORT_COMP: Record<string, string> = { kleague: "축구", epl: "EPL", kbo: "KBO 리그", lck: "LCK" };
+const SPORT_COMP: Record<string, string> = { kleague: "축구", epl: "EPL", kbo: "KBO 리그", lck: "LoL" };
 
 function momWordOf(sport: string): string {
   if (sport === "kbo") return "MVP";
@@ -233,7 +234,7 @@ function buildCaptions(m: MatchMeta, d: {
   homeBest: CardPick | null; awayBest: CardPick | null;
   homeAvg: number | null; awayAvg: number | null;
 }): { x: string; insta: string } {
-  const url = `https://fanarena.kr/${m.sport}/${m.id}`;
+  const url = `https://fanarena.kr/${sportPath(m.sport)}/${m.id}`;
   const hs = m.homeScore ?? "-";
   const as = m.awayScore ?? "-";
   const head = `${d.emoji} ${SPORT_COMP[m.sport] ?? ""} 경기 종료 팬 평점 | ${m.homeLabel} ${hs}-${as} ${m.awayLabel}`;
@@ -353,7 +354,7 @@ export function buildShareCardData(m: MatchMeta, players: PlayerMeta[], ratings:
     const hs = m.homeScore ?? "-";
     const as = m.awayScore ?? "-";
     captionInsta = [
-      `${emoji} LCK ${competition} 팬 평점 | ${m.homeLabel} ${hs}-${as} ${m.awayLabel}`,
+      `${emoji} ${competition} 팬 평점 | ${m.homeLabel} ${hs}-${as} ${m.awayLabel}`,
       "ㅤ",
       "라인별 팬 평점 맞대결",
       ...laneLines,

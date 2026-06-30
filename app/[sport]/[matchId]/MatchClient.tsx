@@ -9,6 +9,7 @@ import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import ShareCardPanel from "./ShareCardPanel";
 import { teamLabel } from "@/app/MatchCard";
+import { sportPath } from "@/lib/sportUrl";
 import type { ShareCardData } from "@/lib/shareCard";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
@@ -211,7 +212,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             <ShareButton
               title={`${match.homeTeam} ${match.homeScore ?? "-"} : ${match.awayScore ?? "-"} ${match.awayTeam} 팬 평점`}
               text="fanarena.kr에서 선수 평점을 매겨보세요!"
-              path={`/${match.sport}/${match.id}`}
+              path={`/${sportPath(match.sport)}/${match.id}`}
               label="공유" />
             <DeleteMatchButton matchId={match.id} afterDelete={() => router.push("/")} />
           </div>
@@ -1580,7 +1581,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
               <ShareButton
                 title={`${player.name} 팬 평점 ⭐ ${data.avg}`}
                 text={`${player.team} ${player.name} — fanarena.kr 팬 평점 ${data.avg}점 (${data.count}명)`}
-                path={`/${sport}/${matchId}`}
+                path={`/${sportPath(sport)}/${matchId}`}
                 label="공유" />
             )}
             <button onClick={onClose} className="text-2xl leading-none">×</button>

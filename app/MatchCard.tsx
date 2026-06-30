@@ -1,9 +1,10 @@
 import Link from "next/link";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import { KBO_TEAM_LABELS } from "@/lib/kboTeams";
+import { sportPath } from "@/lib/sportUrl";
 
 export const SPORT_LABEL: Record<string, string> = {
-  kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LCK", epl: "⚽ EPL",
+  kbo: "⚾ 야구", kleague: "⚽ 축구", lck: "🎮 LoL", epl: "⚽ EPL",
 };
 
 // 표시용 팀명: KBO는 약칭(저장값) → 풀네임. 그 외 종목은 저장값 그대로.
@@ -25,7 +26,7 @@ export function MatchCard({ m }: { m: any }) {
   const awayWin = m.homeScore != null && m.awayScore != null && m.awayScore > m.homeScore;
   return (
     <div className="group relative rounded-2xl border border-gray-300 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <Link href={`/${m.sport}/${m.id}`} className="block">
+      <Link href={`/${sportPath(m.sport)}/${m.id}`} className="block">
         <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-3">
           <span className="text-gray-700 font-semibold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
           <StatusBadge status={m.status} />

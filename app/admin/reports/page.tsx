@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { sportPath } from "@/lib/sportUrl";
 
 export default function ReportsPage() {
   const { data: session, status } = useSession();
@@ -49,7 +50,7 @@ export default function ReportsPage() {
               <div key={it.id} className={`border rounded-lg p-3 ${it.blinded ? "bg-gray-50" : "bg-white"}`}>
                 <div className="flex justify-between items-start gap-2">
                   <div className="text-xs text-gray-500">
-                    <Link href={`/${it.sport}/${it.matchId}`} className="text-blue-600 underline">{it.matchLabel}</Link>
+                    <Link href={`/${sportPath(it.sport)}/${it.matchId}`} className="text-blue-600 underline">{it.matchLabel}</Link>
                     {" · "}{it.player} · 작성자 {it.author}
                   </div>
                   <span className="text-xs font-bold text-red-500 shrink-0">🚩 {it.reportCount}</span>

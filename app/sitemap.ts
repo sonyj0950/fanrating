@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { sportPath } from "@/lib/sportUrl";
 
 export const revalidate = 3600; // 1시간마다 갱신
 
@@ -23,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 5000,
     });
     matchPages = matches.map(m => ({
-      url: `${base}/${m.sport}/${m.id}`,
+      url: `${base}/${sportPath(m.sport)}/${m.id}`,
       lastModified: m.date ?? m.createdAt,
       changeFrequency: "daily" as const,
       priority: 0.7,

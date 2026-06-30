@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
 import { teamLabel } from "@/app/MatchCard";
 import { buildShareCardData } from "@/lib/shareCard";
+import { sportPath } from "@/lib/sportUrl";
 
-const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LCK", epl: "EPL" };
+const SPORT_LABEL: Record<string, string> = { kbo: "야구", kleague: "축구", lck: "LoL", epl: "EPL" };
 
 export async function generateMetadata({ params }: any) {
   const m = await prisma.match.findUnique({ where: { id: params.matchId } });
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: any) {
       title,
       description,
       type: "article",
-      url: `https://fanarena.kr/${m.sport}/${m.id}`,
+      url: `https://fanarena.kr/${sportPath(m.sport)}/${m.id}`,
       images: [{ url: image, width: 1200, height: 630, alt: title }],
     },
     twitter: { card: "summary_large_image", title, description, images: [image] },

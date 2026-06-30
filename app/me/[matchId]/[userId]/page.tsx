@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import SharePitch from "./SharePitch";
+import { sportPath } from "@/lib/sportUrl";
 
 export async function generateMetadata({ params }: any) {
   const [m, user] = await Promise.all([
@@ -95,7 +96,7 @@ export default async function SharePage({ params }: any) {
           subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId }))} />
       )}
 
-      <Link href={`/${m.sport}/${m.id}`}
+      <Link href={`/${sportPath(m.sport)}/${m.id}`}
         className="block text-center mt-5 bg-blue-600 text-white rounded-lg py-2.5 text-sm font-semibold">
         이 경기에서 나도 평점 매기기 →
       </Link>

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import ShareButton from "@/components/ShareButton";
+import { sportPath } from "@/lib/sportUrl";
 import type { ShareCardData } from "@/lib/shareCard";
 
 /**
@@ -107,7 +108,7 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             <ShareButton
               title={`${data.homeLabel} ${data.scoreLabel} ${data.awayLabel} 팬 평점`}
               text="fanarena.kr에서 선수 평점을 매겨보세요!"
-              path={`/${data.sport}/${data.matchId}`}
+              path={`/${sportPath(data.sport)}/${data.matchId}`}
               label="링크 공유"
             />
           </div>

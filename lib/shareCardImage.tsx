@@ -44,7 +44,7 @@ const SPORT_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   kleague: { label: "축구", bg: "#1f7a4d", fg: "#ffffff" },
   epl: { label: "EPL", bg: "#1f7a4d", fg: "#ffffff" },
   kbo: { label: "야구", bg: "#1f7a4d", fg: "#ffffff" },
-  lck: { label: "LCK", bg: "#5b4bc4", fg: "#ffffff" },
+  lck: { label: "LoL", bg: "#5b4bc4", fg: "#ffffff" },
 };
 
 function fmt(n: number, d = 1) {
