@@ -50,6 +50,7 @@ export type MatchMeta = {
   awayScore: number | null;
   date: Date;
   round: string | null;
+  record: string | null; // 골·어시/홈런 등 줄단위 기록 (선수 이름 매칭으로 추출)
   status: string;
 };
 
@@ -58,6 +59,7 @@ export type CardPick = {
   team: string;
   teamLabel: string;
   role: string;
+  recordTag: string; // 골/도움·홈런 등 (없으면 "")
   avg: number;
 };
 
@@ -147,7 +149,55 @@ function pick(stats: Stat[], cmp: (a: Stat, b: Stat) => number): Stat | null {
 function toPick(s: Stat | null, m: MatchMeta): CardPick | null {
   if (!s) return null;
   const teamLabel = s.meta.team === m.homeTeam ? m.homeLabel : s.meta.team === m.awayTeam ? m.awayLabel : s.meta.team;
-  return { name: s.meta.name, team: s.meta.team, teamLabel, role: roleText(m.sport, s.meta), avg: s.avg };
+  return {
+    name: s.meta.name,
+    team: s.meta.team,
+    teamLabel,
+    role: roleText(m.sport, s.meta),
+    recordTag: extractRecordTag(s.meta.name, m.record, m.sport),
+    avg: s.avg,
+  };
+}
+
+// record(줄단위 기록)에서 해당 선수의 기록을 뽑는다.
+// 축구: 득점자/도움 카운트 → "1골 1도움" · 야구/롤: 이름이 든 줄에서 앞 토큰·이름 제거 후 본문.
+function extractRecordTag(name: string, record: string | null, sport: string): string {
+  if (!record || !name) return "";
+  const lines = record.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  if (sport === "kleague" || sport === "epl") {
+    let goals = 0,
+      assists = 0,
+      own = false;
+    for (const l of lines) {
+      const am = l.match(/\(도움:?\s*([^)]+)\)/);
+      const assister = am ? am[1].trim() : "";
+      let head = l.split("(")[0].trim();
+      head = head.replace(/^\d+(\+\d+)?'?\s*/, ""); // "63'" / "90+2'" 제거
+      const isScorer = head === name || head.endsWith(" " + name);
+      if (isScorer) {
+        if (/자책골/.test(l)) own = true;
+        else goals++;
+      }
+      if (assister && (assister === name || assister.endsWith(name))) assists++;
+    }
+    const parts: string[] = [];
+    if (goals) parts.push(`${goals}골`);
+    if (assists) parts.push(`${assists}도움`);
+    if (own && !goals) parts.push("자책골");
+    return parts.join(" ");
+  }
+
+  // 야구·롤: 이름이 포함된 첫 줄 → 앞 회차/세트 토큰과 이름 제거
+  const mine = lines.find((l) => l.includes(name));
+  if (!mine) return "";
+  const body = mine
+    .replace(/^\s*\d+회\s*/, "")
+    .replace(/^\s*\d+세트\s*/, "")
+    .replace(name, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return body.slice(0, 16);
 }
 
 // 종목별 포지션/역할 표시 보정

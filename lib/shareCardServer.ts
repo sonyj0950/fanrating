@@ -36,6 +36,7 @@ export async function getShareCardData(matchId: string): Promise<ShareCardData |
       awayScore: m.awayScore,
       date: m.date,
       round: m.round ?? null,
+      record: m.record ?? null,
       status: m.status,
     },
     players,

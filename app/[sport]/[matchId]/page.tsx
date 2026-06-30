@@ -79,7 +79,8 @@ export default async function MatchPage({ params }: any) {
     {
       id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
       homeLabel: teamLabel(m.sport, m.homeTeam), awayLabel: teamLabel(m.sport, m.awayTeam),
-      homeScore: m.homeScore, awayScore: m.awayScore, date: m.date, round: m.round ?? null, status: m.status,
+      homeScore: m.homeScore, awayScore: m.awayScore, date: m.date, round: m.round ?? null,
+      record: m.record ?? null, status: m.status,
     },
     m.players.map(mp => ({
       playerId: mp.playerId, name: mp.player.name, team: mp.player.team,

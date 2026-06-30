@@ -1,10 +1,25 @@
 import { ImageResponse } from "next/og";
 import { getShareCardData } from "@/lib/shareCardServer";
-import { LandscapeCard, PortraitCard, PortraitLckCard, loadShareFonts, CARD_BG } from "@/lib/shareCardImage";
+import { LandscapeCard, PortraitCard, PortraitLckCard, loadShareFonts, CARD_BG, type Flags } from "@/lib/shareCardImage";
+import { flagCode, flagUrl } from "@/lib/teamFlags";
 
 // 경기별 공유 카드 PNG.  ?v=portrait → 세로(인스타), 기본 → 가로(링크 언펄)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// 국대 국기를 미리 받아 data URI로. 실패하면 null(국기만 생략, 카드는 정상).
+async function flagDataUri(team: string): Promise<string | null> {
+  const code = flagCode(team);
+  if (!code) return null;
+  try {
+    const res = await fetch(flagUrl(code), { cache: "force-cache" });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: Request, { params }: { params: { matchId: string } }) {
   const { searchParams } = new URL(req.url);
@@ -20,11 +35,14 @@ export async function GET(req: Request, { params }: { params: { matchId: string 
       );
     }
 
+    const [homeFlag, awayFlag] = await Promise.all([flagDataUri(data.homeTeam), flagDataUri(data.awayTeam)]);
+    const flags: Flags = { home: homeFlag, away: awayFlag, focus: homeFlag };
+
     const element = portrait
       ? data.sport === "lck"
-        ? <PortraitLckCard data={data} />
-        : <PortraitCard data={data} />
-      : <LandscapeCard data={data} />;
+        ? <PortraitLckCard data={data} flags={flags} />
+        : <PortraitCard data={data} flags={flags} />
+      : <LandscapeCard data={data} flags={flags} />;
 
     return new ImageResponse(element, {
       ...size,

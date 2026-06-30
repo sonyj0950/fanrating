@@ -7,8 +7,11 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import type { ReactNode } from "react";
-import type { ShareCardData } from "./shareCard";
-import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "./teamColors";
+import type { ShareCardData, CardPick } from "./shareCard";
+import { teamColor, DEFAULT_HOME, DEFAULT_AWAY, OFFICIAL_TEAM_COLORS } from "./teamColors";
+
+// 라우트에서 미리 받아온 국기 data URI (국대만, 없으면 null → 구단 색 배지)
+export type Flags = { home?: string | null; away?: string | null; focus?: string | null };
 
 export const CARD_BG = "#0e1320";
 const BOX_BG = "#161d30";
@@ -42,11 +45,47 @@ function fmt(n: number, d = 1) {
   return n.toFixed(d);
 }
 
+// 선수 부가정보: 기록 우선, 없으면 포지션 (예: "1골 1도움" / "GK")
+function pickTag(p: CardPick): string {
+  return p.recordTag || p.role || "";
+}
+
+// 팀 마크: 국기(국대) → 색 엠블럼 배지(구단) → 없음
+function TeamMark({ teamKey, flagSrc, size }: { teamKey: string; flagSrc?: string | null; size: number }) {
+  if (flagSrc) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={flagSrc} width={Math.round(size * 1.45)} height={size} style={{ borderRadius: 6 }} alt="" />;
+  }
+  const color = OFFICIAL_TEAM_COLORS[teamKey];
+  if (color) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: size + 10,
+          height: size + 10,
+          background: color,
+          borderRadius: 11,
+          fontSize: Math.round(size * 0.42),
+          fontWeight: 700,
+          color: "#fff",
+        }}
+      >
+        {teamKey}
+      </div>
+    );
+  }
+  return null;
+}
+
 // ─────────────────────────── 가로형 (1200 × 630) MOM 카드 ───────────────────────────
-export function LandscapeCard({ data: d }: { data: ShareCardData }) {
+export function LandscapeCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
   const badge = SPORT_BADGE[d.sport] ?? SPORT_BADGE.kleague;
   const homeColor = teamColor(d.homeTeam, undefined, DEFAULT_HOME);
   const awayColor = teamColor(d.awayTeam, undefined, DEFAULT_AWAY);
+  const header = [d.competition].filter(Boolean).join("");
 
   const smallBox = (label: string, main: ReactNode, flex = 1) => (
     <div
@@ -97,23 +136,31 @@ export function LandscapeCard({ data: d }: { data: ShareCardData }) {
           >
             {badge.label}
           </div>
-          <div style={{ display: "flex", fontSize: 26, color: "#aeb6cc" }}>경기 종료 팬 평점</div>
+          <div style={{ display: "flex", fontSize: 25, color: "#c2c9da", fontWeight: 700 }}>
+            {header || "경기 종료 팬 평점"}
+          </div>
         </div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED }}>{d.dateText}</div>
       </div>
 
       {/* 스코어 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flex: 1 }}>
-          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.homeLabel}</div>
-          <div style={{ display: "flex", width: 110, height: 7, background: homeColor, borderRadius: 4, marginTop: 10 }} />
+        <div style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginRight: 16 }}>
+            <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.homeLabel}</div>
+            <div style={{ display: "flex", width: 92, height: 6, background: homeColor, borderRadius: 4, marginTop: 10 }} />
+          </div>
+          <TeamMark teamKey={d.homeTeam} flagSrc={flags?.home} size={48} />
         </div>
-        <div style={{ display: "flex", fontSize: 76, fontWeight: 700, color: "#fff", padding: "0 40px" }}>
+        <div style={{ display: "flex", fontSize: 80, fontWeight: 700, color: "#fff", padding: "0 36px" }}>
           {d.scoreLabel}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
-          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.awayLabel}</div>
-          <div style={{ display: "flex", width: 110, height: 7, background: awayColor, borderRadius: 4, marginTop: 10 }} />
+        <div style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "flex-start" }}>
+          <TeamMark teamKey={d.awayTeam} flagSrc={flags?.away} size={48} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginLeft: 16 }}>
+            <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "#fff" }}>{d.awayLabel}</div>
+            <div style={{ display: "flex", width: 92, height: 6, background: awayColor, borderRadius: 4, marginTop: 10 }} />
+          </div>
         </div>
       </div>
 
@@ -143,12 +190,12 @@ export function LandscapeCard({ data: d }: { data: ShareCardData }) {
           >
             {d.momWord}
           </div>
-          <div style={{ display: "flex", fontSize: 36, fontWeight: 700, color: "#fff" }}>{d.mom.name}</div>
+          <div style={{ display: "flex", fontSize: 38, fontWeight: 700, color: "#fff" }}>{d.mom.name}</div>
           <div style={{ display: "flex", fontSize: 22, color: SUBTLE, marginLeft: 14 }}>
             {d.mom.teamLabel}
-            {d.mom.role ? ` · ${d.mom.role}` : ""}
+            {pickTag(d.mom) ? ` · ${pickTag(d.mom)}` : ""}
           </div>
-          <div style={{ display: "flex", marginLeft: "auto", fontSize: 50, fontWeight: 700, color: GOLD }}>
+          <div style={{ display: "flex", marginLeft: "auto", fontSize: 54, fontWeight: 700, color: GOLD }}>
             {fmt(d.mom.avg)}
           </div>
         </div>
@@ -156,8 +203,8 @@ export function LandscapeCard({ data: d }: { data: ShareCardData }) {
 
       {/* 하단 3박스 */}
       <div style={{ display: "flex" }}>
-        {smallBox(`${d.homeLabel} 최고`, d.homeBest ? `${d.homeBest.name} ${fmt(d.homeBest.avg)}` : "-")}
-        {smallBox(`${d.awayLabel} 최고`, d.awayBest ? `${d.awayBest.name} ${fmt(d.awayBest.avg)}` : "-")}
+        {smallBox(`${d.homeLabel} 최고`, d.homeBest ? `${d.homeBest.name} ${pickTag(d.homeBest) ? pickTag(d.homeBest) + " " : ""}${fmt(d.homeBest.avg)}` : "-")}
+        {smallBox(`${d.awayLabel} 최고`, d.awayBest ? `${d.awayBest.name} ${pickTag(d.awayBest) ? pickTag(d.awayBest) + " " : ""}${fmt(d.awayBest.avg)}` : "-")}
         {smallBox(
           "팀 평균",
           d.homeAvg != null && d.awayAvg != null
@@ -185,9 +232,7 @@ export function LandscapeCard({ data: d }: { data: ShareCardData }) {
 }
 
 // ─────────────────────── 세로형 LCK (1080 × 1320) 라인별 1:1 맞대결 ───────────────────────
-export function PortraitLckCard({ data: d }: { data: ShareCardData }) {
-  const homeColor = teamColor(d.homeTeam, undefined, "#e2012d");
-  const awayColor = teamColor(d.awayTeam, undefined, "#2f6bd8");
+export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
   const lanes = (d.lckLanes ?? []).filter((l) => l.home || l.away);
 
   const scoreBox = (v: number | null, bg: string) => (
@@ -235,14 +280,14 @@ export function PortraitLckCard({ data: d }: { data: ShareCardData }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 30 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#fff", marginRight: 14 }}>{d.homeLabel}</div>
-          <div style={{ display: "flex", width: 44, height: 44, background: homeColor, borderRadius: 10 }} />
+          <TeamMark teamKey={d.homeTeam} flagSrc={flags?.home} size={46} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 240 }}>
           <div style={{ display: "flex", fontSize: 24, color: "#9aa3ba" }}>{d.competition}</div>
           <div style={{ display: "flex", fontSize: 52, fontWeight: 700, color: "#fff", marginTop: 4 }}>{d.scoreLabel}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ display: "flex", width: 44, height: 44, background: awayColor, borderRadius: 10 }} />
+          <TeamMark teamKey={d.awayTeam} flagSrc={flags?.away} size={46} />
           <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#fff", marginLeft: 14 }}>{d.awayLabel}</div>
         </div>
       </div>
@@ -285,14 +330,10 @@ export function PortraitLckCard({ data: d }: { data: ShareCardData }) {
 }
 
 // ─────────────────────────── 세로형 (1080 × 1320) BEST vs WORST ───────────────────────────
-export function PortraitCard({ data: d }: { data: ShareCardData }) {
+export function PortraitCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
   const focusColor = teamColor(d.focusTeam, undefined, DEFAULT_HOME);
 
-  const bigBox = (
-    kind: "best" | "worst",
-    badgeText: string,
-    pick: { name: string; role: string; avg: number } | null,
-  ) => {
+  const bigBox = (kind: "best" | "worst", badgeText: string, pick: CardPick | null) => {
     const accent = kind === "best" ? "#35d07f" : "#ef5350";
     const fill = kind === "best" ? "#102619" : "#260f10";
     const badgeBg = kind === "best" ? "#2ea043" : "#d64545";
@@ -327,7 +368,7 @@ export function PortraitCard({ data: d }: { data: ShareCardData }) {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 14 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
-            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 10 }}>{pick?.role || ""}</div>
+            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 10 }}>{pick ? pickTag(pick) : ""}</div>
           </div>
           <div style={{ display: "flex", alignItems: "flex-end" }}>
             <div style={{ display: "flex", fontSize: 88, fontWeight: 700, color: numColor }}>
@@ -392,7 +433,13 @@ export function PortraitCard({ data: d }: { data: ShareCardData }) {
       {/* focus 팀 */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 28 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ display: "flex", width: 18, height: 40, background: focusColor, borderRadius: 5, marginRight: 16 }} />
+          {flags?.focus || OFFICIAL_TEAM_COLORS[d.focusTeam] ? (
+            <div style={{ display: "flex", marginRight: 16 }}>
+              <TeamMark teamKey={d.focusTeam} flagSrc={flags?.focus} size={46} />
+            </div>
+          ) : (
+            <div style={{ display: "flex", width: 18, height: 40, background: focusColor, borderRadius: 5, marginRight: 16 }} />
+          )}
           <div style={{ display: "flex", fontSize: 54, fontWeight: 700, color: "#fff" }}>{d.focusLabel}</div>
         </div>
         <div style={{ display: "flex", fontSize: 30, fontWeight: 700, marginTop: 16 }}>

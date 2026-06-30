@@ -63,25 +63,29 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
             style={{ aspectRatio: variant === "portrait" ? "1080 / 1320" : "1200 / 630" }}
           />
 
-          {/* 캡션 */}
-          <div className="mt-3">
-            <div className="text-[11px] text-[#8a92ad] mb-1">
-              {variant === "portrait" ? "인스타그램 캡션" : "X(트위터) 캡션"}
+          {/* 캡션 — 관리자만 (공식 계정용 문구 관리) */}
+          {canPreview && (
+            <div className="mt-3">
+              <div className="text-[11px] text-[#8a92ad] mb-1">
+                {variant === "portrait" ? "인스타그램 캡션" : "X(트위터) 캡션"} <span className="text-amber-300">· 관리자 전용</span>
+              </div>
+              <textarea
+                readOnly
+                value={caption}
+                className="w-full h-40 text-[12px] leading-relaxed rounded-lg bg-[#161d30] border border-[#2a3550] text-[#cfd6e6] p-2.5 resize-none"
+              />
             </div>
-            <textarea
-              readOnly
-              value={caption}
-              className="w-full h-40 text-[12px] leading-relaxed rounded-lg bg-[#161d30] border border-[#2a3550] text-[#cfd6e6] p-2.5 resize-none"
-            />
-          </div>
+          )}
 
           {/* 액션 */}
           <div className="flex flex-wrap gap-2 mt-3">
-            <button
-              onClick={() => copy(variant === "portrait" ? "insta" : "x")}
-              className="text-xs px-3 py-1.5 rounded-lg bg-[#5b9bf0] text-[#06223f] font-bold hover:opacity-90">
-              {copied ? "✓ 복사됨" : "📋 캡션 복사"}
-            </button>
+            {canPreview && (
+              <button
+                onClick={() => copy(variant === "portrait" ? "insta" : "x")}
+                className="text-xs px-3 py-1.5 rounded-lg bg-[#5b9bf0] text-[#06223f] font-bold hover:opacity-90">
+                {copied ? "✓ 복사됨" : "📋 캡션 복사"}
+              </button>
+            )}
             <a
               href={imgSrc}
               download={`fanarena-${data.matchId}-${variant}.png`}
@@ -98,8 +102,9 @@ export default function ShareCardPanel({ data, canPreview = false }: { data: Sha
           </div>
 
           <p className="text-[10px] text-[#5a6480] mt-3 leading-relaxed">
-            인스타그램은 세로 이미지를 저장해 업로드하고, 캡션을 붙여넣으세요.
+            인스타그램은 세로 이미지를 저장해 업로드하세요.
             X는 링크 공유 시 가로 카드가 자동으로 함께 표시됩니다.
+            {canPreview && " 캡션은 관리자에게만 보입니다."}
           </p>
         </div>
       )}
