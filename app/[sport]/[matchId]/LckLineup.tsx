@@ -1,21 +1,14 @@
 "use client";
 import type { Player } from "./types";
+import { normalizeLane } from "@/lib/lckLanes";
 
 export const LANE_ORDER = ["TOP", "JGL", "MID", "ADC", "SPT"];
 const LANE_LABEL: Record<string, string> = {
   TOP: "탑", JGL: "정글", MID: "미드", ADC: "원딜", SPT: "서폿",
 };
-const LANE_ALIAS: Record<string, string> = {
-  "TOP": "TOP", "탑": "TOP",
-  "JGL": "JGL", "JUNGLE": "JGL", "정글": "JGL",
-  "MID": "MID", "미드": "MID",
-  "ADC": "ADC", "BOT": "ADC", "원딜": "ADC", "바텀": "ADC",
-  "SPT": "SPT", "SUP": "SPT", "SUPPORT": "SPT", "서폿": "SPT", "서포터": "SPT",
-};
 
 export function laneOf(p: Player): string {
-  const key = (p.role || "").trim().toUpperCase().replace(/\s+/g, "");
-  return LANE_ALIAS[key] || LANE_ALIAS[(p.role || "").trim()] || "ETC";
+  return normalizeLane(p.role);
 }
 
 function sortByLane(players: Player[]): Player[] {

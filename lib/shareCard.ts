@@ -11,7 +11,7 @@
  * 이미지 라우트(서버)와 경기 페이지(UI)가 같은 함수를 호출해 일관성을 유지한다.
  */
 
-import { LCK_LANES } from "./lckLanes";
+import { LCK_LANES, normalizeLane } from "./lckLanes";
 
 // 카드 자동 노출 기준: 경기 총 평점 수가 이 값 이상이면 켠다.
 export const SHARE_MIN_TOTAL = 30;
@@ -275,7 +275,7 @@ function buildCaptions(m: MatchMeta, d: {
 
 function buildLckLanes(m: MatchMeta, players: PlayerMeta[], avgById: Map<string, number>): LanePair[] {
   const findLane = (team: string, code: string) =>
-    players.find((p) => p.team === team && (p.role || "").toUpperCase() === code);
+    players.find((p) => p.team === team && normalizeLane(p.role) === code);
   return LCK_LANES.map((l) => {
     const h = findLane(m.homeTeam, l.code);
     const a = findLane(m.awayTeam, l.code);
