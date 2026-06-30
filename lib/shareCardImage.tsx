@@ -331,55 +331,43 @@ export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags
 
 // ─────────────────────────── 세로형 (1080 × 1320) BEST vs WORST ───────────────────────────
 export function PortraitCard({ data: d, flags }: { data: ShareCardData; flags?: Flags }) {
-  const focusColor = teamColor(d.focusTeam, undefined, DEFAULT_HOME);
+  const homeColor = teamColor(d.homeTeam, undefined, DEFAULT_HOME);
+  const awayColor = teamColor(d.awayTeam, undefined, DEFAULT_AWAY);
 
-  const bigBox = (kind: "best" | "worst", badgeText: string, pick: CardPick | null) => {
-    const accent = kind === "best" ? "#35d07f" : "#ef5350";
-    const fill = kind === "best" ? "#102619" : "#260f10";
-    const badgeBg = kind === "best" ? "#2ea043" : "#d64545";
-    const badgeFg = kind === "best" ? "#06240f" : "#2a0708";
-    const numColor = kind === "best" ? GREEN : RED;
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          border: `3px solid ${accent}`,
-          background: fill,
-          borderRadius: 20,
-          padding: "26px 30px",
-        }}
-      >
-        <div style={{ display: "flex" }}>
-          <div
-            style={{
-              display: "flex",
-              background: badgeBg,
-              color: badgeFg,
-              fontSize: 22,
-              fontWeight: 700,
-              padding: "6px 18px",
-              borderRadius: 999,
-            }}
-          >
-            {badgeText}
-          </div>
+  const teamBox = (
+    teamKey: string,
+    label: string,
+    flagSrc: string | null | undefined,
+    pick: CardPick | null,
+    accent: string,
+  ) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        border: `3px solid ${accent}`,
+        background: "#141a2b",
+        borderRadius: 20,
+        padding: "24px 30px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <TeamMark teamKey={teamKey} flagSrc={flagSrc} size={40} />
+        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: "#fff", marginLeft: 14 }}>{label}</div>
+        <div style={{ display: "flex", marginLeft: "auto", fontSize: 18, color: MUTED }}>최고 평점</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", fontSize: 58, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
+          <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 8 }}>{pick ? pickTag(pick) : ""}</div>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 14 }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: 60, fontWeight: 700, color: "#fff" }}>{pick ? pick.name : "-"}</div>
-            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, marginTop: 10 }}>{pick ? pickTag(pick) : ""}</div>
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end" }}>
-            <div style={{ display: "flex", fontSize: 88, fontWeight: 700, color: numColor }}>
-              {pick ? fmt(pick.avg) : "-"}
-            </div>
-            <div style={{ display: "flex", fontSize: 24, color: SUBTLE, paddingBottom: 16, marginLeft: 6 }}>/ 10</div>
-          </div>
+        <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, color: GOLD }}>{pick ? fmt(pick.avg) : "-"}</div>
+          <div style={{ display: "flex", fontSize: 24, color: SUBTLE, paddingBottom: 14, marginLeft: 6 }}>/ 10</div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const pill = (text: string) => (
     <div style={{ display: "flex", justifyContent: "center" }}>
@@ -430,32 +418,24 @@ export function PortraitCard({ data: d, flags }: { data: ShareCardData; flags?: 
         </div>
       </div>
 
-      {/* focus 팀 */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 28 }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {flags?.focus || OFFICIAL_TEAM_COLORS[d.focusTeam] ? (
-            <div style={{ display: "flex", marginRight: 16 }}>
-              <TeamMark teamKey={d.focusTeam} flagSrc={flags?.focus} size={46} />
-            </div>
-          ) : (
-            <div style={{ display: "flex", width: 18, height: 40, background: focusColor, borderRadius: 5, marginRight: 16 }} />
-          )}
-          <div style={{ display: "flex", fontSize: 54, fontWeight: 700, color: "#fff" }}>{d.focusLabel}</div>
-        </div>
-        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, marginTop: 16 }}>
-          <span style={{ color: GOLD }}>최고 평점</span>
-          <span style={{ color: "#aeb6cc", padding: "0 10px" }}>vs</span>
-          <span style={{ color: GOLD }}>최저 평점</span>
-        </div>
+      {/* 타이틀 */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 26 }}>
+        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, color: GOLD }}>팀별 최고 평점</div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 34 }}>
-        {bigBox("best", "BEST · 최고", d.best)}
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "16px 0" }}>
-          {pill(`평점 격차 ${d.gap != null ? fmt(d.gap) : "-"}`)}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 28 }}>
+        {teamBox(d.homeTeam, d.homeLabel, flags?.home, d.homeBest, homeColor)}
+        <div style={{ display: "flex", justifyContent: "center", padding: "14px 0" }}>
+          <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: "#5a6480" }}>VS</div>
         </div>
-        {bigBox("worst", "WORST · 최저", d.worst)}
-        <div style={{ display: "flex", marginTop: 18 }}>{pill(`팀 평균 ${d.focusAvg != null ? d.focusAvg.toFixed(2) : "-"}`)}</div>
+        {teamBox(d.awayTeam, d.awayLabel, flags?.away, d.awayBest, awayColor)}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 22 }}>
+          {pill(
+            d.homeAvg != null && d.awayAvg != null
+              ? `팀 평균   ${d.homeLabel} ${fmt(d.homeAvg)}   ·   ${d.awayLabel} ${fmt(d.awayAvg)}`
+              : "팀 평균 -",
+          )}
+        </div>
       </div>
 
       {/* 푸터 */}
