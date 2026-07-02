@@ -14,7 +14,7 @@ model User {
   id            String        @id @default(cuid())
   username      String        @unique // 로그인용 아이디
   nickname      String        @unique // 표시용 닉네임
-  password      String // bcrypt 해시
+  password      String?       // bcrypt 해시 (구글 로그인 유저는 null)
   email         String?       @unique // 신규 가입 필수(기존 유저는 null=인증 면제)
   emailVerified DateTime?     // 이메일 인증 완료 시각 (null=미인증)
   profilePublic Boolean       @default(true) // 프로필 공개 여부 (false=본인·관리자만)
