@@ -43,7 +43,7 @@ export default function Header() {
           )}
           {session ? (
             <>
-              <Link href="/account" className="text-gray-500 hidden sm:inline hover:text-blue-600">{session.user?.name}님</Link>
+              <Link href={`/u/${(session.user as any).id}`} className="text-gray-500 hidden sm:inline hover:text-blue-600">{session.user?.name}님</Link>
               <button onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-2 sm:px-3 py-1.5 rounded border">로그아웃</button>
             </>
