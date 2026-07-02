@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // 아이디/비번 로그인: authorize가 반환한 우리 값 사용
       if (user && (user as any).role) {
         token.id = (user as any).id;
@@ -58,6 +58,11 @@ export const authOptions: NextAuthOptions = {
           token.role = dbu.role;
           token.name = dbu.nickname;
         }
+      }
+      // 닉네임 설정 등으로 session.update() 호출 시 DB에서 최신 닉네임 반영
+      if (trigger === "update" && token.id) {
+        const dbu = await prisma.user.findUnique({ where: { id: token.id as string } });
+        if (dbu) { token.name = dbu.nickname; token.role = dbu.role; }
       }
       return token;
     },

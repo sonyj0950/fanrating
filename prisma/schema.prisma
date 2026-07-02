@@ -18,6 +18,7 @@ model User {
   email         String?       @unique // 신규 가입 필수(기존 유저는 null=인증 면제)
   emailVerified DateTime?     // 이메일 인증 완료 시각 (null=미인증)
   profilePublic Boolean       @default(true) // 프로필 공개 여부 (false=본인·관리자만)
+  nicknameSet   Boolean       @default(true) // 닉네임 확정 여부 (구글 신규 가입은 false→설정 유도)
   role          String        @default("user") // "admin" | "user"
   createdAt     DateTime      @default(now())
   tokens        Token[]

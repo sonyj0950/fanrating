@@ -8,6 +8,7 @@ export async function provisionGoogleUser(rawEmail: string, name?: string | null
   if (existing) return existing;
 
   const local = email.split("@")[0] || "user";
+  // 닉네임은 NOT NULL·유니크라 임시값을 넣고, 첫 로그인 후 유저가 직접 설정하도록 유도한다.
   const nickname = await uniqueField("nickname", cleanName(name || local));
   const username = await uniqueField("username", cleanName(`g_${local}`));
   const count = await prisma.user.count();
@@ -20,6 +21,7 @@ export async function provisionGoogleUser(rawEmail: string, name?: string | null
         nickname,
         password: null,
         emailVerified: new Date(), // 구글이 검증한 이메일
+        nicknameSet: false,        // 아직 유저가 닉네임을 정하지 않음 → /welcome로 유도
         role: count === 0 ? "admin" : "user",
       },
     });
