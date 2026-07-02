@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { OFFICIAL_TEAM_COLORS } from "@/lib/teamColors";
+import { logAdmin } from "@/lib/adminLog";
 
 // 구단 색상 오버라이드 (관리자 전용)
 // GET            : 모든 오버라이드 { team: color }
@@ -34,11 +35,13 @@ export async function POST(req: Request) {
   // 공식색과 동일하면 오버라이드 불필요 → 삭제(기본 복귀)
   if ((OFFICIAL_TEAM_COLORS[team] || "").toUpperCase() === hex) {
     await prisma.teamColor.deleteMany({ where: { team } });
+    await logAdmin("RESET_TEAM_COLOR", "TeamColor", team, "기본색 복귀");
     return NextResponse.json({ ok: true, reverted: true });
   }
   await prisma.teamColor.upsert({
     where: { team }, update: { color: hex }, create: { team, color: hex },
   });
+  await logAdmin("SET_TEAM_COLOR", "TeamColor", team, hex);
   return NextResponse.json({ ok: true });
 }
 
@@ -47,5 +50,6 @@ export async function DELETE(req: Request) {
   const team = new URL(req.url).searchParams.get("team");
   if (!team) return NextResponse.json({ error: "team 필요" }, { status: 400 });
   await prisma.teamColor.deleteMany({ where: { team } });
+  await logAdmin("RESET_TEAM_COLOR", "TeamColor", team, "기본색 복귀");
   return NextResponse.json({ ok: true });
 }

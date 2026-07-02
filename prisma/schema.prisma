@@ -30,6 +30,20 @@ model User {
   discussionReports DiscussionReport[]
 }
 
+// 관리자 조치 로그 (감사 추적). 유저 삭제돼도 남도록 관계 없이 닉네임 스냅샷 저장.
+model AdminLog {
+  id         String   @id @default(cuid())
+  adminId    String   // 조치한 관리자 User.id
+  adminName  String   // 당시 닉네임 스냅샷
+  action     String   // BLIND_COMMENT | DELETE_MATCH | EDIT_STANDINGS ...
+  targetType String   // Rating | Match | DiscussionComment | Player | ...
+  targetId   String?  // 대상 ID (있으면)
+  detail     String   @default("") // 사람이 읽을 요약
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // 이메일 인증 & 비밀번호 재설정 토큰 (원문은 이메일 링크로만 전달, DB엔 sha256 해시만 저장)
 model Token {
   id        String   @id @default(cuid())

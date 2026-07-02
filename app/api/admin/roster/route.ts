@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { classifyPitcher } from "@/lib/kboTeams";
+import { logAdmin } from "@/lib/adminLog";
 
 // KBO 로스터 관리 (관리자 전용)
 // GET    ?team=LG         : 해당 팀 선수 목록 (투수/타자/말소 분류용 필드 포함)
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
       added++;
     }
   }
+  await logAdmin("EDIT_ROSTER", "Player", null, `${team} · 추가 ${added} / 갱신 ${updated}`);
   return NextResponse.json({ ok: true, added, updated });
 }
 
@@ -67,5 +69,6 @@ export async function PATCH(req: Request) {
   if (!Object.keys(data).length) return NextResponse.json({ error: "변경할 내용 없음" }, { status: 400 });
 
   await prisma.player.update({ where: { id: playerId }, data });
+  await logAdmin("EDIT_PLAYER", "Player", playerId, Object.keys(data).join(", "));
   return NextResponse.json({ ok: true });
 }

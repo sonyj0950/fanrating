@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findFixtureId, buildGoalsRecord } from "@/lib/eplImport";
+import { logAdmin } from "@/lib/adminLog";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "이 경기의 골 데이터가 API에 없습니다." });
 
     await prisma.match.update({ where: { id: matchId }, data: { record } });
+    await logAdmin("SYNC_EPL_GOALS", "Match", matchId, `${m.homeTeam} vs ${m.awayTeam}`);
     return NextResponse.json({ ok: true, record });
   } catch (e: any) {
     return NextResponse.json({ ok: false, message: e.message }, { status: 500 });

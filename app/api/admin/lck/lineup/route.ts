@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAdmin } from "@/lib/adminLog";
 
 // LCK 경기 라인업/세트 수동 편집 (관리자 전용, 외부 API 호출 없음)
 // GET  ?matchId=X : 경기 + 양 팀 기존 LCK 선수(자동완성) + 현재 라인업/세트결과
@@ -83,5 +84,6 @@ export async function POST(req: Request) {
   if (mpRows.length) ops.push(prisma.matchPlayer.createMany({ data: mpRows }));
   await prisma.$transaction(ops);
 
+  await logAdmin("EDIT_LCK_LINEUP", "Match", b.matchId, `선수 ${mpRows.length} · ${homeWins}:${awayWins}`);
   return NextResponse.json({ ok: true, players: mpRows.length, sets: Object.keys(setResults).length, score: `${homeWins}:${awayWins}` });
 }

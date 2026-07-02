@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseStandings, replaceStandings, syncEplStandings } from "@/lib/standings";
 import { currentEplSeason } from "@/lib/eplImport";
+import { logAdmin } from "@/lib/adminLog";
 
 // 순위 관리 (관리자 전용)
 // GET    ?league=kbo      : 해당 리그 순위 행
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     if (league === "epl") {
       const season = currentEplSeason();
       const n = await syncEplStandings(season);
+      await logAdmin("SYNC_STANDINGS", "Standing", "epl", `EPL ${season} · ${n}행`);
       return NextResponse.json({ ok: true, auto: true, season, count: n });
     }
   }
@@ -41,5 +43,6 @@ export async function POST(req: Request) {
   const rows = parseStandings(text || "", drawBeforeLoss);
   if (rows.length === 0) return NextResponse.json({ error: "유효한 순위 줄이 없습니다." }, { status: 400 });
   const n = await replaceStandings(league, rows);
+  await logAdmin("EDIT_STANDINGS", "Standing", league, `${league} · ${n}행`);
   return NextResponse.json({ ok: true, count: n });
 }

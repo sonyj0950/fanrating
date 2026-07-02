@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateFootballSeed } from "@/lib/discussionSeed";
+import { logAdmin } from "@/lib/adminLog";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -97,6 +98,7 @@ export async function PATCH(req: Request, { params }: any) {
   // 종료로 바뀌면 토론 시드 생성 시도
   if (data.status === "finished") await maybeGenerateSeed(params.id);
 
+  await logAdmin("EDIT_MATCH", "Match", params.id, Object.keys(data).join(", "));
   return NextResponse.json({ ok: true });
 }
 
@@ -115,5 +117,6 @@ export async function DELETE(_req: Request, { params }: any) {
     prisma.matchPlayer.deleteMany({ where: { matchId: params.id } }),
     prisma.match.delete({ where: { id: params.id } }),
   ]);
+  await logAdmin("DELETE_MATCH", "Match", params.id, `[${exists.sport}] ${exists.homeTeam} vs ${exists.awayTeam}`);
   return NextResponse.json({ ok: true });
 }

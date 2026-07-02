@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAdmin } from "@/lib/adminLog";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -51,5 +52,6 @@ export async function POST(req: Request) {
     await prisma.matchPlayer.create({ data: { matchId: match.id, playerId: player.id, role, isDefault, segment } });
   }
 
+  await logAdmin("CREATE_MATCH", "Match", match.id, `[${b.sport}] ${homeTeam} vs ${awayTeam}`);
   return NextResponse.json({ ok: true, id: match.id });
 }

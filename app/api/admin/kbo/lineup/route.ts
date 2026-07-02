@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAdmin } from "@/lib/adminLog";
 
 // KBO 경기 라인업/교체 편집 (관리자 전용)
 // GET  ?matchId=X : 경기 정보 + 홈/원정 1군 로스터 + 현재 라인업/교체
@@ -86,5 +87,6 @@ export async function POST(req: Request) {
   if (subRows.length) ops.push(prisma.substitution.createMany({ data: subRows }));
   await prisma.$transaction(ops);
 
+  await logAdmin("EDIT_KBO_LINEUP", "Match", b.matchId, `선수 ${mpRows.length} · 교체 ${subRows.length}`);
   return NextResponse.json({ ok: true, players: mpRows.length, subs: subRows.length });
 }

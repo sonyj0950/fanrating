@@ -33,6 +33,12 @@ export default function Header() {
               <Link href="/admin/reports" className="px-2 sm:px-3 py-1.5 rounded border border-red-200 text-red-600 bg-red-50">
                 신고
               </Link>
+              <Link href="/admin/stats" className="px-2 sm:px-3 py-1.5 rounded border border-green-200 text-green-700 bg-green-50">
+                통계
+              </Link>
+              <Link href="/admin/logs" className="px-2 sm:px-3 py-1.5 rounded border border-gray-200 text-gray-600 bg-gray-50">
+                로그
+              </Link>
             </>
           )}
           {session ? (
