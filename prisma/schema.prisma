@@ -11,12 +11,15 @@ datasource db {
 }
 
 model User {
-  id        String        @id @default(cuid())
-  username  String        @unique // 로그인용 아이디
-  nickname  String        @unique // 표시용 닉네임
-  password  String // bcrypt 해시
-  role      String        @default("user") // "admin" | "user"
-  createdAt DateTime      @default(now())
+  id            String        @id @default(cuid())
+  username      String        @unique // 로그인용 아이디
+  nickname      String        @unique // 표시용 닉네임
+  password      String // bcrypt 해시
+  email         String?       @unique // 신규 가입 필수(기존 유저는 null=인증 면제)
+  emailVerified DateTime?     // 이메일 인증 완료 시각 (null=미인증)
+  role          String        @default("user") // "admin" | "user"
+  createdAt     DateTime      @default(now())
+  tokens        Token[]
   ratings   Rating[]
   replies   Reply[]
   likes     CommentLike[]
@@ -25,6 +28,19 @@ model User {
   discussionReplies DiscussionReply[]
   discussionLikes DiscussionLike[]
   discussionReports DiscussionReport[]
+}
+
+// 이메일 인증 & 비밀번호 재설정 토큰 (원문은 이메일 링크로만 전달, DB엔 sha256 해시만 저장)
+model Token {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique // sha256(raw)
+  type      String   // "verify" | "reset"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Match {
