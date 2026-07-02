@@ -1,17 +1,37 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // 프로필 공개 설정
+  const [pub, setPub] = useState<boolean | null>(null);
+  const [pubBusy, setPubBusy] = useState(false);
 
   // 비밀번호 변경
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
   const [pwMsg, setPwMsg] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/account/profile").then(r => r.ok ? r.json() : null).then(j => { if (j) setPub(j.profilePublic); });
+  }, [status]);
+
+  async function togglePublic(nextVal: boolean) {
+    setPubBusy(true);
+    const res = await fetch("/api/account/profile", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profilePublic: nextVal }),
+    });
+    setPubBusy(false);
+    if (res.ok) setPub(nextVal);
+  }
 
   // 탈퇴
   const [delPw, setDelPw] = useState("");
@@ -55,7 +75,27 @@ export default function AccountPage() {
   return (
     <div className="max-w-md mx-auto space-y-6">
       <h1 className="text-xl font-bold">내 계정</h1>
-      <p className="text-sm text-gray-500">{(session.user as any)?.name}님</p>
+      <p className="text-sm text-gray-500">
+        {(session.user as any)?.name}님 ·{" "}
+        <Link href={`/u/${(session.user as any)?.id}`} className="text-blue-600 underline">내 프로필 보기</Link>
+      </p>
+
+      {/* 프로필 공개 설정 */}
+      <section className="bg-white border rounded-lg p-4 space-y-2">
+        <h2 className="font-semibold text-sm">프로필 공개</h2>
+        <p className="text-xs text-gray-500">공개하면 다른 이용자가 내 평점·통계를 볼 수 있습니다. 비공개하면 본인만 볼 수 있습니다.</p>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-sm">
+            {pub === null ? "불러오는 중…" : pub ? "🌐 공개 중" : "🔒 비공개"}
+          </span>
+          <button
+            onClick={() => pub !== null && togglePublic(!pub)}
+            disabled={pubBusy || pub === null}
+            className={`text-sm rounded px-4 py-1.5 disabled:opacity-40 ${pub ? "border" : "bg-blue-600 text-white"}`}>
+            {pub ? "비공개로 전환" : "공개로 전환"}
+          </button>
+        </div>
+      </section>
 
       {/* 비밀번호 변경 */}
       <section className="bg-white border rounded-lg p-4 space-y-2">

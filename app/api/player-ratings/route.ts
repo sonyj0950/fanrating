@@ -39,6 +39,7 @@ export async function GET(req: Request) {
     .filter(r => r.comment.trim() !== "")
     .map(r => ({
       id: r.id,
+      userId: r.userId,
       username: r.user.nickname,
       score: r.score,
       text: r.comment,
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
       reportCount: r.reports.length,
       reportedByMe: viewerId ? r.reports.some(rp => rp.userId === viewerId) : false,
       mine: viewerId ? r.userId === viewerId : false,
-      replies: r.replies.map(rp => ({ id: rp.id, username: rp.user.nickname, text: rp.text })),
+      replies: r.replies.map(rp => ({ id: rp.id, userId: rp.userId, username: rp.user.nickname, text: rp.text })),
     }))
     .sort((a, b) => b.likes - a.likes);
 

@@ -24,6 +24,7 @@ export async function GET(req: Request, { params }: any) {
 
   const items = list.map(c => ({
     id: c.id,
+    userId: c.userId,
     username: c.user.nickname,
     text: c.text,
     blinded: c.blinded,
@@ -31,7 +32,7 @@ export async function GET(req: Request, { params }: any) {
     likes: c._count.likes,
     reportCount: c.reports.length,
     reportedByMe: viewerId ? c.reports.some(r => r.userId === viewerId) : false,
-    replies: c.replies.map(r => ({ id: r.id, username: r.user.nickname, text: r.text })),
+    replies: c.replies.map(r => ({ id: r.id, userId: r.userId, username: r.user.nickname, text: r.text })),
     createdAt: c.createdAt,
   }))
   // 좋아요순 정렬

@@ -2,6 +2,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+// 작성자 닉네임 → 프로필 링크 (userId 없으면 일반 텍스트)
+function Author({ id, name, className }: { id?: string; name: string; className?: string }) {
+  if (!id) return <span className={className}>{name}</span>;
+  return <Link href={`/u/${id}`} className={`${className || ""} hover:underline`}>{name}</Link>;
+}
 import BaseballField from "./BaseballField";
 import SoccerField from "./SoccerField";
 import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
@@ -1353,7 +1360,7 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
             {items.map(c => (
               <div key={c.id} className="bg-white border border-orange-100 rounded px-2.5 py-1.5">
                 <div className="flex justify-between items-start gap-2">
-                  <span className="text-[11px] text-gray-500">{c.username}</span>
+                  <Author id={c.userId} name={c.username} className="text-[11px] text-gray-500" />
                   <div className="flex gap-2 shrink-0">
                     {isAdmin && (c.blinded
                       ? <button onClick={() => setBlind(c.id, false)} className="text-[10px] text-green-600">복구</button>
@@ -1398,7 +1405,7 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
                   <div className="mt-2 space-y-1 pl-3 border-l-2 border-orange-100">
                     {c.replies.map((r: any) => (
                       <div key={r.id} className="text-xs">
-                        <span className="text-gray-400">{r.username}</span>{" "}
+                        <Author id={r.userId} name={r.username} className="text-gray-400" />{" "}
                         <span className="whitespace-pre-wrap break-words">{r.text}</span>
                       </div>
                     ))}
@@ -1722,7 +1729,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
   return (
     <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-orange-50 border-orange-200" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
       <div className="flex justify-between text-xs text-gray-500 mb-1">
-        <span>{c.username} · ⭐ {c.score}{isAdmin && c.reportCount > 0 ? <span className="text-red-500"> · 🚩 {c.reportCount}</span> : null}</span>
+        <span><Author id={c.userId} name={c.username} /> · ⭐ {c.score}{isAdmin && c.reportCount > 0 ? <span className="text-red-500"> · 🚩 {c.reportCount}</span> : null}</span>
         {!c.blinded && <button onClick={onLike} className="hover:text-red-500">👍 {c.likes}</button>}
       </div>
 
@@ -1766,7 +1773,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
         <div className="mt-2 space-y-1.5 border-l-2 border-gray-200 pl-3">
           {replies.map(r => (
             <div key={r.id} className="text-sm">
-              <span className="text-xs text-gray-500 mr-1.5">↳ {r.username}</span>
+              <span className="text-xs text-gray-500 mr-1.5">↳ <Author id={r.userId} name={r.username} /></span>
               <span className="whitespace-pre-wrap">{r.text}</span>
             </div>
           ))}

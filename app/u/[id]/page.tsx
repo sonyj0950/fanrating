@@ -18,12 +18,24 @@ export default async function ProfilePage({ params }: any) {
   const id = params.id;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, nickname: true, createdAt: true, emailVerified: true, role: true },
+    select: { id: true, nickname: true, createdAt: true, emailVerified: true, role: true, profilePublic: true },
   });
   if (!user) notFound();
 
   const session = await getServerSession(authOptions);
   const isOwner = (session?.user as any)?.id === id;
+  const viewerIsAdmin = (session?.user as any)?.role === "admin";
+
+  // 비공개 프로필: 본인·관리자만 열람. 그 외에는 최소 정보만 노출.
+  if (!user.profilePublic && !isOwner && !viewerIsAdmin) {
+    return (
+      <div className="bg-white border rounded-xl p-8 text-center max-w-md mx-auto mt-6">
+        <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-2xl mx-auto mb-3">🔒</div>
+        <div className="text-lg font-bold">{user.nickname}</div>
+        <p className="text-sm text-gray-500 mt-2">비공개 프로필입니다. 활동 내역이 공개되어 있지 않습니다.</p>
+      </div>
+    );
+  }
 
   // 이 유저의 평점 전체 (프로필 통계 대부분을 여기서 계산)
   const ratings = await prisma.rating.findMany({
@@ -74,6 +86,9 @@ export default async function ProfilePage({ params }: any) {
               {user.emailVerified
                 ? <span className="text-xs bg-green-50 text-green-700 rounded-full px-2 py-0.5">✓ 인증</span>
                 : <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">미인증</span>}
+              {!user.profilePublic && (isOwner || viewerIsAdmin) && (
+                <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">🔒 비공개</span>
+              )}
             </div>
             <div className="text-sm text-gray-500 mt-1">{joined} 가입</div>
           </div>
