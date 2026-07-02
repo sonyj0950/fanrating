@@ -4,7 +4,6 @@ export default function PrivacyPage() {
   return (
     <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
       <h1 className="text-xl font-bold mb-1">개인정보 처리방침</h1>
-      {/* TODO: 시행일자를 실제 날짜로 변경하세요 */}
       <p className="text-gray-500 mb-6">시행일: 2026-06-10</p>
 
       <p className="mb-6">
@@ -47,6 +46,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-5 mt-2 space-y-1">
           <li>Vercel Inc. (미국) — 웹 호스팅 및 서비스 운영</li>
           <li>Neon Inc. / Amazon Web Services (미국·싱가포르 리전) — 데이터베이스 저장</li>
+          <li>Google LLC (미국) — 광고 게재(Google AdSense) 및 이용 분석. 쿠키를 통한 광고 식별자 등 자동 수집 정보가 처리될 수 있습니다.</li>
         </ul>
         <p className="mt-2">이전 항목: 위 1항의 수집 정보. 이전 목적: 서비스 제공. 보유 기간: 회원 탈퇴 또는 위탁 종료 시까지.</p>
       </Section>
@@ -60,15 +60,34 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="8. 쿠키의 사용">
-        <p>서비스는 로그인 상태 유지를 위해 쿠키(세션)를 사용합니다. 이용자는 브라우저 설정에서 쿠키 저장을 거부할 수 있으나, 이 경우 로그인 등 일부 기능이 제한될 수 있습니다.</p>
+        <p>서비스는 로그인 상태 유지를 위해 쿠키(세션)를 사용합니다. 또한 아래 9항의 광고·분석 목적으로 서비스 및 제3자(광고 사업자)가 쿠키를 사용할 수 있습니다. 이용자는 브라우저 설정에서 쿠키 저장을 거부할 수 있으나, 이 경우 로그인 등 일부 기능이 제한될 수 있습니다.</p>
       </Section>
 
-      <Section title="9. 개인정보의 안전성 확보 조치">
+      <Section title="9. 온라인 맞춤형 광고 및 행태정보">
+        <p>
+          서비스는 운영을 위해 Google AdSense 등 제3자 광고 서비스를 게재할 수 있습니다. 이 과정에서
+          광고 사업자는 쿠키·광고 식별자 등 이용자의 행태정보(방문 기록, 관심사 등)를 자동으로 수집하여
+          맞춤형 광고 제공에 이용할 수 있으며, 이러한 정보는 서비스가 아닌 해당 광고 사업자가 직접
+          수집·보관합니다.
+        </p>
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          <li>수집 주체: Google LLC 등 제3자 광고 사업자</li>
+          <li>수집 항목: 쿠키, 광고 식별자, 방문·클릭 등 행태정보</li>
+          <li>이용 목적: 맞춤형 광고 제공 및 광고 성과 측정</li>
+          <li>거부 방법: 이용자는 브라우저 쿠키 차단, 또는 Google 광고 설정
+            (<a className="text-blue-600 underline" href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">adssettings.google.com</a>)
+            에서 맞춤형 광고를 거부할 수 있습니다.</li>
+        </ul>
+        <p className="mt-2">Google의 데이터 처리에 관한 자세한 내용은 Google 개인정보처리방침(
+          <a className="text-blue-600 underline" href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">policies.google.com/technologies/partner-sites</a>
+          )을 참고하시기 바랍니다.</p>
+      </Section>
+
+      <Section title="10. 개인정보의 안전성 확보 조치">
         <p>비밀번호는 복호화가 불가능한 방식으로 암호화하여 저장하며, 데이터 전송 구간은 HTTPS로 암호화됩니다. 접근 권한을 최소한으로 관리합니다.</p>
       </Section>
 
-      <Section title="10. 개인정보 보호책임자">
-        {/* TODO: 책임자 이름과 연락 이메일을 채우세요 */}
+      <Section title="11. 개인정보 보호책임자">
         <ul className="list-disc pl-5 space-y-1">
           <li>책임자: fanarena.kr 관리자</li>
           <li>연락처(이메일): fanarenakr@gmail.com</li>
@@ -76,7 +95,7 @@ export default function PrivacyPage() {
         <p className="mt-2">개인정보 관련 문의·불만·피해구제는 위 연락처로 접수해 주시기 바랍니다.</p>
       </Section>
 
-      <Section title="11. 고지 의무">
+      <Section title="12. 고지 의무">
         <p>본 방침의 내용이 변경되는 경우 시행일 및 변경 사항을 서비스 화면에 공지합니다.</p>
       </Section>
 

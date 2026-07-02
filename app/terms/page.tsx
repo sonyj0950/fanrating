@@ -4,7 +4,6 @@ export default function TermsPage() {
   return (
     <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
       <h1 className="text-xl font-bold mb-1">이용약관 및 운영정책</h1>
-      {/* TODO: 시행일자 변경 */}
       <p className="text-gray-500 mb-6">시행일: 2026-06-10</p>
 
       <Section title="제1조 (목적)">
