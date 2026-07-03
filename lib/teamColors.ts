@@ -44,7 +44,21 @@ export function badgeTextColor(hex: string): string {
   return lum >= 0.6 ? "#1a1a1a" : "#fff";
 }
 
-// 팀 배지 라벨: 공백 제거 후 앞 3글자 (두산, LG, T1, 토트넘 등)
+// 긴 팀명의 배지 약칭 (명시 우선)
+const BADGE_ABBR: Record<string, string> = {
+  "디플러스 기아": "DK", "한진 브리온": "BRO", "농심 레드포스": "NS",
+  "BNK 피어엑스": "BFX", "KT 롤스터": "KT", 한화생명: "HLE",
+  대한민국: "KOR",
+};
+
+// 팀 배지 라벨: 명시 약칭 > 3글자 이하 그대로 > 짧은 첫 단어 > 앞 2글자
+// (예: 두산, T1, 토트넘 → 그대로 / 한진 브리온 → 한진 / 한화생명 → HLE)
 export function badgeLabel(team: string): string {
-  return team.replace(/\s+/g, "").slice(0, 3);
+  const t = team.trim();
+  if (BADGE_ABBR[t]) return BADGE_ABBR[t];
+  const compact = t.replace(/\s+/g, "");
+  if (compact.length <= 3) return compact;
+  const first = t.split(/\s+/)[0];
+  if (first.length >= 2 && first.length <= 3) return first;
+  return compact.slice(0, 2);
 }
