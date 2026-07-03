@@ -1,6 +1,7 @@
 "use client";
 import type { Player } from "./types";
 import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { scoreChipStyle } from "@/lib/scoreColor";
 
 type SubInfo = Record<string, { dir: "in" | "out"; min: number }>;
 type SubKind = Record<string, string>; // playerId → 교체 종류(투수교체/대타/대주자/수비교체)
@@ -40,19 +41,19 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
   { p: Player; left: number; top: number; color: string; highlight?: boolean;
     onPick: (p: Player) => void; sub?: { dir: "in" | "out"; min: number } }) {
   const rated = p.avg !== null;
-  const hot = rated && (p.avg as number) >= 7.5;  // 골드 채움
-  const low = rated && (p.avg as number) < 5.5;   // 적갈색 숫자
   const posShort = POS_SHORT[p.role] ?? "";
   return (
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
       style={{ left: `${left}%`, top: `${top}%` }}
       className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20">
       <span className="relative">
-        <span style={{ boxShadow: ringShadow(color) }}
+        {/* 흰 분리 링 + 구단색 링 — 색 칩이 잔디와 겹치지 않게 */}
+        <span style={{ boxShadow: `0 0 0 2px #fffdf8, 0 0 0 4.5px ${color}, 0 1px 5px rgba(0,0,0,.35)`,
+            ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
           className={`min-w-[34px] h-[34px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full
           ${highlight ? "outline outline-2 outline-gold outline-offset-1" : ""}
           flex items-center justify-center text-[13px] sm:text-[14px] font-extrabold tabular-nums
-          ${hot ? "bg-gold text-ink" : `bg-card ${low ? "text-live" : rated ? "text-ink" : "text-wfaint"}`}
+          ${rated ? "" : "bg-card text-wfaint"}
           group-hover:scale-110 transition`}>
           {rated ? p.avg : "–"}
         </span>
@@ -75,9 +76,9 @@ function Chip({ p, color, sub, kind, onPick }:
       className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
         hover:bg-white hover:border-wsub active:scale-95 transition group">
       <SubBadge s={sub} />
-      <span style={{ boxShadow: ringShadow(color) }}
+      <span style={{ boxShadow: ringShadow(color), ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
         className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
-        ${rated && (p.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${rated ? "text-ink" : "text-wmute"}`}
+        ${rated ? "" : "bg-card text-wmute"}
         group-hover:scale-105 transition`}>
         {rated ? p.avg : "–"}
       </span>
@@ -111,8 +112,8 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <span className="min-w-0 flex-1">
               <span className="flex items-center justify-between gap-1">
                 <span className="font-semibold text-sm truncate">{p.name}</span>
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums
-                  ${p.avg !== null ? "bg-goldbg text-golddim" : "bg-wgray text-wfaint"}`}>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums ${p.avg !== null ? "" : "bg-wgray text-wfaint"}`}
+                  style={p.avg !== null ? scoreChipStyle(p.avg as number) : undefined}>
                   {p.avg !== null ? p.avg : "－"}
                 </span>
               </span>
@@ -201,9 +202,9 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
               className="absolute left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10
                 flex items-center gap-1 bg-card/95 rounded-full pl-0.5 pr-1.5 py-0.5 shadow-md border border-wline">
-              <span style={{ boxShadow: ringShadow(color) }}
+              <span style={{ boxShadow: ringShadow(color), ...(dh.avg !== null ? scoreChipStyle(dh.avg as number) : {}) }}
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
-                ${dh.avg !== null && (dh.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${dh.avg !== null ? "text-ink" : "text-wmute"}`}`}>
+                ${dh.avg !== null ? "" : "bg-card text-wmute"}`}>
                 {dh.avg !== null ? dh.avg : "–"}
               </span>
               <span className="text-[10px] font-bold text-ink whitespace-nowrap">지명 {dh.name}</span>
@@ -240,11 +241,13 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
                   const s = subInfo[p.playerId];
                   return (
                     <button key={p.mpId} onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
-                      className="flex items-center justify-between bg-paper border border-wline rounded-lg px-2.5 py-1.5
+                      className="flex items-center gap-2 bg-paper border border-wline rounded-lg px-2.5 py-1.5
                         hover:border-ink hover:shadow-sm transition">
-                      <span className="text-[13px] font-semibold text-ink truncate">{p.name}</span>
-                      <span className="text-[11px] text-wsub shrink-0 ml-2 tabular-nums">
-                        {s ? `${s.min}회 ` : ""}{p.avg !== null ? <b className={(p.avg as number) >= 7.5 ? "text-golddim" : "text-ink"}>{p.avg}</b> : "－"}
+                      <span className="text-[13px] font-semibold text-ink truncate flex-1 text-left">{p.name}</span>
+                      {s && <span className="text-[10px] font-bold text-golddim bg-goldbg rounded px-1 py-0.5 shrink-0 tabular-nums">{s.min}회</span>}
+                      <span className={`min-w-[30px] h-[24px] px-1 rounded-lg flex items-center justify-center text-[13px] font-extrabold tabular-nums shrink-0 ${p.avg !== null ? "" : "bg-wgray text-wfaint"}`}
+                        style={p.avg !== null ? scoreChipStyle(p.avg as number) : undefined}>
+                        {p.avg !== null ? p.avg : "–"}
                       </span>
                     </button>
                   );
