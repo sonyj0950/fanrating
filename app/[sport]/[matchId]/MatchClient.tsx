@@ -71,6 +71,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const router = useRouter();
   const [seg, setSeg] = useState("full");
   const [open, setOpen] = useState<Player | null>(null);
+  const [cRev, setCRev] = useState(0); // 코멘트 요약 재조회 트리거 (모달 닫힐 때 +1)
+  const [subsListOpen, setSubsListOpen] = useState(false); // ⚾ 교체 기록 접기/펼치기
   const [showAll, setShowAll] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
@@ -412,8 +414,13 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
         {match.sport === "kbo" && subs.length > 0 && (
           <div className="mt-4 bg-card border border-wline rounded-xl p-3">
-            <div className="text-sm font-bold text-ink mb-2">교체 기록</div>
-            <div className="space-y-1">
+            <button onClick={() => setSubsListOpen(v => !v)}
+              className="w-full flex items-center justify-between text-sm font-bold text-ink">
+              <span>교체 기록 <span className="text-wfaint font-semibold">{subs.length}건</span></span>
+              <span className="text-[11px] text-wfaint font-semibold">{subsListOpen ? "접기 ▲" : "펼치기 ▼"}</span>
+            </button>
+            {subsListOpen && (
+            <div className="space-y-1 mt-2 pt-2 border-t border-dashed border-wsoft">
               {subs.slice().sort((a, b) => a.minute - b.minute).map((s, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
                   {s.minute ? <span className="text-[11px] font-bold text-golddim bg-goldbg rounded px-1.5 py-0.5 shrink-0 tabular-nums">{s.minute}회</span> : null}
@@ -424,6 +431,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
                 </div>
               ))}
             </div>
+            )}
           </div>
         )}
       </div>
@@ -431,7 +439,8 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {/* 평점 리스트 (캡처용) — 축구·야구, 현재 탭 기준 */}
       {(match.sport === "kleague" || match.sport === "epl" || match.sport === "kbo") && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} sport={match.sport} teamColors={teamColors} />
+          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} sport={match.sport} teamColors={teamColors}
+          matchId={match.id} seg={seg} loggedIn={!!session} rev={cRev} />
       )}
 
       {/* 라인 대결 비교 — LCK만, 현재 세트 탭 기준 */}
@@ -442,7 +451,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {open && <PlayerModal matchId={match.id} player={open} loggedIn={!!session} segment={seg}
         segments={segments} status={match.status} sport={match.sport}
-        onClose={() => { setOpen(null); router.refresh(); }}/>}
+        onClose={() => { setOpen(null); setCRev(v => v + 1); router.refresh(); }}/>}
 
       {addOpen && <AddPlayerModal matchId={match.id} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
         onClose={() => { setAddOpen(false); router.refresh(); }}/>}
@@ -559,14 +568,38 @@ const BB_GROUP_LABEL: Record<string, string> = { P: "투수", C: "포수", IF: "
 const BB_GROUP_ICON: Record<string, string> = { P: "⚾", C: "🧤", IF: "🔷", OF: "🟢", DH: "🏏" };
 const BB_GROUP_ORDER = ["P", "C", "IF", "OF", "DH"] as const;
 
-// 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
-function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {}, sport, teamColors = {} }:
+// 평점 리스트 (높은순 / 낮은순 / 포지션 비교) — 행마다 베스트 한 줄 + 펼치면 인라인 토론
+type CommentSummary = {
+  players: Record<string, { count: number; top: { id: string; score: number; text: string; likes: number }[] }>;
+  myRatings: Record<string, Record<string, number>>;
+};
+
+function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {}, sport, teamColors = {},
+  matchId, seg, loggedIn, rev }:
   { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string;
     isMine: boolean; pog: Player | null; onPick: (p: Player) => void;
     subInfo?: Record<string, { dir: "in" | "out"; min: number }>; sport?: string;
-    teamColors?: Record<string, string> }) {
+    teamColors?: Record<string, string>;
+    matchId: string; seg: string; loggedIn: boolean; rev: number }) {
   const [mode, setMode] = useState<"high" | "low" | "pos">("high");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [cdata, setCdata] = useState<CommentSummary | null>(null);
   const all = [...home, ...away];
+
+  // 선수별 코멘트 요약 (베스트 한 줄·개수·내 평점) — 경기 단위 1회 조회
+  async function loadComments() {
+    try {
+      const r = await fetch(`/api/match-comments?matchId=${matchId}`);
+      if (r.ok) setCdata(await r.json());
+    } catch {}
+  }
+  useEffect(() => { loadComments(); /* eslint-disable-next-line */ }, [matchId, rev]);
+
+  async function likeComment(id: string) {
+    if (!loggedIn) { alert("로그인이 필요합니다."); return; }
+    await fetch(`/api/comment/${id}/like`, { method: "POST" });
+    loadComments();
+  }
   // 사이드 바/닷에 쓸 실제 구단색 (없으면 홈/원정 기본색)
   const hColor = resolveTeamColor(homeTeam, teamColors, DEFAULT_HOME);
   const aColor = resolveTeamColor(awayTeam, teamColors, DEFAULT_AWAY);
@@ -599,18 +632,79 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     const medal = mode === "high" && rank <= 3;
     const rkClass = !medal ? "text-wmute"
       : rank === 1 ? "bg-gold text-ink" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
+
+    const pc = cdata?.players?.[p.playerId];
+    const best = pc?.top?.[0];
+    const isOpen = !isMine && expanded === p.playerId;
+    const myScore = cdata?.myRatings?.[p.playerId]?.[seg];
+
     return (
-      <button onClick={() => onPick(p)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-wsoft first:border-t-0 hover:bg-paper text-left">
-        <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg tabular-nums ${rkClass}`}>{rank}</span>
-        <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: isHome ? hColor : aColor }} />
-        <span className="flex-1 min-w-0 flex items-center gap-1.5">
-          <span className="text-[14.5px] font-bold text-ink truncate">{p.name}</span>
-          {p.role && <span className="text-[10px] font-bold text-wfaint bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
-          <SubBadge pid={p.playerId} />
-        </span>
-        <span className="w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums" style={scoreChipStyle(v)}>{v}</span>
-      </button>
+      <div className={`border-t border-wsoft first:border-t-0 ${isOpen ? "border-l-[3px] border-l-gold" : ""}`}>
+        <button onClick={() => isMine ? onPick(p) : setExpanded(isOpen ? null : p.playerId)}
+          className="w-full px-3 py-2 hover:bg-paper text-left">
+          <span className="flex items-center gap-2.5">
+            <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg tabular-nums ${rkClass}`}>{rank}</span>
+            <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: isHome ? hColor : aColor }} />
+            <span className="flex-1 min-w-0 flex items-center gap-1.5">
+              <span className="text-[14.5px] font-bold text-ink truncate">{p.name}</span>
+              {p.role && <span className="text-[10px] font-bold text-wfaint bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
+              <SubBadge pid={p.playerId} />
+            </span>
+            <span className="w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums" style={scoreChipStyle(v)}>{v}</span>
+            {!isMine && <span className="text-[10px] text-wfaint shrink-0">{isOpen ? "▴" : "▾"}</span>}
+          </span>
+          {/* 베스트 한 줄 (접힘 상태) */}
+          {!isMine && !isOpen && (
+            <span className="flex items-center gap-1.5 mt-1 pl-[38px] pr-1">
+              {best ? (
+                <>
+                  <span className="text-[12px] text-wsub truncate">“{best.text}”</span>
+                  <span className="ml-auto shrink-0 text-[11px] text-wfaint tabular-nums">💬 {pc!.count}</span>
+                </>
+              ) : (
+                <span className="text-[12px] text-wmute italic">첫 한마디를 남겨보세요</span>
+              )}
+            </span>
+          )}
+        </button>
+
+        {/* 펼침: 상위 코멘트 + 좋아요 + 평점 모달 CTA */}
+        {isOpen && (
+          <div className="pl-[50px] pr-3 pb-3">
+            {(pc?.top ?? []).map(c => (
+              <div key={c.id} className="flex items-center gap-2 py-1.5 border-t border-dashed border-wsoft first:border-t-0">
+                <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold shrink-0" style={scoreChipStyle(c.score)}>{c.score}</span>
+                <span className="text-[13px] text-ink flex-1 min-w-0 break-words">{c.text}</span>
+                <button onClick={() => likeComment(c.id)}
+                  className="shrink-0 text-[11px] text-wsub border border-wline rounded-full px-2 py-0.5 hover:border-ink hover:text-ink transition tabular-nums">
+                  👍 {c.likes}
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-1.5 mt-2 items-center">
+              <button onClick={() => onPick(p)}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-full py-1.5 text-[12.5px] font-bold transition ${
+                  myScore != null
+                    ? "bg-card text-ink border-[1.5px] border-ink hover:bg-paper"
+                    : "bg-ink text-paper hover:opacity-90"}`}>
+                {myScore != null ? (
+                  <>내 평점 수정
+                    <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold" style={scoreChipStyle(myScore)}>{myScore}</span>
+                  </>
+                ) : (
+                  <><GoldStar className="w-3 h-3" /> 내 평점·코멘트 남기기</>
+                )}
+              </button>
+              {pc?.count ? (
+                <button onClick={() => onPick(p)}
+                  className="shrink-0 text-[11.5px] font-semibold text-wsub border border-wline bg-card rounded-full px-3 py-1.5 hover:border-ink hover:text-ink transition tabular-nums">
+                  전체 {pc.count}개
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
