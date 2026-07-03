@@ -30,14 +30,20 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "권한없음" }, { status: 403 });
-  const { team, text } = await req.json();
+  const { team, text, sync } = await req.json();
   if (!team) return NextResponse.json({ error: "team 필요" }, { status: 400 });
 
   const lines = (text || "").split("\n").map((l: string) => l.trim()).filter(Boolean);
+  // 동기화 모드 오작동 방지: 전체 명단이라기엔 너무 짧으면 거부 (1군 로스터는 통상 26~28명)
+  if (sync && lines.length < 15)
+    return NextResponse.json({ error: `동기화 모드는 전체 명단(15명 이상)을 붙여넣어야 합니다. 현재 ${lines.length}명 — 일부만 추가하려면 동기화를 끄세요.` }, { status: 400 });
+
   let added = 0, updated = 0;
+  const namesInList: string[] = [];
   for (const line of lines) {
     const [name, position] = line.split(",").map((s: string) => s.trim());
     if (!name) continue;
+    namesInList.push(name);
     const isPitcher = classifyPitcher(position);
     const existing = await prisma.player.findFirst({ where: { name, team } });
     if (existing) {
@@ -53,8 +59,20 @@ export async function POST(req: Request) {
       added++;
     }
   }
-  await logAdmin("EDIT_ROSTER", "Player", null, `${team} · 추가 ${added} / 갱신 ${updated}`);
-  return NextResponse.json({ ok: true, added, updated });
+
+  // 동기화 모드: 붙여넣은 명단에 없는 1군 선수는 말소 (삭제 아님 — 평점 이력 보존)
+  let deactivated = 0;
+  if (sync) {
+    const r = await prisma.player.updateMany({
+      where: { team, rosterActive: true, name: { notIn: namesInList } },
+      data: { rosterActive: false },
+    });
+    deactivated = r.count;
+  }
+
+  await logAdmin("EDIT_ROSTER", "Player", null,
+    `${team} · 추가 ${added} / 갱신 ${updated}` + (sync ? ` / 말소 ${deactivated}` : ""));
+  return NextResponse.json({ ok: true, added, updated, deactivated });
 }
 
 export async function PATCH(req: Request) {

@@ -24,6 +24,8 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -89,6 +91,80 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
     });
   }
 
+  const curTeam = tab === "home" ? match.homeTeam : match.awayTeam;
+
+  // ↩ 같은 팀의 가장 최근 경기 라인업을 현재 탭에 복사
+  async function loadRecent() {
+    setMsg("");
+    const res = await fetch(`/api/admin/kbo/lineup?matchId=${matchId}&recentFor=${encodeURIComponent(curTeam)}`);
+    const j = await res.json();
+    if (!res.ok) { setMsg(j.error || "최근 라인업이 없습니다."); return; }
+    setNameMap(nm => ({ ...nm, ...j.names }));
+    setSide(s => ({ pitcherId: j.pitcherId || s.pitcherId, batters: j.batters }));
+    setMsg(`${KBO_TEAM_LABELS[curTeam] || curTeam} — ${j.sourceLabel} 라인업을 불러왔습니다. 바뀐 자리만 고치고 저장하세요.`);
+  }
+
+  // 📋 붙여넣기 파서 — "1 신민재 2루수" / "선발 임찬규" 형식 인식, 로스터 이름과 대조
+  function normPos(tok: string): string | null {
+    const t = tok.trim();
+    const all = KBO_BATTER_POSITIONS as readonly string[];
+    if (all.includes(t)) return t;
+    if (t === "지타" || t.toUpperCase() === "DH") return "지명타자";
+    if (all.includes(t + "수")) return t + "수";
+    return null;
+  }
+  function findByName(name: string, list: RP[]): RP | undefined {
+    const n = name.replace(/\s+/g, "");
+    return n ? list.find(p => p.name.replace(/\s+/g, "") === n) : undefined;
+  }
+  // 이름이 아닌 토큰: 타율 등 숫자, 투타 표기(좌타·우투좌타…), 라벨성 단어
+  function isNoise(t: string): boolean {
+    return /^[0-9.%:-]+$/.test(t) || /^[좌우양][투타]/.test(t) || t === "타율" || t === "타순";
+  }
+  function applyPaste() {
+    const bs = emptyBatters();
+    let pitcherId = "";
+    const issues: string[] = [];
+    for (const raw of pasteText.split("\n")) {
+      const s = raw.replace(/[()\[\],·|/]/g, " ").replace(/\s+/g, " ").trim();
+      if (!s) continue;
+      const m = s.match(/^([1-9])\s*[.)번:]?\s*(.+)$/);
+      if (m) {
+        const order = Number(m[1]);
+        const tokens = m[2].split(" ").filter(t => t && !isNoise(t));
+        let pos = "";
+        const nameToks: string[] = [];
+        for (const t of tokens) {
+          const p = normPos(t);
+          if (p && !pos) pos = p;
+          else nameToks.push(t);
+        }
+        const name = nameToks.join(" ");
+        const found = findByName(name, batters) || findByName(name, roster);
+        if (!found) { issues.push(`${order}번 "${name}" 로스터에 없음`); continue; }
+        bs[order - 1] = { playerId: found.id, position: pos || found.position || "" };
+      } else {
+        const tokens = s.split(" ").filter(t => !/^(선발|투수|SP)$/i.test(t) && !isNoise(t));
+        const name = tokens.join(" ");
+        const found = findByName(name, pitchers) || findByName(name, roster);
+        if (found) pitcherId = found.id;
+        else if (name) issues.push(`"${name}" 인식 못 함`);
+      }
+    }
+    const filled = bs.filter(b => b.playerId).length;
+    if (!filled && !pitcherId) {
+      setMsg('인식된 선수가 없습니다. 한 줄에 한 명 — 타순은 "1 신민재 2루수", 선발투수는 "선발 임찬규" 형식.');
+      return;
+    }
+    setSide(s => ({
+      pitcherId: pitcherId || s.pitcherId,
+      batters: bs.map((b, i) => (b.playerId ? b : s.batters[i])),
+    }));
+    setPasteText("");
+    setMsg(`붙여넣기 적용 — 타순 ${filled}자리${pitcherId ? " + 선발투수" : ""}` +
+      (issues.length ? ` · 확인 필요: ${issues.join(", ")}` : ""));
+  }
+
   async function save() {
     setSaving(true); setMsg("");
     try {
@@ -133,6 +209,33 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
       </div>
 
       {msg && <p className="text-sm mb-3 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+
+      {/* 빠른 입력 도구 — 현재 탭 팀에만 적용 */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <button onClick={loadRecent}
+          className="text-sm px-3 py-1.5 rounded border bg-white hover:bg-gray-50 font-semibold">
+          ↩ 최근 라인업 불러오기
+        </button>
+        <button onClick={() => setPasteOpen(v => !v)}
+          className={`text-sm px-3 py-1.5 rounded border font-semibold ${pasteOpen ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white hover:bg-gray-50"}`}>
+          📋 붙여넣기로 채우기
+        </button>
+        <span className="text-[11px] text-gray-400">
+          {KBO_TEAM_LABELS[curTeam] || curTeam} 탭에 적용됩니다
+        </span>
+      </div>
+      {pasteOpen && (
+        <div className="bg-white rounded p-3 shadow mb-3">
+          <textarea className="border rounded p-2 w-full h-28 text-sm" value={pasteText}
+            placeholder={"한 줄에 한 명 — 타순·이름·포지션 순서, 괄호·쉼표 섞여도 OK\n1 신민재 2루수\n2 박해민 (중견수)\n…\n선발 임찬규"}
+            onChange={e => setPasteText(e.target.value)} />
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-[11px] text-gray-400">이름이 1군 로스터와 일치해야 채워집니다 (없으면 확인 목록으로 표시)</span>
+            <button onClick={applyPaste} disabled={!pasteText.trim()}
+              className="text-sm px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40">적용</button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded p-4 shadow mb-3">
         <div className="flex items-center gap-3 pb-2 mb-2 border-b">

@@ -24,6 +24,42 @@ export async function GET(req: Request) {
   });
   if (!match) return NextResponse.json({ error: "경기를 찾을 수 없음" }, { status: 404 });
 
+  // ↩ 최근 라인업 불러오기 — 이 경기보다 앞선 해당 팀의 가장 최근 타순 있는 경기에서 복사
+  const recentFor = new URL(req.url).searchParams.get("recentFor");
+  if (recentFor) {
+    const candidates = await prisma.match.findMany({
+      where: {
+        sport: "kbo", id: { not: matchId }, date: { lt: match.date },
+        OR: [{ homeTeam: recentFor }, { awayTeam: recentFor }],
+      },
+      orderBy: { date: "desc" }, take: 10,
+      select: { id: true, date: true, homeTeam: true, awayTeam: true },
+    });
+    for (const c of candidates) {
+      const rows = await prisma.matchPlayer.findMany({
+        where: { matchId: c.id, player: { team: recentFor } },
+        select: { playerId: true, role: true, battingOrder: true, player: { select: { name: true } } },
+      });
+      if (!rows.some(r => r.battingOrder != null)) continue;
+      const batters = Array.from({ length: 9 }, () => ({ playerId: "", position: "" }));
+      let pitcherId = "";
+      const names: Record<string, string> = {};
+      for (const r of rows) {
+        names[r.playerId] = r.player.name;
+        if (r.battingOrder != null && r.battingOrder >= 1 && r.battingOrder <= 9)
+          batters[r.battingOrder - 1] = { playerId: r.playerId, position: r.role || "" };
+        else if (r.role === "투수") pitcherId = r.playerId;
+      }
+      const opp = c.homeTeam === recentFor ? c.awayTeam : c.homeTeam;
+      const kst = new Date(c.date.getTime() + 9 * 3600 * 1000);
+      return NextResponse.json({
+        pitcherId, batters, names,
+        sourceLabel: `${kst.getUTCMonth() + 1}/${kst.getUTCDate()} vs ${opp}`,
+      });
+    }
+    return NextResponse.json({ error: `${recentFor}의 이전 라인업이 없습니다.` }, { status: 404 });
+  }
+
   const roster = (team: string) =>
     prisma.player.findMany({
       where: { team, rosterActive: true },

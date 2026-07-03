@@ -9,6 +9,7 @@ export default function RosterPanel() {
   const [players, setPlayers] = useState<P[]>([]);
   const [loading, setLoading] = useState(false);
   const [paste, setPaste] = useState("");
+  const [sync, setSync] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function load(t: string) {
@@ -38,11 +39,11 @@ export default function RosterPanel() {
     try {
       const res = await fetch("/api/admin/roster", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ team, text: paste }),
+        body: JSON.stringify({ team, text: paste, sync }),
       });
       const j = await res.json();
       if (!res.ok) { setMsg("추가 실패: " + (j.error || "")); return; }
-      setMsg(`추가 ${j.added}명 · 재등록 ${j.updated}명`);
+      setMsg(`추가 ${j.added}명 · 재등록 ${j.updated}명` + (sync ? ` · 말소 ${j.deactivated}명` : ""));
       setPaste("");
       load(team);
     } catch (e: any) { setMsg("추가 실패: " + e.message); }
@@ -109,10 +110,16 @@ export default function RosterPanel() {
         <textarea className="border rounded p-2 w-full h-24 text-sm"
           placeholder={"한 줄에 한 명 (이름,포지션) — 포지션으로 투/타 자동 분류\n예) 임찬규,투수\n홍창기,우익수"}
           value={paste} onChange={e => setPaste(e.target.value)} />
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={sync} onChange={e => setSync(e.target.checked)} />
+            전체 명단 동기화 — 붙여넣은 명단에 없는 선수는 자동 말소 (월요일 갱신용, 15명 이상 필요)
+          </label>
           <span className="text-[11px] text-gray-400">관리자가 직접 입력 · 외부 자동수집 없음</span>
           <button onClick={addPaste} disabled={loading || !paste.trim()}
-            className="text-sm px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40">추가</button>
+            className={`text-sm px-3 py-1 rounded text-white disabled:opacity-40 ${sync ? "bg-amber-600" : "bg-blue-600"}`}>
+            {sync ? "동기화" : "추가"}
+          </button>
         </div>
       </div>
     </div>
