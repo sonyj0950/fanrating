@@ -51,6 +51,29 @@ function fmt(n: number, d = 1) {
   return n.toFixed(d);
 }
 
+// 브랜드 로고 마크: 잉크 스쿼클 + 골드 F (헤더 로고와 동일 문법, satori용 div)
+export function LogoMark({ size = 30 }: { size?: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        background: INK,
+        borderRadius: Math.round(size * 0.3),
+        color: AMBER,
+        fontSize: Math.round(size * 0.62),
+        fontWeight: 700,
+        lineHeight: 1,
+      }}
+    >
+      F
+    </div>
+  );
+}
+
 // 선수 부가정보: 기록 우선, 없으면 포지션 (예: "1골 1도움" / "GK")
 function pickTag(p: CardPick): string {
   return p.recordTag || p.role || "";
@@ -214,7 +237,10 @@ export function LandscapeCard({ data: d, flags }: { data: ShareCardData; flags?:
 
       {/* 푸터 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
-        <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LogoMark size={26} />
+          <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        </div>
         <div style={{ display: "flex", fontSize: 20, color: MUTED }}>지금 평점 진행 중 · 당신의 점수는?</div>
       </div>
     </div>
@@ -262,7 +288,10 @@ export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags
       {/* 상단 */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 38, fontWeight: 700, color: INK }}>fanarena</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoMark size={40} />
+            <div style={{ display: "flex", fontSize: 38, fontWeight: 700, color: INK }}>fanarena</div>
+          </div>
           <div style={{ display: "flex", fontSize: 20, color: MUTED, marginTop: 4 }}>팬 평점</div>
         </div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED }}>{d.dateText}</div>
@@ -308,7 +337,10 @@ export function PortraitLckCard({ data: d, flags }: { data: ShareCardData; flags
 
       {/* 푸터 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${LINE}`, paddingTop: 20, marginTop: "auto" }}>
-        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <LogoMark size={32} />
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        </div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED }}>팬이 직접 매긴 평점</div>
       </div>
     </div>
@@ -399,7 +431,10 @@ export function PortraitCard({ data: d, team = "home", flags }: { data: ShareCar
 
       {/* 푸터 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${LINE}`, paddingTop: 20, marginTop: "auto" }}>
-        <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <LogoMark size={32} />
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: INK }}>fanarena.kr</div>
+        </div>
         <div style={{ display: "flex", fontSize: 22, color: MUTED }}>팬이 직접 매긴 평점</div>
       </div>
     </div>
