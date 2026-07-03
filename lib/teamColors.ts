@@ -32,3 +32,19 @@ export function teamColor(
 export function ringShadow(color: string): string {
   return `0 0 0 2.5px ${color}, 0 1px 4px rgba(0,0,0,.28)`;
 }
+
+// 솔리드 팀 배지 글자색: 밝은 구단색(하늘색·노랑 등)은 잉크, 어두우면 흰색
+export function badgeTextColor(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  // 상대 휘도(간이) — 0.6 이상이면 밝은 색으로 판단
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum >= 0.6 ? "#1a1a1a" : "#fff";
+}
+
+// 팀 배지 라벨: 공백 제거 후 앞 3글자 (두산, LG, T1, 토트넘 등)
+export function badgeLabel(team: string): string {
+  return team.replace(/\s+/g, "").slice(0, 3);
+}

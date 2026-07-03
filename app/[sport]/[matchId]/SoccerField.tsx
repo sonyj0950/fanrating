@@ -142,6 +142,8 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
   // 팀별 테두리 색 (구단색 > 공식색 > 홈=파랑/원정=빨강)
   const color = teamColor(player.team, teamColors, player.team === homeTeam ? DEFAULT_HOME : DEFAULT_AWAY);
   const rated = player.avg !== null;
+  const hot = rated && (player.avg as number) >= 7.5;  // 골드 채움
+  const low = rated && (player.avg as number) < 5.5;   // 적갈색 숫자
   const short = displayName(player.name);
   const isShortened = short !== player.name;
 
@@ -190,9 +192,10 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
       <span className="relative">
       <span
         style={{ boxShadow: ringShadow(color) }}
-        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white
-          flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold
-          ${rated ? "text-gray-900" : "text-gray-400"} ${editMode ? "" : "group-hover:scale-110"} transition`}
+        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full
+          flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold tabular-nums
+          ${hot ? "bg-gold text-ink" : `bg-card ${low ? "text-live" : rated ? "text-ink" : "text-wfaint"}`}
+          ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
         {rated ? player.avg : "–"}
       </span>
@@ -203,11 +206,11 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
             +{stackCount}
           </span>
         )}
-        {/* 교체 배지 (→들어옴 / ←나감 + 분) */}
+        {/* 교체 배지 (→들어옴 / ←나감 + 분) — 기능 유지, 톤만 3안 */}
         {sub && (
           <span className={`absolute -top-1.5 -left-2.5 h-[15px] px-1 rounded-md flex items-center
             text-[8px] sm:text-[9px] font-extrabold text-white shadow z-20 whitespace-nowrap
-            ${sub.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+            ${sub.dir === "in" ? "bg-[#3c7d46]" : "bg-live"}`}>
             {sub.dir === "in" ? "→" : "←"}{sub.min}{"'"}
           </span>
         )}
@@ -231,12 +234,12 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
 function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
   return (
     <button onClick={() => onPick(p)}
-      className="w-full bg-white border rounded-lg px-2 py-1.5 text-left hover:border-blue-400 hover:shadow-sm transition">
-      <div className="text-[10px] text-gray-500 leading-none mb-0.5">{p.role || "스태프"}</div>
+      className="w-full bg-card border border-wline rounded-lg px-2 py-1.5 text-left hover:border-ink hover:shadow-sm transition">
+      <div className="text-[10px] text-wsub leading-none mb-0.5">{p.role || "스태프"}</div>
       <div className="flex items-center justify-between gap-1">
         <span className="text-xs font-semibold truncate">{p.name}</span>
-        <span className={`text-[10px] font-bold shrink-0 ${p.avg !== null ? "text-blue-700" : "text-gray-300"}`}>
-          {p.avg !== null ? `⭐${p.avg}` : "－"}
+        <span className={`text-[10px] font-bold shrink-0 tabular-nums ${p.avg !== null ? "text-golddim" : "text-wmute"}`}>
+          {p.avg !== null ? p.avg : "－"}
         </span>
       </div>
     </button>
@@ -369,21 +372,21 @@ export default function SoccerField({
         <div
           ref={pitchRef}
           onClick={() => { if (!editMode && expanded) setExpanded(null); }}
-          className="relative w-full max-w-md rounded-xl overflow-hidden shadow-lg
-            bg-gradient-to-b from-green-600 via-green-500 to-green-600
-            border-2 border-white/30"
+          className="relative w-full max-w-md rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
+            bg-gradient-to-b from-[#6d905f] to-[#63875a]
+            border border-wline"
           style={{ aspectRatio: "2 / 3.8" }}
         >
           {/* 잔디 줄무늬 */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none"
+          <div className="absolute inset-0 opacity-[0.12] pointer-events-none"
             style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0 8%, transparent 8% 16%)" }} />
 
           {/* 필드 라인 */}
-          <div className="absolute inset-2 border-2 border-white/70 rounded-sm pointer-events-none" />
-          <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-white/70 pointer-events-none" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26%] aspect-square rounded-full border-2 border-white/70 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-white/70 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-white/70 pointer-events-none" />
+          <div className="absolute inset-2 border-2 border-[#fbfaf4]/60 rounded-sm pointer-events-none" />
+          <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-[#fbfaf4]/60 pointer-events-none" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26%] aspect-square rounded-full border-2 border-[#fbfaf4]/60 pointer-events-none" />
+          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-[#fbfaf4]/60 pointer-events-none" />
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-[#fbfaf4]/60 pointer-events-none" />
 
           {/* 팀 표시 */}
           <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{topLabel}</span>
@@ -431,24 +434,24 @@ export default function SoccerField({
         <div className="flex justify-center gap-1.5 mt-2 flex-wrap">
           {officials.map(p => (
             <button key={p.mpId} onClick={() => onPick(p)}
-              className="text-xs px-2.5 py-1 rounded-full border bg-gray-800 text-white hover:bg-gray-700">
-              🟨 {p.role || "심판"} {p.name}{p.avg !== null ? ` · ⭐${p.avg}` : ""}
+              className="text-xs font-semibold px-2.5 py-1 rounded-full bg-ink text-paper hover:opacity-85">
+              {p.role || "심판"} {p.name}{p.avg !== null ? ` · ${p.avg}` : ""}
             </button>
           ))}
         </div>
       )}
 
       {/* 팀 색 범례 */}
-      <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
+      <div className="flex justify-center gap-4 mt-2 text-xs text-wsub">
         <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(homeTeam, teamColors, DEFAULT_HOME)) }} /> {homeTeam ?? "홈"}</span>
         <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(awayTeam, teamColors, DEFAULT_AWAY)) }} /> {awayTeam ?? "원정"}</span>
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
       {(homeR.bench.length > 0 || awayR.bench.length > 0) && (
-        <div className="mt-3 border rounded p-2 bg-gray-50">
-          <p className="text-xs font-semibold text-gray-500 mb-2">
-            🔁 후보/교체 <span className="font-normal text-gray-400">— 탭하면 평점 매기기</span>
+        <div className="mt-3 border border-wline rounded-xl p-2.5 bg-card">
+          <p className="text-xs font-bold text-wsub mb-2">
+            후보/교체 <span className="font-normal text-wfaint">— 탭하면 평점 매기기</span>
           </p>
           <div className="grid grid-cols-2 gap-3">
             <BenchColumn team={homeTeam ?? "홈"} list={homeR.bench} onPick={onPick} subInfo={subInfo}
@@ -479,21 +482,22 @@ function BenchColumn({ team, list, color, onPick, subInfo = {} }:
             const s = subInfo[p.playerId];
             return (
               <button key={p.mpId} onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
-                className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border bg-white
-                  hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition group">
+                className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
+                  hover:bg-white hover:border-wsub active:scale-95 transition group">
                 {s && (
                   <span className={`absolute -top-1.5 -left-1 h-[14px] px-1 rounded-md flex items-center
                     text-[8px] font-extrabold text-white shadow whitespace-nowrap
-                    ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+                    ${s.dir === "in" ? "bg-[#3c7d46]" : "bg-live"}`}>
                     {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
                   </span>
                 )}
                 <span style={{ boxShadow: ringShadow(color) }}
-                  className={`w-7 h-7 rounded-full bg-white flex items-center justify-center text-[12px] font-extrabold
-                  ${rated ? "text-gray-900" : "text-gray-300"} group-hover:scale-105 transition`}>
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
+                  ${rated && (p.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${rated ? "text-ink" : "text-wmute"}`}
+                  group-hover:scale-105 transition`}>
                   {rated ? p.avg : "–"}
                 </span>
-                <span className="text-[13px] font-medium text-gray-800">{p.name}</span>
+                <span className="text-[13px] font-medium text-ink">{p.name}</span>
               </button>
             );
           })}

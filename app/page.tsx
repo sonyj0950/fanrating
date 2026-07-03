@@ -66,7 +66,7 @@ export default async function Home() {
   return (
     <div>
       {/* 오늘의 경기 — 모든 종목 */}
-      <Section title="🔥 오늘의 경기" matches={today} empty="오늘 등록된 경기가 없습니다." />
+      <Section title="오늘의 경기" matches={today} empty="오늘 등록된 경기가 없습니다." />
 
       {/* 종목별 탭 — 순위표 + 예정·이전 경기 */}
       <SportTabs upcoming={upcoming} past={past}

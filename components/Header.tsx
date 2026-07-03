@@ -7,21 +7,15 @@ export default function Header() {
   const isAdmin = (session?.user as any)?.role === "admin";
 
   return (
-    <header className="bg-white border-b-2 border-gray-900 sticky top-0 z-40">
+    <header className="bg-paper border-b border-wline sticky top-0 z-40">
       <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <svg width="34" height="34" viewBox="0 0 38 38" aria-hidden="true">
-            <rect x="1.5" y="1.5" width="35" height="35" rx="11" fill="#f4efe2" stroke="#1a1a1a" strokeWidth="2"/>
-            <text x="16.5" y="27.5" textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize="25" fontWeight="800"
-              fill="#1a1a1a" stroke="#1a1a1a" strokeWidth="1.3" strokeLinejoin="round" paintOrder="stroke">F</text>
-            <g transform="translate(29,10) scale(0.46)">
-              <path d="M0,-8 L1.8,-2.5 L7.6,-2.5 L2.9,1 L4.7,6.5 L0,3.2 L-4.7,6.5 L-2.9,1 L-7.6,-2.5 L-1.8,-2.5 Z"
-                fill="#f5b301" stroke="#1a1a1a" strokeWidth="0.5"/>
-            </g>
-          </svg>
-          <span className="font-extrabold text-lg sm:text-xl tracking-tight text-gray-900"
-            style={{ WebkitTextStroke: "0.4px #111827", letterSpacing: "-0.5px" }}>
-            fanarena<span className="text-gray-400" style={{ WebkitTextStroke: "0.4px #9ca3af" }}>.kr</span>
+          <span aria-hidden="true"
+            className="w-[26px] h-[26px] rounded-lg bg-ink text-gold grid place-items-center text-[15px] font-black leading-none">
+            F
+          </span>
+          <span className="font-extrabold text-lg sm:text-xl tracking-tight text-ink" style={{ letterSpacing: "-0.5px" }}>
+            fanarena<span className="text-wfaint">.kr</span>
           </span>
         </Link>
         <nav className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
@@ -43,12 +37,12 @@ export default function Header() {
           )}
           {session ? (
             <>
-              <Link href={`/u/${(session.user as any).id}`} className="text-gray-500 hidden sm:inline hover:text-blue-600">{session.user?.name}님</Link>
+              <Link href={`/u/${(session.user as any).id}`} className="text-wsub hidden sm:inline hover:text-ink">{session.user?.name}님</Link>
               <button onClick={() => signOut({ callbackUrl: "/" })}
-                className="px-2 sm:px-3 py-1.5 rounded border">로그아웃</button>
+                className="px-2.5 sm:px-3.5 py-1 rounded-full border-[1.5px] border-wline text-wsub font-semibold hover:border-ink hover:text-ink transition">로그아웃</button>
             </>
           ) : (
-            <Link href="/login" className="px-2 sm:px-3 py-1.5 rounded bg-gray-900 text-white">로그인</Link>
+            <Link href="/login" className="px-2.5 sm:px-3.5 py-1 rounded-full border-[1.5px] border-ink text-ink font-bold hover:bg-ink hover:text-paper transition">로그인</Link>
           )}
         </nav>
       </div>

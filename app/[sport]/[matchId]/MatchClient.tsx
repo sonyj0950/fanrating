@@ -15,7 +15,8 @@ import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import ShareCardPanel from "./ShareCardPanel";
-import { teamLabel } from "@/app/MatchCard";
+import { teamLabel, GoldStar, pogLabel } from "@/app/MatchCard";
+import { teamColor as resolveTeamColor, badgeTextColor, badgeLabel, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { sportPath } from "@/lib/sportUrl";
 import type { ShareCardData } from "@/lib/shareCard";
 import type { Player, Agg } from "./types";
@@ -208,12 +209,12 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
   return (
     <div>
-      {/* 스코어보드 (라이트) */}
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-4 sm:p-5 mb-4">
+      {/* 스코어보드 (3안: 솔리드 서클 팀 배지) */}
+      <div className="rounded-2xl bg-card border border-wline shadow-[0_1px_2px_rgba(60,50,20,.05)] p-4 sm:p-5 mb-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge status={match.status} />
-            {match.round && <span className="text-xs font-medium text-gray-500 truncate">{match.round}</span>}
+            {match.round && <span className="text-xs font-medium text-wsub truncate">{match.round}</span>}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ShareButton
@@ -226,20 +227,22 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 text-center min-w-0">
-            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{teamLabel(match.sport, match.homeTeam)}</div>
-            <div className="text-[10px] text-gray-400 tracking-widest mt-1">HOME</div>
+            <TeamBadge team={match.homeTeam} colors={teamColors} fallback={DEFAULT_HOME} />
+            <div className={`text-sm sm:text-base font-bold truncate ${loserSide(match.homeScore, match.awayScore) ? "text-wfaint" : "text-ink"}`}>{teamLabel(match.sport, match.homeTeam)}</div>
+            <div className="text-[10px] text-wfaint tracking-widest mt-1">HOME</div>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4 font-black text-3xl sm:text-4xl tracking-wide shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 font-black text-3xl sm:text-4xl tracking-wide shrink-0 tabular-nums">
             <span className={scoreWin(match.homeScore, match.awayScore)}>{match.homeScore ?? "-"}</span>
-            <span className="text-xl text-gray-300">:</span>
+            <span className="text-xl text-wmute">:</span>
             <span className={scoreWin(match.awayScore, match.homeScore)}>{match.awayScore ?? "-"}</span>
           </div>
           <div className="flex-1 text-center min-w-0">
-            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{teamLabel(match.sport, match.awayTeam)}</div>
-            <div className="text-[10px] text-gray-400 tracking-widest mt-1">AWAY</div>
+            <TeamBadge team={match.awayTeam} colors={teamColors} fallback={DEFAULT_AWAY} />
+            <div className={`text-sm sm:text-base font-bold truncate ${loserSide(match.awayScore, match.homeScore) ? "text-wfaint" : "text-ink"}`}>{teamLabel(match.sport, match.awayTeam)}</div>
+            <div className="text-[10px] text-wfaint tracking-widest mt-1">AWAY</div>
           </div>
         </div>
-        <div className="text-center text-[11px] text-gray-400 mt-3">
+        <div className="text-center text-[11px] text-wfaint mt-3">
           {new Date(match.date).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
         </div>
       </div>
@@ -274,8 +277,11 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       )}
 
       {pog && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded p-3 mb-4">
-          🏆 <b>{match.sport === "kbo" ? "MVP" : "MOM"}</b>: {pog.name} ({pog.team}) — 평균 {pog.avg}{pog.count >= 100 ? ` / ${pog.count}명 참여` : ""}
+        <div className="flex items-center gap-2 bg-goldbg border border-goldline rounded-xl px-3.5 py-2.5 mb-4 text-sm">
+          <GoldStar className="w-4 h-4" />
+          <b className="text-golddim font-extrabold">{pogLabel(match.sport)}</b>
+          <span className="text-ink font-bold">{pog.name}</span>
+          <span className="text-golddim">({pog.team}) · 평균 <b className="tabular-nums">{pog.avg}</b>{pog.count >= 100 ? ` · ${pog.count}명 참여` : ""}</span>
         </div>
       )}
 
@@ -283,26 +289,28 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {seg !== "mine" && (
         <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          segLabel={segments.find(s => s.key === seg)?.label ?? ""} />
+          segLabel={segments.find(s => s.key === seg)?.label ?? ""} teamColors={teamColors} />
       )}
 
       {(segments.length > 1 || session) && (
-        <div className="flex gap-1 mb-4 border-b overflow-x-auto">
+        <div className="flex gap-4 mb-4 border-b border-wline overflow-x-auto px-1">
           {segments.map(s => {
             const setWin = match.sport === "lck" && match.setResults ? match.setResults[s.key] : null;
             return (
             <button key={s.key} onClick={() => setSeg(s.key)}
-              className={`px-4 py-2 whitespace-nowrap ${seg===s.key?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
+              className={`pt-1 pb-2.5 whitespace-nowrap text-sm font-bold border-b-[2.5px] -mb-px transition ${
+                seg===s.key ? "text-ink border-gold" : "text-wfaint border-transparent hover:text-wsub"}`}>
               {s.label}
               {setWin && <span title={setWin === "home" ? match.homeTeam : match.awayTeam}
-                className={`ml-1 inline-block w-1.5 h-1.5 rounded-full align-middle ${setWin === "home" ? "bg-amber-500" : "bg-red-500"}`} />}
+                className={`ml-1 inline-block w-1.5 h-1.5 rounded-full align-middle ${setWin === "home" ? "bg-gold" : "bg-live"}`} />}
             </button>
             );
           })}
           {session && (
             <button onClick={() => setSeg("mine")}
-              className={`px-4 py-2 whitespace-nowrap ${seg==="mine"?"border-b-2 border-gray-900 font-semibold text-gray-900":""}`}>
-              ⭐ 나의 평점
+              className={`ml-auto inline-flex items-center gap-1 pt-1 pb-2.5 whitespace-nowrap text-sm font-bold border-b-[2.5px] -mb-px transition ${
+                seg==="mine" ? "text-ink border-gold" : "text-wfaint border-transparent hover:text-wsub"}`}>
+              <GoldStar className="w-3 h-3" /> 나의 평점
             </button>
           )}
         </div>
@@ -368,11 +376,11 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             <div className="flex gap-2 mb-3 justify-center">
               {(["home", "away"] as const).map(t => (
                 <button key={t} onClick={() => setKboTeam(t)}
-                  className={`text-sm px-4 py-1.5 rounded-full border transition
+                  className={`text-sm font-bold px-4 py-1.5 rounded-full border-[1.5px] transition
                     ${kboTeam === t
-                      ? (t === "home" ? "bg-blue-600 text-white border-blue-600" : "bg-red-500 text-white border-red-500")
-                      : "bg-white text-gray-600 hover:bg-gray-50"}`}>
-                  {t === "home" ? `🏠 ${match.homeTeam}` : `✈️ ${match.awayTeam}`}
+                      ? "bg-ink text-paper border-ink"
+                      : "bg-card text-wfaint border-wline hover:text-wsub"}`}>
+                  {t === "home" ? `${match.homeTeam} 수비` : `${match.awayTeam} 수비`}
                 </button>
               ))}
             </div>
@@ -402,15 +410,15 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         )}
 
         {match.sport === "kbo" && subs.length > 0 && (
-          <div className="mt-4 bg-white border rounded-lg p-3">
-            <div className="text-sm font-semibold mb-2">🔁 교체 기록</div>
+          <div className="mt-4 bg-card border border-wline rounded-xl p-3">
+            <div className="text-sm font-bold text-ink mb-2">교체 기록</div>
             <div className="space-y-1">
               {subs.slice().sort((a, b) => a.minute - b.minute).map((s, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  {s.minute ? <span className="text-[11px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 shrink-0">{s.minute}회</span> : null}
-                  {s.kind && <span className="text-xs text-gray-500 w-16 shrink-0">{s.kind}</span>}
+                  {s.minute ? <span className="text-[11px] font-bold text-golddim bg-goldbg rounded px-1.5 py-0.5 shrink-0 tabular-nums">{s.minute}회</span> : null}
+                  {s.kind && <span className="text-xs text-wsub w-16 shrink-0">{s.kind}</span>}
                   <span className="truncate">{nameOf(s.outPlayerId)}</span>
-                  <span className="text-gray-400 shrink-0">→</span>
+                  <span className="text-wfaint shrink-0">→</span>
                   <span className="truncate">{nameOf(s.inPlayerId)}</span>
                 </div>
               ))}
@@ -422,7 +430,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {/* 평점 리스트 (캡처용) — 축구·야구, 현재 탭 기준 */}
       {(match.sport === "kleague" || match.sport === "epl" || match.sport === "kbo") && (home.length > 0 || away.length > 0) && (
         <RatingList home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} sport={match.sport} />
+          isMine={isMine} pog={pog} onPick={setOpen} subInfo={subInfo} sport={match.sport} teamColors={teamColors} />
       )}
 
       {/* 라인 대결 비교 — LCK만, 현재 세트 탭 기준 */}
@@ -551,12 +559,16 @@ const BB_GROUP_ICON: Record<string, string> = { P: "⚾", C: "🧤", IF: "🔷",
 const BB_GROUP_ORDER = ["P", "C", "IF", "OF", "DH"] as const;
 
 // 평점 리스트 (높은순 / 낮은순 / 포지션 비교)
-function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {}, sport }:
+function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subInfo = {}, sport, teamColors = {} }:
   { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string;
     isMine: boolean; pog: Player | null; onPick: (p: Player) => void;
-    subInfo?: Record<string, { dir: "in" | "out"; min: number }>; sport?: string }) {
+    subInfo?: Record<string, { dir: "in" | "out"; min: number }>; sport?: string;
+    teamColors?: Record<string, string> }) {
   const [mode, setMode] = useState<"high" | "low" | "pos">("high");
   const all = [...home, ...away];
+  // 사이드 바/닷에 쓸 실제 구단색 (없으면 홈/원정 기본색)
+  const hColor = resolveTeamColor(homeTeam, teamColors, DEFAULT_HOME);
+  const aColor = resolveTeamColor(awayTeam, teamColors, DEFAULT_AWAY);
   // 포지션 그룹: 야구는 투수/포수/내야/외야/지명, 그 외(축구)는 GK/DF/MF/FW
   const isBaseball = sport === "kbo";
   const groupOf = (p: Player) => isBaseball ? baseballPosGroup(p.role, p.isPitcher) : posGroup(p.role);
@@ -568,12 +580,12 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
   const ratedSorted = all.filter(p => p.avg !== null)
     .sort((a, b) => mode === "low" ? (a.avg! - b.avg!) : (b.avg! - a.avg!));
 
-  // 교체 배지 (→들어옴 / ←나감 + 분)
+  // 교체 배지 (→들어옴 / ←나감 + 분) — 기능 유지, 톤만 3안
   function SubBadge({ pid }: { pid: string }) {
     const s = subInfo[pid];
     if (!s) return null;
     return (
-      <span className={`text-[9px] font-extrabold text-white rounded px-1 py-0.5 ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+      <span className={`text-[9px] font-extrabold text-white rounded px-1 py-0.5 ${s.dir === "in" ? "bg-[#3c7d46]" : "bg-live"}`}>
         {s.dir === "in" ? "→" : "←"}{s.min}{sport === "kbo" ? "회" : "'"}
       </span>
     );
@@ -584,27 +596,27 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     const v = p.avg!;
     // 순위 메달색 (높은순 1~3위만)
     const medal = mode === "high" && rank <= 3;
-    const rkClass = !medal ? "text-gray-300"
-      : rank === 1 ? "bg-amber-400 text-white" : rank === 2 ? "bg-gray-400 text-white" : "bg-amber-700/70 text-white";
+    const rkClass = !medal ? "text-wmute"
+      : rank === 1 ? "bg-gold text-ink" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
     // 점수 배지색
     const worst = mode === "low" && rank === 1;
     const best = mode === "high" && rank === 1;
-    const scClass = best ? "bg-amber-400 text-white shadow-md shadow-amber-400/40"
-      : worst ? "bg-red-500 text-white shadow-md shadow-red-500/40"
-      : v < 4 ? "bg-red-50 text-red-500"
-      : v >= 7 ? "bg-green-50 text-green-600"
-      : "bg-gray-100 text-gray-700";
+    const scClass = best ? "bg-gold text-ink shadow-md shadow-gold/40"
+      : worst ? "bg-live text-white shadow-md shadow-live/40"
+      : v < 4 ? "bg-[#f7e7e2] text-live"
+      : v >= 7 ? "bg-goldbg text-golddim"
+      : "bg-wgray text-wgraytx";
     return (
       <button onClick={() => onPick(p)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-gray-50 first:border-t-0 hover:bg-gray-50 text-left">
-        <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg ${rkClass}`}>{rank}</span>
-        <span className={`w-1 self-stretch rounded-full shrink-0 ${isHome ? "bg-amber-500" : "bg-red-500"}`} />
+        className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-wsoft first:border-t-0 hover:bg-paper text-left">
+        <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg tabular-nums ${rkClass}`}>{rank}</span>
+        <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: isHome ? hColor : aColor }} />
         <span className="flex-1 min-w-0 flex items-center gap-1.5">
-          <span className="text-[14.5px] font-bold text-gray-900 truncate">{p.name}</span>
-          {p.role && <span className="text-[10px] font-bold text-gray-400 bg-gray-100 rounded px-1 py-px shrink-0">{p.role}</span>}
+          <span className="text-[14.5px] font-bold text-ink truncate">{p.name}</span>
+          {p.role && <span className="text-[10px] font-bold text-wfaint bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
           <SubBadge pid={p.playerId} />
         </span>
-        <span className={`w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] ${scClass}`}>{v}</span>
+        <span className={`w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums ${scClass}`}>{v}</span>
       </button>
     );
   }
@@ -613,24 +625,24 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
   function posCompare() {
     const sortByAvg = (a: Player, b: Player) => (b.avg ?? -1) - (a.avg ?? -1);
 
-    // 한쪽 셀 렌더
+    // 한쪽 셀 렌더 — 승자는 골드 스퀘어 + 잉크 테두리 (팀 구분은 사이드 컬러가 담당)
     const Cell = ({ p, side, win }: { p?: Player; side: "home" | "away"; win: boolean }) => {
       const rated = p && p.avg !== null;
       const isHome = side === "home";
       const base = `flex-1 relative flex items-center gap-2 px-3 py-2.5 overflow-hidden ${isHome ? "justify-end" : "flex-row-reverse justify-end"}`;
-      if (!p) return <div className={base}><span className="text-[13px] text-gray-300 italic">—</span></div>;
+      if (!p) return <div className={base}><span className="text-[13px] text-wmute italic">—</span></div>;
       return (
         <button onClick={() => onPick(p)} className={base}>
           {win && (
-            <span className={`absolute inset-y-0 w-2/3 opacity-[0.13] ${isHome
-              ? "right-0 bg-gradient-to-l from-blue-500 to-transparent"
-              : "left-0 bg-gradient-to-r from-red-500 to-transparent"}`} />
+            <span className={`absolute inset-y-0 w-2/3 opacity-[0.15] ${isHome
+              ? "right-0 bg-gradient-to-l from-gold to-transparent"
+              : "left-0 bg-gradient-to-r from-gold to-transparent"}`} />
           )}
           <span className={`relative z-10 text-[13.5px] truncate max-w-[88px] ${
-            win ? (isHome ? "font-extrabold text-gray-900" : "font-extrabold text-red-600") : "font-semibold text-gray-700"}`}>{p.name}</span>
-          <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 ${
-            win ? (isHome ? "bg-amber-500 text-white shadow-md shadow-blue-500/40" : "bg-red-500 text-white shadow-md shadow-red-500/40")
-                : rated ? "bg-gray-100 text-gray-700" : "bg-gray-50 text-gray-300"}`}>
+            win ? "font-extrabold text-ink" : "font-semibold text-wgraytx"}`}>{p.name}</span>
+          <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 tabular-nums ${
+            win ? "bg-gold text-ink border-2 border-ink"
+                : rated ? "bg-wgray text-wgraytx" : "bg-paper text-wmute"}`}>
             {rated ? p.avg : "–"}
           </span>
         </button>
@@ -644,8 +656,8 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
       if (rows === 0) return null;
       return (
         <div key={g}>
-          <div className="flex items-center gap-1.5 bg-gray-100 text-[11px] font-extrabold text-gray-500 px-3.5 py-1.5 border-t border-gray-200">
-            <span>{GICON[g]}</span>{GLABEL[g]}
+          <div className="bg-wgray text-[11px] font-extrabold text-wsub px-3.5 py-1.5 border-t border-wline tracking-wide">
+            {GLABEL[g]}
           </div>
           {Array.from({ length: rows }).map((_, i) => {
             const ph = h[i], pa = a[i];
@@ -654,10 +666,10 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
             const aWin = hv !== null && av !== null && av > hv;
             const bothEmpty = hv === null && av === null;
             return (
-              <div key={i} className={`flex items-stretch border-t border-gray-50 min-h-[52px] ${bothEmpty ? "opacity-50" : ""}`}>
+              <div key={i} className={`flex items-stretch border-t border-wsoft min-h-[52px] ${bothEmpty ? "opacity-50" : ""}`}>
                 <Cell p={ph} side="home" win={hWin} />
-                <div className="w-8 shrink-0 flex items-center justify-center border-x border-gray-100">
-                  <span className="text-[12px]">{hWin || aWin ? "👑" : <span className="text-[8px] font-extrabold text-gray-300">VS</span>}</span>
+                <div className="w-8 shrink-0 flex items-center justify-center border-x border-wsoft">
+                  {hWin || aWin ? <GoldStar className="w-3.5 h-3.5" /> : <span className="text-[8px] font-extrabold text-wmute">VS</span>}
                 </div>
                 <Cell p={pa} side="away" win={aWin} />
               </div>
@@ -671,7 +683,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
   const btn = (k: "high" | "low" | "pos", label: string) => (
     <button onClick={() => setMode(k)}
       className={`flex-1 text-[12px] font-bold py-2 rounded-lg border transition ${
-        mode === k ? "bg-gray-900 border-gray-900 text-white" : "bg-white border-gray-200 text-gray-500"}`}>
+        mode === k ? "bg-ink border-ink text-paper" : "bg-card border-wline text-wsub hover:text-ink"}`}>
       {label}
     </button>
   );
@@ -684,20 +696,20 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
         {btn("pos", "포지션 비교")}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-gray-100">
-          <span className="text-[13px] font-extrabold text-gray-900">📊 평점 {mode === "pos" ? "포지션 비교" : "순위"}</span>
-          <span className="text-[11px] text-gray-400 font-semibold">{isMine ? "나의 평점" : "총평"}{mode === "low" ? " · 낮은 순" : mode === "high" ? " · 높은 순" : ""}</span>
+      <div className="bg-card border border-wline rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-wsoft">
+          <span className="text-[13px] font-extrabold text-ink">평점 {mode === "pos" ? "포지션 비교" : "순위"}</span>
+          <span className="text-[11px] text-wfaint font-semibold">{isMine ? "나의 평점" : "총평"}{mode === "low" ? " · 낮은 순" : mode === "high" ? " · 높은 순" : ""}</span>
         </div>
 
         {mode === "pos" && (
-          <div className="flex items-center bg-gray-900 text-white px-3.5 py-2.5">
+          <div className="flex items-center bg-ink text-paper px-3.5 py-2.5">
             <div className="flex-1 flex items-center gap-1.5 text-[13px] font-extrabold">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />{homeTeam}
+              <span className="w-2 h-2 rounded-full" style={{ background: hColor }} />{homeTeam}
             </div>
-            <span className="text-[10px] font-bold text-gray-400 px-2">VS</span>
+            <span className="text-[10px] font-bold text-wfaint px-2">VS</span>
             <div className="flex-1 flex items-center justify-end gap-1.5 text-[13px] font-extrabold">
-              {awayTeam}<span className="w-2 h-2 rounded-full bg-red-500" />
+              {awayTeam}<span className="w-2 h-2 rounded-full" style={{ background: aColor }} />
             </div>
           </div>
         )}
@@ -705,18 +717,18 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
         {mode === "pos" ? (
           posCompare()
         ) : ratedSorted.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">아직 평점이 없습니다.</p>
+          <p className="text-sm text-wfaint text-center py-6">아직 평점이 없습니다.</p>
         ) : (
           ratedSorted.map((p, i) => <Row key={p.mpId} p={p} rank={i + 1} />)
         )}
 
         {/* 캡처용 푸터 */}
-        <div className="flex items-center justify-center gap-2 bg-gray-900 text-white text-[12px] font-semibold py-2.5">
+        <div className="flex items-center justify-center gap-2 bg-ink text-paper text-[12px] font-semibold py-2.5">
           {mode === "low"
-            ? (ratedSorted[0] && <span>⚠️ WORST {ratedSorted[0].name} {ratedSorted[0].avg}</span>)
-            : (pog && <span>🏆 {sport === "kbo" ? "MVP" : "MOM"} {pog.name} {pog.avg}</span>)}
-          <span className="text-gray-500">·</span>
-          <span>fanarena<span className="text-gray-400">.kr</span></span>
+            ? (ratedSorted[0] && <span className="text-[#e8a08e]">WORST {ratedSorted[0].name} {ratedSorted[0].avg}</span>)
+            : (pog && <span className="inline-flex items-center gap-1.5"><GoldStar className="w-3 h-3" /> {pogLabel(sport || "")} {pog.name} {pog.avg}</span>)}
+          <span className="text-wsub">·</span>
+          <span>fanarena<span className="text-wfaint">.kr</span></span>
         </div>
       </div>
     </div>
@@ -810,11 +822,25 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
   );
 }
 
+// 배지 2: 솔리드 서클 팀 배지 — 구단색 채움 + 밝은 색은 잉크 글자로 자동 대비
+function TeamBadge({ team, colors, fallback }:
+  { team: string; colors: Record<string, string>; fallback: string }) {
+  const bg = resolveTeamColor(team, colors, fallback);
+  const label = badgeLabel(team);
+  return (
+    <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full grid place-items-center mx-auto mb-1.5 font-black leading-none select-none"
+      style={{ background: bg, color: badgeTextColor(bg), fontSize: label.length >= 3 ? "9px" : "11px", letterSpacing: "-0.02em" }}
+      aria-hidden="true">
+      {label}
+    </span>
+  );
+}
+
 function StatusBadge({ status, dark = false }: { status: string; dark?: boolean }) {
   const light: Record<string, { label: string; cls: string }> = {
-    scheduled: { label: "예정", cls: "bg-gray-100 text-gray-600" },
-    live: { label: "진행중", cls: "bg-red-100 text-red-600" },
-    finished: { label: "종료", cls: "bg-blue-100 text-gray-900" },
+    scheduled: { label: "예정", cls: "bg-goldbg text-golddim" },
+    live: { label: "진행중", cls: "bg-live/10 text-live" },
+    finished: { label: "종료", cls: "bg-wgray text-wgraytx" },
   };
   const darkMap: Record<string, { label: string; cls: string; live?: boolean }> = {
     scheduled: { label: "예정", cls: "border border-[#39415a] text-[#9aa6bd]" },
@@ -831,13 +857,22 @@ function StatusBadge({ status, dark = false }: { status: string; dark?: boolean 
     );
   }
   const s = light[status] ?? light.scheduled;
-  return <span className={`ml-2 text-xs px-2 py-0.5 rounded-full align-middle ${s.cls}`}>{s.label}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full align-middle ${s.cls}`}>
+      {status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-live animate-pulse" />}
+      {s.label}
+    </span>
+  );
 }
 
-// 이긴 팀 점수는 파란색, 진 팀/무승부는 회색
+// 이긴 팀 점수는 잉크, 진 팀/미정은 감산
 function scoreWin(mine: number | null, other: number | null): string {
-  if (mine == null || other == null) return "text-gray-300";
-  return mine > other ? "text-gray-900" : "text-gray-300";
+  if (mine == null || other == null) return "text-wmute";
+  return mine > other ? "text-ink" : "text-wmute";
+}
+// 패배한 쪽인지 (팀명 감산용)
+function loserSide(mine: number | null, other: number | null): boolean {
+  return mine != null && other != null && mine < other;
 }
 
 // 관리자: 경기 진행 상태 변경 (예정 → 진행중 → 종료)
@@ -1056,9 +1091,11 @@ function StatusSwitcher({ matchId, status, onChanged }:
 }
 
 // 평점 통계: 선수 순위 막대 + 팀별 평균 비교
-function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
-  { players: Player[]; homeTeam: string; awayTeam: string; segLabel: string }) {
+function StatsPanel({ players, homeTeam, awayTeam, segLabel, teamColors = {} }:
+  { players: Player[]; homeTeam: string; awayTeam: string; segLabel: string; teamColors?: Record<string, string> }) {
   const [open, setOpen] = useState(false);
+  const hColor = resolveTeamColor(homeTeam, teamColors, DEFAULT_HOME);
+  const aColor = resolveTeamColor(awayTeam, teamColors, DEFAULT_AWAY);
 
   const rated = players.filter(p => p.avg !== null) as (Player & { avg: number })[];
 
@@ -1075,19 +1112,19 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
   // 선수 순위 (베스트 → 워스트)
   const ranked = [...rated].sort((a, b) => b.avg - a.avg || b.count - a.count);
 
-  // 팀 기준 색상 (홈=파랑, 원정=빨강 — 팀 평균 막대와 통일)
-  const teamColor = (team: string) =>
-    team === homeTeam ? "bg-amber-500" : team === awayTeam ? "bg-red-500" : "bg-gray-400";
+  // 팀 기준 색상 — 실제 구단색 막대
+  const barColor = (team: string) =>
+    team === homeTeam ? hColor : team === awayTeam ? aColor : "#b8b2a2";
   const pct = (v: number) => `${Math.max(0, Math.min(100, ((v - 1) / 9) * 100))}%`; // 1~10 범위를 0~100%로
 
   if (rated.length === 0) return null;
 
   return (
-    <div className="mb-4 border rounded-lg bg-white overflow-hidden">
+    <div className="mb-4 border border-wline rounded-xl bg-card overflow-hidden">
       <button onClick={() => setOpen(!open)}
-        className="w-full flex justify-between items-center px-4 py-2.5 text-sm font-semibold hover:bg-gray-50">
-        <span>📊 평점 통계{segLabel ? ` · ${segLabel}` : ""}</span>
-        <span className="text-gray-400">{open ? "▲" : "▼"}</span>
+        className="w-full flex justify-between items-center px-4 py-2.5 text-sm font-bold text-ink hover:bg-paper">
+        <span>평점 통계{segLabel ? ` · ${segLabel}` : ""}</span>
+        <span className="text-wfaint">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
@@ -1095,22 +1132,22 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
           {/* 팀별 평균 비교 */}
           {(homeA || awayA) && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-2">팀 평균 평점</p>
+              <p className="text-xs font-semibold text-wsub mb-2">팀 평균 평점</p>
               <div className="space-y-2">
-                {[{ t: homeTeam, d: homeA, c: "bg-amber-500" }, { t: awayTeam, d: awayA, c: "bg-red-500" }].map(({ t, d, c }) => (
+                {[{ t: homeTeam, d: homeA, c: hColor }, { t: awayTeam, d: awayA, c: aColor }].map(({ t, d, c }) => (
                   <div key={t} className="flex items-center gap-2">
                     <span className="w-20 shrink-0 text-xs truncate">{t}</span>
-                    <div className="flex-1 bg-gray-100 rounded h-5 relative">
-                      {d && <div className={`${c} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(d.avg) }}>
-                        <span className="text-[10px] text-white font-bold">{d.avg}</span>
+                    <div className="flex-1 bg-wgray rounded h-5 relative">
+                      {d && <div className="h-5 rounded flex items-center justify-end pr-1.5" style={{ width: pct(d.avg), background: c }}>
+                        <span className="text-[10px] text-white font-bold tabular-nums">{d.avg}</span>
                       </div>}
                     </div>
-                    <span className="w-10 shrink-0 text-[10px] text-gray-400 text-right">{d ? `${d.n}명` : "-"}</span>
+                    <span className="w-10 shrink-0 text-[10px] text-wfaint text-right">{d ? `${d.n}명` : "-"}</span>
                   </div>
                 ))}
               </div>
               {homeA && awayA && (
-                <p className="text-xs text-gray-500 mt-1.5 text-center">
+                <p className="text-xs text-wsub mt-1.5 text-center">
                   {homeA.avg > awayA.avg ? `${homeTeam}` : awayA.avg > homeA.avg ? `${awayTeam}` : "양 팀"}
                   {homeA.avg === awayA.avg ? " 평점 동일" : ` 우세 (+${Math.abs(homeA.avg - awayA.avg).toFixed(2)})`}
                 </p>
@@ -1121,23 +1158,23 @@ function StatsPanel({ players, homeTeam, awayTeam, segLabel }:
           {/* 선수 순위 막대 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-gray-500">선수 평점 순위 (베스트 → 워스트)</p>
-              <div className="flex gap-2 text-[10px] text-gray-400">
-                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />{homeTeam}</span>
-                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" />{awayTeam}</span>
+              <p className="text-xs font-semibold text-wsub">선수 평점 순위 (베스트 → 워스트)</p>
+              <div className="flex gap-2 text-[10px] text-wfaint">
+                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: hColor }} />{homeTeam}</span>
+                <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: aColor }} />{awayTeam}</span>
               </div>
             </div>
             <div className="space-y-1.5">
               {ranked.map((p, i) => (
                 <div key={p.mpId} className="flex items-center gap-2">
-                  <span className="w-4 shrink-0 text-[10px] text-gray-400 text-right">{i + 1}</span>
+                  <span className="w-4 shrink-0 text-[10px] text-wfaint text-right tabular-nums">{i + 1}</span>
                   <span className="w-16 shrink-0 text-xs truncate">{p.name}</span>
-                  <div className="flex-1 bg-gray-100 rounded h-5">
-                    <div className={`${teamColor(p.team)} h-5 rounded flex items-center justify-end pr-1.5`} style={{ width: pct(p.avg) }}>
-                      <span className="text-[10px] text-white font-bold">{p.avg}</span>
+                  <div className="flex-1 bg-wgray rounded h-5">
+                    <div className="h-5 rounded flex items-center justify-end pr-1.5" style={{ width: pct(p.avg), background: barColor(p.team) }}>
+                      <span className="text-[10px] text-white font-bold tabular-nums">{p.avg}</span>
                     </div>
                   </div>
-                  <span className="w-8 shrink-0 text-[10px] text-gray-400 text-right">{p.count}명</span>
+                  <span className="w-8 shrink-0 text-[10px] text-wfaint text-right">{p.count}명</span>
                 </div>
               ))}
             </div>
@@ -1178,18 +1215,18 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
   }
 
   return (
-    <div className="flex items-center justify-between mb-3 bg-amber-50 border border-gray-200 rounded-lg px-3 py-2">
-      <p className="text-sm font-semibold text-gray-900">
-        ⭐ 나의 평점
+    <div className="flex items-center justify-between mb-3 bg-goldbg border border-goldline rounded-xl px-3.5 py-2.5">
+      <p className="text-sm font-bold text-ink inline-flex items-center gap-1.5 flex-wrap">
+        <GoldStar className="w-3.5 h-3.5" /> 나의 평점
         {count > 0 && data?.top
-          ? <span className="font-normal text-gray-900"> · 내 최고 평점 <b className="text-gray-900">{data.top.name}</b> ⭐{data.top.score}</span>
+          ? <span className="font-normal text-golddim"> · 내 최고 평점 <b className="text-ink">{data.top.name}</b> {data.top.score}</span>
           : count > 0
-          ? <span className="font-normal text-gray-900"> · {count}명 평가</span>
-          : <span className="font-normal text-blue-500"> · 선수를 눌러 평점을 남겨보세요</span>}
+          ? <span className="font-normal text-golddim"> · {count}명 평가</span>
+          : <span className="font-normal text-golddim"> · 선수를 눌러 평점을 남겨보세요</span>}
       </p>
       {count > 0 && (
-        <button onClick={share} className="text-sm px-3 py-1.5 rounded bg-gray-900 text-white shrink-0">
-          {copied ? "✓ 복사됨" : "🔗 공유"}
+        <button onClick={share} className="text-sm font-bold px-3.5 py-1.5 rounded-full bg-ink text-paper shrink-0">
+          {copied ? "✓ 복사됨" : "공유"}
         </button>
       )}
     </div>
@@ -1221,34 +1258,37 @@ function SeedBanner({ matchId, seed, isAdmin, loggedIn, onChanged }:
     return (
       <div className="mb-4">
         <button onClick={() => { setText(""); setEditing(true); }}
-          className="text-xs px-2 py-1 border rounded bg-white text-orange-600 hover:bg-orange-50">
-          ✏️ 토론 주제 직접 입력
+          className="text-xs px-2 py-1 border border-wline rounded bg-card text-golddim hover:bg-goldbg">
+          토론 주제 직접 입력
         </button>
       </div>
     );
   }
 
   return (
-    <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
+    <div className="bg-card border border-wline border-l-4 border-l-gold rounded-xl p-3.5 mb-4">
       {editing ? (
         <div className="space-y-2">
           <textarea value={text} onChange={e => setText(e.target.value)} maxLength={300}
             placeholder="토론 주제를 입력하세요 (비우면 삭제됩니다)"
-            className="w-full border rounded p-2 text-sm h-20 bg-white" />
+            className="w-full border border-wline rounded p-2 text-sm h-20 bg-white" />
           <div className="flex gap-2 justify-end">
-            <span className="text-[11px] text-orange-400 mr-auto self-center">{text.length}/300</span>
+            <span className="text-[11px] text-wfaint mr-auto self-center">{text.length}/300</span>
             <button onClick={() => { setText(seed || ""); setEditing(false); }}
-              className="text-xs px-3 py-1 border rounded bg-white">취소</button>
+              className="text-xs px-3 py-1 border border-wline rounded bg-white">취소</button>
             <button onClick={save} disabled={busy}
-              className="text-xs px-3 py-1 rounded bg-orange-500 text-white disabled:opacity-40">저장</button>
+              className="text-xs px-3 py-1 rounded bg-ink text-paper disabled:opacity-40">저장</button>
           </div>
         </div>
       ) : (
         <div className="flex justify-between items-start gap-2">
-          <p className="text-sm text-orange-900 font-medium">{seed}</p>
+          <div>
+            <p className="text-[10.5px] font-extrabold tracking-widest text-golddim mb-0.5">오늘의 토론</p>
+            <p className="text-sm text-ink font-medium">{seed}</p>
+          </div>
           {isAdmin && (
             <button onClick={() => { setText(seed || ""); setEditing(true); }}
-              className="text-[11px] text-orange-500 shrink-0 hover:underline">✏️ 수정</button>
+              className="text-[11px] text-wfaint shrink-0 hover:underline hover:text-ink">수정</button>
           )}
         </div>
       )}
@@ -1332,33 +1372,33 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
   }
 
   return (
-    <div className="mt-3 border-t border-orange-200 pt-3">
-      <button onClick={() => setOpen(!open)} className="text-xs font-semibold text-orange-700 mb-2">
-        💬 토론 {items.length > 0 ? `(${items.length})` : ""} {open ? "▲" : "▼"}
+    <div className="mt-3 border-t border-dashed border-wline pt-3">
+      <button onClick={() => setOpen(!open)} className="text-xs font-bold text-wsub mb-2 hover:text-ink">
+        토론 {items.length > 0 ? `(${items.length})` : ""} {open ? "▲" : "▼"}
       </button>
 
       {open && (
         <>
           {/* 입력 */}
           {loggedIn ? (
-            <div className="flex gap-1 mb-3">
+            <div className="flex gap-1.5 mb-3">
               <input value={text} onChange={e => setText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") submit(); }}
                 placeholder="이 경기에 대한 의견을 남겨보세요"
                 maxLength={500}
-                className="flex-1 border rounded px-2 py-1.5 text-sm bg-white" />
+                className="flex-1 border border-wline rounded-full px-3 py-1.5 text-sm bg-paper" />
               <button onClick={submit} disabled={busy || !text.trim()}
-                className="text-sm px-3 bg-orange-500 text-white rounded disabled:opacity-40">등록</button>
+                className="text-sm font-bold px-3.5 bg-ink text-gold rounded-full disabled:opacity-40">등록</button>
             </div>
           ) : (
-            <p className="text-xs text-orange-500 mb-3">로그인하면 토론에 참여할 수 있습니다.</p>
+            <p className="text-xs text-wsub mb-3">로그인하면 토론에 참여할 수 있습니다.</p>
           )}
 
           {/* 목록 */}
           <div className="space-y-1.5">
-            {items.length === 0 && <p className="text-xs text-orange-400">첫 댓글을 남겨보세요!</p>}
+            {items.length === 0 && <p className="text-xs text-wfaint">첫 댓글을 남겨보세요!</p>}
             {items.map(c => (
-              <div key={c.id} className="bg-white border border-orange-100 rounded px-2.5 py-1.5">
+              <div key={c.id} className="bg-paper border border-wsoft rounded-lg px-2.5 py-1.5">
                 <div className="flex justify-between items-start gap-2">
                   <Author id={c.userId} name={c.username} className="text-[11px] text-gray-500" />
                   <div className="flex gap-2 shrink-0">
@@ -1377,12 +1417,12 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
 
                 {/* 액션 바 */}
                 {!c.blinded && (
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
-                    <button onClick={() => like(c.id)} className="hover:text-orange-600">👍 {c.likes > 0 ? c.likes : ""}</button>
-                    <button onClick={() => { setReplyOn(replyOn === c.id ? null : c.id); setReplyText(""); }} className="hover:text-orange-600">💬 답글 {c.replies.length > 0 ? c.replies.length : ""}</button>
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-wfaint">
+                    <button onClick={() => like(c.id)} className="hover:text-ink">👍 {c.likes > 0 ? c.likes : ""}</button>
+                    <button onClick={() => { setReplyOn(replyOn === c.id ? null : c.id); setReplyText(""); }} className="hover:text-ink">답글 {c.replies.length > 0 ? c.replies.length : ""}</button>
                     {!c.mine && (
-                      <button onClick={() => report(c.id)} className={`hover:text-red-500 ${c.reportedByMe ? "text-red-400" : ""}`}>
-                        🚩 {c.reportedByMe ? "신고됨" : "신고"}
+                      <button onClick={() => report(c.id)} className={`hover:text-live ${c.reportedByMe ? "text-live" : ""}`}>
+                        {c.reportedByMe ? "신고됨" : "신고"}
                       </button>
                     )}
                   </div>
@@ -1394,18 +1434,18 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
                     <input value={replyText} onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") submitReply(c.id); }}
                       placeholder="답글 입력" maxLength={300}
-                      className="flex-1 border rounded px-2 py-1 text-xs bg-white" />
+                      className="flex-1 border border-wline rounded px-2 py-1 text-xs bg-white" />
                     <button onClick={() => submitReply(c.id)} disabled={!replyText.trim()}
-                      className="text-xs px-2 bg-orange-500 text-white rounded disabled:opacity-40">등록</button>
+                      className="text-xs px-2 bg-ink text-paper rounded disabled:opacity-40">등록</button>
                   </div>
                 )}
 
                 {/* 답글 목록 */}
                 {c.replies.length > 0 && (
-                  <div className="mt-2 space-y-1 pl-3 border-l-2 border-orange-100">
+                  <div className="mt-2 space-y-1 pl-3 border-l-2 border-wline">
                     {c.replies.map((r: any) => (
                       <div key={r.id} className="text-xs">
-                        <Author id={r.userId} name={r.username} className="text-gray-400" />{" "}
+                        <Author id={r.userId} name={r.username} className="text-wfaint" />{" "}
                         <span className="whitespace-pre-wrap break-words">{r.text}</span>
                       </div>
                     ))}
@@ -1422,15 +1462,15 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
 
 const RECORD_META: Record<string, { title: string; placeholder: string }> = {
   kbo: {
-    title: "⚾ 주요 기록 (홈런 · 타점 등)",
+    title: "주요 기록 (홈런 · 타점 등)",
     placeholder: "한 줄에 하나씩 입력\n예) 3회 오스틴 2점 홈런\n7회 김현수 결승 적시타\n9회 유영찬 세이브",
   },
   lck: {
-    title: "🎮 주요 기록",
+    title: "주요 기록",
     placeholder: "한 줄에 하나씩 입력\n예) 1세트 페이커 펜타킬\n2세트 오너 갱킹 주도",
   },
   default: {
-    title: "⚽ 골 · 어시스트 기록",
+    title: "골 · 어시스트 기록",
     placeholder: "한 줄에 하나씩 입력\n예) 23' 손흥민 (도움: 이강인)\n67' 주민규 (PK)",
   },
 };
@@ -1474,9 +1514,9 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
   }
 
   return (
-    <div className="bg-white border rounded p-3 mb-4 text-sm max-w-md">
+    <div className="bg-card border border-wline rounded-xl p-3 mb-4 text-sm max-w-md">
       <div className="flex justify-between items-center mb-1">
-        <span className="font-semibold">{meta.title}</span>
+        <span className="font-bold text-ink">{meta.title}</span>
         <div className="flex items-center gap-2">
           {isAdmin && sport === "epl" && !editing && (
             <button onClick={syncGoals} disabled={syncing}
@@ -1503,11 +1543,11 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
       ) : record ? (
         <ul className="space-y-0.5">
           {record.split("\n").filter(Boolean).map((line, i) => (
-            <li key={i} className="text-gray-700">{line}</li>
+            <li key={i} className="text-wgraytx">{line}</li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-400 text-xs">아직 기록이 없습니다.</p>
+        <p className="text-wfaint text-xs">아직 기록이 없습니다.</p>
       )}
     </div>
   );
@@ -1581,7 +1621,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
           <div>
             <h3 className="text-xl font-bold">{player.name}</h3>
             <p className="text-sm text-gray-500">{player.team} · {player.role}</p>
-            {data && <p className="text-sm mt-1">전체 평균 ⭐ {data.avg} ({data.count}명)</p>}
+            {data && <p className="text-sm mt-1 inline-flex items-center gap-1">전체 평균 <GoldStar className="w-3.5 h-3.5" /> <b className="tabular-nums">{data.avg}</b> ({data.count}명)</p>}
           </div>
           <div className="flex items-start gap-2">
             {data && (
@@ -1653,7 +1693,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
           {data && data.comments.length === 0 && <p className="text-sm text-gray-400">아직 코멘트가 없습니다.</p>}
           {top3.length > 0 && (
             <div className="mb-3">
-              <p className="text-xs text-orange-600 font-semibold mb-1">🔥 인기 코멘트</p>
+              <p className="text-xs text-golddim font-bold mb-1">인기 코멘트</p>
               {top3.map((c:any) => <CommentRow key={c.id} c={c} onLike={() => like(c.id)} onReload={load} loggedIn={loggedIn} isAdmin={!!data?.isAdmin} highlight/>)}
             </div>
           )}
@@ -1727,7 +1767,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
   const hidden = c.blinded && !isAdmin && !revealed;
 
   return (
-    <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-orange-50 border-orange-200" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
+    <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-goldbg border-goldline" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
       <div className="flex justify-between text-xs text-gray-500 mb-1">
         <span><Author id={c.userId} name={c.username} /> · ⭐ {c.score}{isAdmin && c.reportCount > 0 ? <span className="text-red-500"> · 🚩 {c.reportCount}</span> : null}</span>
         {!c.blinded && <button onClick={onLike} className="hover:text-red-500">👍 {c.likes}</button>}

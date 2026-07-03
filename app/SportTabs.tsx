@@ -5,9 +5,9 @@ import StandingsTable from "./StandingsTable";
 import { TAB_LEAGUE } from "@/lib/standings";
 
 const TABS = [
-  { key: "soccer", label: "⚽ 축구", sports: ["kleague", "epl"] },
-  { key: "baseball", label: "⚾ 야구", sports: ["kbo"] },
-  { key: "lol", label: "🎮 LoL", sports: ["lck"] },
+  { key: "soccer", label: "축구", sports: ["kleague", "epl"] },
+  { key: "baseball", label: "야구", sports: ["kbo"] },
+  { key: "lol", label: "LoL", sports: ["lck"] },
 ] as const;
 
 export default function SportTabs({ upcoming, past, standings = {}, standingsAsOf = {}, teamColors = {} }:
@@ -22,11 +22,11 @@ export default function SportTabs({ upcoming, past, standings = {}, standingsAsO
 
   return (
     <div>
-      <div className="flex gap-1.5 mb-5 sticky top-0 z-10 bg-white/80 backdrop-blur py-1">
+      <div className="flex gap-6 mb-5 sticky top-14 z-10 bg-paper/90 backdrop-blur border-b border-wline px-1">
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex-1 py-2 rounded-lg text-sm font-bold border transition ${
-              tab === t.key ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"}`}>
+            className={`pt-1 pb-2.5 text-sm font-bold border-b-[2.5px] -mb-px transition ${
+              tab === t.key ? "text-ink border-gold" : "text-wfaint border-transparent hover:text-wsub"}`}>
             {t.label}
           </button>
         ))}
@@ -37,8 +37,8 @@ export default function SportTabs({ upcoming, past, standings = {}, standingsAsO
           asOf={standingsAsOf[league]} teamColors={teamColors} />
       )}
 
-      {up.length > 0 && <Section title="📅 예정된 경기" matches={up} empty="" />}
-      <Section title="🗂 이전의 경기" matches={ps} empty={`${cur.label} 경기가 아직 없습니다.`} />
+      {up.length > 0 && <Section title="예정된 경기" matches={up} empty="" />}
+      <Section title="이전의 경기" matches={ps} empty={`${cur.label} 경기가 아직 없습니다.`} />
     </div>
   );
 }

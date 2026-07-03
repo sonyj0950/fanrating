@@ -20,32 +20,32 @@ export default function StandingsTable({ league, rows, asOf, teamColors = {} }:
     : "";
 
   return (
-    <div className="mb-5 border border-gray-200 rounded-xl overflow-hidden bg-white">
-      <div className="flex items-baseline justify-between px-3 py-2 border-b border-gray-100">
-        <span className="text-sm font-bold">{title}</span>
-        {asOfLabel && <span className="text-[11px] text-gray-400">{asOfLabel}</span>}
+    <div className="mb-5 border border-wline rounded-xl overflow-hidden bg-card shadow-[0_1px_2px_rgba(60,50,20,.05)]">
+      <div className="flex items-baseline justify-between px-3.5 py-2 border-b border-wsoft">
+        <span className="text-sm font-extrabold text-ink">{title}</span>
+        {asOfLabel && <span className="text-[11px] text-wsub font-medium">{asOfLabel}</span>}
       </div>
-      <table className="w-full text-[13px]">
+      <table className="w-full text-[13px] tabular-nums">
         <thead>
-          <tr className="text-gray-400 text-[11px]">
-            <th className="text-center font-normal py-1.5 w-8">순위</th>
-            <th className="text-left font-normal py-1.5">팀</th>
-            {cols.map(c => <th key={c.key} className="text-center font-normal py-1.5 px-1">{c.label}</th>)}
+          <tr className="text-wfaint text-[11px]">
+            <th className="text-center font-semibold py-1.5 w-8">순위</th>
+            <th className="text-left font-semibold py-1.5">팀</th>
+            {cols.map(c => <th key={c.key} className="text-center font-semibold py-1.5 px-1">{c.label}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map(r => {
             const label = league === "kbo" ? (KBO_TEAM_LABELS[r.team] ?? r.team) : r.team;
-            const color = teamColor(r.team, teamColors, "#9ca3af");
+            const color = teamColor(r.team, teamColors, "#cdc7b6");
             return (
-              <tr key={r.rank} className="border-t border-gray-50">
-                <td className="text-center font-bold py-1.5 text-gray-700">{r.rank}</td>
-                <td className="py-1.5 truncate">
-                  <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ background: color }} />
+              <tr key={r.rank} className="border-t border-wsoft">
+                <td className="text-center font-extrabold py-1.5 text-wsub">{r.rank}</td>
+                <td className="py-1.5 truncate font-semibold text-ink">
+                  <span className="inline-block w-[3px] h-3.5 rounded-sm mr-2 align-middle" style={{ background: color }} />
                   {label}
                 </td>
                 {cols.map(c => (
-                  <td key={c.key} className="text-center px-1 text-gray-600">{cellValue(r, c.key)}</td>
+                  <td key={c.key} className="text-center px-1 text-wsub">{cellValue(r, c.key)}</td>
                 ))}
               </tr>
             );

@@ -29,7 +29,7 @@ function SubBadge({ s }: { s?: { dir: "in" | "out"; min: number } }) {
   return (
     <span className={`absolute -top-1.5 -left-2 h-[15px] px-1 rounded-md flex items-center
       text-[8px] font-extrabold text-white shadow z-20 whitespace-nowrap
-      ${s.dir === "in" ? "bg-green-600" : "bg-red-500"}`}>
+      ${s.dir === "in" ? "bg-[#3c7d46]" : "bg-live"}`}>
       {s.dir === "in" ? "→" : "←"}{s.min}{s.min ? "회" : ""}
     </span>
   );
@@ -40,6 +40,8 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
   { p: Player; left: number; top: number; color: string; highlight?: boolean;
     onPick: (p: Player) => void; sub?: { dir: "in" | "out"; min: number } }) {
   const rated = p.avg !== null;
+  const hot = rated && (p.avg as number) >= 7.5;  // 골드 채움
+  const low = rated && (p.avg as number) < 5.5;   // 적갈색 숫자
   const posShort = POS_SHORT[p.role] ?? "";
   return (
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
@@ -47,17 +49,18 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
       className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20">
       <span className="relative">
         <span style={{ boxShadow: ringShadow(color) }}
-          className={`min-w-[34px] h-[34px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full bg-white
-          ${highlight ? "outline outline-2 outline-yellow-400 outline-offset-1" : ""}
-          flex items-center justify-center text-[13px] sm:text-[14px] font-extrabold
-          ${rated ? "text-gray-900" : "text-gray-400"} group-hover:scale-110 transition`}>
+          className={`min-w-[34px] h-[34px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full
+          ${highlight ? "outline outline-2 outline-gold outline-offset-1" : ""}
+          flex items-center justify-center text-[13px] sm:text-[14px] font-extrabold tabular-nums
+          ${hot ? "bg-gold text-ink" : `bg-card ${low ? "text-live" : rated ? "text-ink" : "text-wfaint"}`}
+          group-hover:scale-110 transition`}>
           {rated ? p.avg : "–"}
         </span>
         <SubBadge s={sub} />
       </span>
       <span className="text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
         whitespace-nowrap bg-black/[0.58] rounded-md px-1 py-0.5">
-        {posShort && <span className="text-amber-300">{posShort} </span>}{p.name}
+        {posShort && <span className="text-[#f5d878]">{posShort} </span>}{p.name}
       </span>
     </button>
   );
@@ -69,16 +72,17 @@ function Chip({ p, color, sub, kind, onPick }:
   const rated = p.avg !== null;
   return (
     <button onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
-      className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border bg-white
-        hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition group">
+      className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
+        hover:bg-white hover:border-wsub active:scale-95 transition group">
       <SubBadge s={sub} />
       <span style={{ boxShadow: ringShadow(color) }}
-        className={`w-7 h-7 rounded-full bg-white flex items-center justify-center text-[12px] font-extrabold
-        ${rated ? "text-gray-900" : "text-gray-300"} group-hover:scale-105 transition`}>
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
+        ${rated && (p.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${rated ? "text-ink" : "text-wmute"}`}
+        group-hover:scale-105 transition`}>
         {rated ? p.avg : "–"}
       </span>
-      <span className="text-[13px] font-medium text-gray-800 whitespace-nowrap">
-        {p.name}{kind ? <span className="text-gray-400 ml-1">{kind}</span> : null}
+      <span className="text-[13px] font-medium text-ink whitespace-nowrap">
+        {p.name}{kind ? <span className="text-wfaint ml-1">{kind}</span> : null}
       </span>
     </button>
   );
@@ -103,16 +107,16 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
       <div className="grid grid-cols-2 gap-2">
         {players.map(p => (
           <button key={p.mpId} onClick={() => onPick(p)}
-            className="w-full bg-white border rounded-lg p-2.5 text-left hover:border-blue-400 hover:shadow-sm transition flex items-center gap-2">
+            className="w-full bg-card border border-wline rounded-lg p-2.5 text-left hover:border-ink hover:shadow-sm transition flex items-center gap-2">
             <span className="min-w-0 flex-1">
               <span className="flex items-center justify-between gap-1">
                 <span className="font-semibold text-sm truncate">{p.name}</span>
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0
-                  ${p.avg !== null ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-400"}`}>
-                  {p.avg !== null ? `⭐ ${p.avg}` : "－"}
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums
+                  ${p.avg !== null ? "bg-goldbg text-golddim" : "bg-wgray text-wfaint"}`}>
+                  {p.avg !== null ? p.avg : "－"}
                 </span>
               </span>
-              <span className="block text-xs text-gray-500 mt-0.5 truncate">
+              <span className="block text-xs text-wsub mt-0.5 truncate">
                 {p.role || "－"}{p.count > 0 ? ` · ${p.count}명` : ""}
               </span>
             </span>
@@ -152,32 +156,32 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <defs>
               <clipPath id="kbo-fld"><path d="M160 272 L18 152 Q160 -108 302 152 Z" /></clipPath>
               <pattern id="kbo-grass" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="26" height="26" fill="#3f8049" />
-                <rect width="13" height="13" fill="#478e51" />
-                <rect x="13" y="13" width="13" height="13" fill="#478e51" />
+                <rect width="26" height="26" fill="#62885a" />
+                <rect width="13" height="13" fill="#6b9161" />
+                <rect x="13" y="13" width="13" height="13" fill="#6b9161" />
               </pattern>
             </defs>
-            {/* 워닝트랙(흙) 테두리 + 체커 잔디 */}
-            <path d="M160 272 L18 152 Q160 -108 302 152 Z" fill="#3f8049" stroke="#f1c894" strokeWidth="14" strokeLinejoin="round" />
+            {/* 워닝트랙(흙) 테두리 + 체커 잔디 (웜톤) */}
+            <path d="M160 272 L18 152 Q160 -108 302 152 Z" fill="#62885a" stroke="#d9b98a" strokeWidth="14" strokeLinejoin="round" />
             <g clipPath="url(#kbo-fld)"><rect x="0" y="0" width="320" height="292" fill="url(#kbo-grass)" /></g>
             {/* 파울라인 */}
-            <line x1="160" y1="264" x2="32" y2="158" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
-            <line x1="160" y1="264" x2="288" y2="158" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="32" y2="158" stroke="#fbfaf4" strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="288" y2="158" stroke="#fbfaf4" strokeWidth="2.6" strokeLinecap="round" />
             {/* 내야 흙 부채꼴 */}
-            <path d="M160 256 L64 176 Q160 88 256 176 Z" fill="#f0c891" />
+            <path d="M160 256 L64 176 Q160 88 256 176 Z" fill="#c8a877" />
             {/* 내야 잔디 다이아몬드 */}
-            <path d="M160 224 L214 174 L160 124 L106 174 Z" fill="#4f9158" />
+            <path d="M160 224 L214 174 L160 124 L106 174 Z" fill="#6f9563" />
             {/* 베이스 (2·1·3루) */}
-            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" fill="#fff" />
-            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" fill="#fff" />
-            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" fill="#fff" />
+            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" fill="#fbfaf4" />
+            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" fill="#fbfaf4" />
+            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" fill="#fbfaf4" />
             {/* 흙 마운드(투수) */}
-            <circle cx="160" cy="175" r="17" fill="#a45f34" />
+            <circle cx="160" cy="175" r="17" fill="#a97b4f" />
             {/* 흙 홈써클(포수) + 홈플레이트 + 타석 */}
-            <circle cx="160" cy="258" r="18" fill="#a45f34" />
-            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" fill="#fff" />
-            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" stroke="#fff" strokeWidth="1.6" />
-            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" stroke="#fff" strokeWidth="1.6" />
+            <circle cx="160" cy="258" r="18" fill="#a97b4f" />
+            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" fill="#fbfaf4" />
+            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" stroke="#fbfaf4" strokeWidth="1.6" />
+            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" stroke="#fbfaf4" strokeWidth="1.6" />
           </svg>
 
           {teamLabel && (
@@ -196,13 +200,13 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
           {dh && (
             <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
               className="absolute left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10
-                flex items-center gap-1 bg-white/95 rounded-full pl-0.5 pr-1.5 py-0.5 shadow-md">
+                flex items-center gap-1 bg-card/95 rounded-full pl-0.5 pr-1.5 py-0.5 shadow-md border border-wline">
               <span style={{ boxShadow: ringShadow(color) }}
-                className={`w-7 h-7 rounded-full bg-white flex items-center justify-center
-                text-[12px] font-extrabold ${dh.avg !== null ? "text-gray-900" : "text-gray-300"}`}>
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
+                ${dh.avg !== null && (dh.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${dh.avg !== null ? "text-ink" : "text-wmute"}`}`}>
                 {dh.avg !== null ? dh.avg : "–"}
               </span>
-              <span className="text-[10px] font-bold text-gray-800 whitespace-nowrap">지명 {dh.name}</span>
+              <span className="text-[10px] font-bold text-ink whitespace-nowrap">지명 {dh.name}</span>
             </button>
           )}
         </div>
@@ -212,9 +216,9 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
         <div className="mt-3 flex gap-2.5 items-start flex-wrap">
           {/* 후보 · 교체 (대타·대주자·수비교체) */}
           {bench.length > 0 && (
-            <div className="flex-1 min-w-[240px] border rounded-xl p-2.5 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 mb-2">
-                후보 · 교체 <span className="font-normal text-gray-400">— 탭하면 평점 매기기</span>
+            <div className="flex-1 min-w-[240px] border border-wline rounded-xl p-2.5 bg-card">
+              <p className="text-xs font-bold text-wsub mb-2">
+                후보 · 교체 <span className="font-normal text-wfaint">— 탭하면 평점 매기기</span>
               </p>
               <div className="flex flex-wrap gap-2">
                 {bench.map(p => (
@@ -227,20 +231,20 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
 
           {/* 교체투수(불펜) — 우하단 */}
           {bullpen.length > 0 && (
-            <div className="w-full sm:w-[210px] border rounded-xl p-2.5 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 mb-2">
-                교체투수 <span className="font-normal text-gray-400">(불펜)</span>
+            <div className="w-full sm:w-[210px] border border-wline rounded-xl p-2.5 bg-card">
+              <p className="text-xs font-bold text-wsub mb-2">
+                교체투수 <span className="font-normal text-wfaint">(불펜)</span>
               </p>
               <div className="flex flex-col gap-1.5">
                 {bullpen.map(p => {
                   const s = subInfo[p.playerId];
                   return (
                     <button key={p.mpId} onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
-                      className="flex items-center justify-between bg-white border rounded-lg px-2.5 py-1.5
-                        hover:border-blue-400 hover:shadow-sm transition">
-                      <span className="text-[13px] font-semibold text-gray-800 truncate">{p.name}</span>
-                      <span className="text-[11px] text-gray-500 shrink-0 ml-2">
-                        {s ? `${s.min}회 ` : ""}{p.avg !== null ? `⭐${p.avg}` : "－"}
+                      className="flex items-center justify-between bg-paper border border-wline rounded-lg px-2.5 py-1.5
+                        hover:border-ink hover:shadow-sm transition">
+                      <span className="text-[13px] font-semibold text-ink truncate">{p.name}</span>
+                      <span className="text-[11px] text-wsub shrink-0 ml-2 tabular-nums">
+                        {s ? `${s.min}회 ` : ""}{p.avg !== null ? <b className={(p.avg as number) >= 7.5 ? "text-golddim" : "text-ink"}>{p.avg}</b> : "－"}
                       </span>
                     </button>
                   );
