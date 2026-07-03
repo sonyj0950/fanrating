@@ -16,6 +16,12 @@ export type RankingRow = {
 
 export const RANKING_SPORTS = ["epl", "kleague", "kbo", "lck"] as const;
 
+// A매치(국가대표 친선·월드컵 등)는 클럽 시즌 단위 집계와 성격이 달라 랭킹·선수 프로필에서 제외
+export function isNationalTeamMatch(m: { homeTeam: string; awayTeam: string; round?: string | null }): boolean {
+  if (m.round && /월드컵|A매치|국가대표|아시안컵/.test(m.round)) return true;
+  return m.homeTeam === "대한민국" || m.awayTeam === "대한민국";
+}
+
 const KST = 9 * 3600 * 1000;
 
 // KST 기준 해당 연·월 1일 0시 → UTC Date
@@ -61,7 +67,7 @@ export async function getRankings(): Promise<Record<string, RankingRow[]>> {
       score: true,
       playerId: true,
       matchId: true,
-      match: { select: { sport: true, date: true } },
+      match: { select: { sport: true, date: true, homeTeam: true, awayTeam: true, round: true } },
       player: { select: { name: true, team: true, position: true } },
     },
   });
@@ -77,6 +83,7 @@ export async function getRankings(): Promise<Record<string, RankingRow[]>> {
     const sport = r.match.sport;
     const start = starts[sport];
     if (!start || r.match.date < start) continue;
+    if (isNationalTeamMatch(r.match)) continue;
     const perSport = (acc[sport] ||= new Map());
     let a = perSport.get(r.playerId);
     if (!a) {

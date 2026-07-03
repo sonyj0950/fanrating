@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { seasonStarts, seasonLabels } from "@/lib/rankings";
+import { isNationalTeamMatch, seasonStarts, seasonLabels } from "@/lib/rankings";
 import { badgeLabel, badgeTextColor, teamColor } from "@/lib/teamColors";
 import { GoldStar, SPORT_LABEL, StatusBadge, teamLabel } from "@/app/MatchCard";
 import { sportPath } from "@/lib/sportUrl";
@@ -116,7 +116,9 @@ export default async function PlayerPage({ params }: { params: { playerId: strin
   const latest = ratings.reduce<Date | null>((t, r) => (!t || r.match.date > t ? r.match.date : t), null);
   const sport = ratings.find(r => r.match.date.getTime() === latest?.getTime())?.match.sport ?? "kleague";
   const start = seasonStarts()[sport];
-  const season = ratings.filter(r => r.match.date >= start && r.match.sport === sport);
+  const season = ratings.filter(
+    r => r.match.date >= start && r.match.sport === sport && !isNationalTeamMatch(r.match),
+  );
 
   // 경기별 집계 (시간순)
   const byMatch = new Map<string, { m: (typeof season)[number]["match"]; sum: number; n: number }>();
