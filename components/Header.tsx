@@ -19,6 +19,9 @@ export default function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
+          <Link href="/rankings" className="px-1.5 sm:px-2 py-1.5 font-bold text-wsub hover:text-ink transition">
+            랭킹
+          </Link>
           {isAdmin && (
             <>
               <Link href="/admin" className="px-2 sm:px-3 py-1.5 rounded border border-blue-200 text-blue-700 bg-blue-50">
