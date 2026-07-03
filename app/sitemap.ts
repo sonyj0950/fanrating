@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 고정 페이지
   const staticPages: MetadataRoute.Sitemap = [
     { url: base, changeFrequency: "hourly", priority: 1 },
+    { url: `${base}/rankings`, changeFrequency: "daily", priority: 0.9 },
     { url: `${base}/login`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/terms`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/privacy`, changeFrequency: "yearly", priority: 0.2 },
@@ -33,5 +34,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB 접근 실패 시 고정 페이지만 반환
   }
 
-  return [...staticPages, ...matchPages];
+  // 선수 페이지 (평점이 하나라도 있는 선수만 — 빈 페이지 색인 방지)
+  let playerPages: MetadataRoute.Sitemap = [];
+  try {
+    const players = await prisma.player.findMany({
+      where: { ratings: { some: {} } },
+      select: { id: true },
+      take: 5000,
+    });
+    playerPages = players.map(p => ({
+      url: `${base}/player/${p.id}`,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    }));
+  } catch {}
+
+  return [...staticPages, ...matchPages, ...playerPages];
 }
