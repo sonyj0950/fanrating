@@ -49,6 +49,8 @@ export function MatchCard({ m }: { m: any }) {
           <span className="ml-auto shrink-0">
             {new Date(m.date).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </span>
+          {/* 관리자 전용 — 비관리자에겐 렌더되지 않음. 날짜와 겹치지 않게 인라인 배치 */}
+          <DeleteMatchButton matchId={m.id} />
         </div>
 
         <div className="flex items-center justify-center gap-4 my-1">
@@ -71,7 +73,6 @@ export function MatchCard({ m }: { m: any }) {
           </div>
         )}
       </Link>
-      <div className="absolute top-3 right-3"><DeleteMatchButton matchId={m.id} /></div>
     </div>
   );
 }

@@ -35,8 +35,8 @@ export default function DeleteMatchButton({ matchId, afterDelete }:
 
   return (
     <button onClick={del} disabled={busy}
-      className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded hover:bg-red-50 disabled:opacity-40 shrink-0">
-      🗑 삭제
+      className="text-[11px] font-bold px-2 py-0.5 border border-live/40 text-live rounded-full hover:bg-live/10 disabled:opacity-40 shrink-0 leading-tight">
+      삭제
     </button>
   );
 }
