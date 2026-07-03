@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { GoldStar, SPORT_LABEL, teamLabel } from "../MatchCard";
 import { badgeLabel, badgeTextColor, teamColor } from "@/lib/teamColors";
+import { scoreTextColor } from "@/lib/scoreColor";
 import type { RankingRow } from "@/lib/rankings";
 
 const TABS = ["epl", "kleague", "kbo", "lck"] as const;
@@ -47,7 +48,7 @@ function TopCard({ row, rank, sport, colors }: { row: RankingRow; rank: number; 
       <div className="text-[11px] text-wsub mb-2 truncate">
         {teamLabel(sport, row.team)}{row.position ? ` · ${row.position}` : ""}
       </div>
-      <div className="flex items-center justify-center gap-1.5 text-2xl font-black tabular-nums text-ink">
+      <div className="flex items-center justify-center gap-1.5 text-2xl font-black tabular-nums" style={{ color: scoreTextColor(row.avg) }}>
         <GoldStar className="w-4 h-4" />{row.avg.toFixed(2)}
       </div>
       <div className="text-[11px] text-wfaint mt-1 tabular-nums">{row.games}경기 · 평가 {row.ratingCount.toLocaleString()}회</div>
@@ -169,7 +170,7 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
                     </span>
                   </span>
                   <span className="w-16 text-right text-[11px] tabular-nums hidden sm:block"><RecentForm row={r} /></span>
-                  <span className="w-12 text-right font-black text-[15px] tabular-nums text-ink">{r.avg.toFixed(2)}</span>
+                  <span className="w-12 text-right font-black text-[15px] tabular-nums" style={{ color: scoreTextColor(r.avg) }}>{r.avg.toFixed(2)}</span>
                 </Link>
               );
             })}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import ShareButton from "@/components/ShareButton";
 import { GoldStar, teamLabel } from "../MatchCard";
 import { badgeLabel, badgeTextColor, teamColor } from "@/lib/teamColors";
+import { scoreTextColor } from "@/lib/scoreColor";
 import type { BestPick, WeeklyBest, WeeklyRow } from "@/lib/weeklyBest";
 
 const TABS = [
@@ -31,7 +32,7 @@ function FormationChip({ p, colors }: { p: BestPick; colors: Record<string, stri
     <Link href={`/player/${p.playerId}`} className="flex flex-col items-center gap-1 w-[76px] sm:w-[88px] group">
       <Badge team={p.team} colors={colors} />
       <span className="text-[12px] font-bold text-ink truncate max-w-full group-hover:underline">{p.name}</span>
-      <span className="flex items-center gap-0.5 text-[12px] font-black tabular-nums text-ink">
+      <span className="flex items-center gap-0.5 text-[12px] font-black tabular-nums" style={{ color: scoreTextColor(p.avg) }}>
         <GoldStar className="w-2.5 h-2.5" />{p.avg.toFixed(2)}
       </span>
     </Link>
@@ -59,7 +60,7 @@ function PickRow({ p, slot, sport, colors }: { p: BestPick | null; slot: string;
             <span className="block font-bold text-ink truncate">{p.name}</span>
             <span className="block text-[11px] text-wsub truncate">{teamLabel(sport, p.team)} · 평가 {p.count}회</span>
           </Link>
-          <span className="flex items-center gap-1 font-black text-[15px] tabular-nums text-ink shrink-0">
+          <span className="flex items-center gap-1 font-black text-[15px] tabular-nums shrink-0" style={{ color: scoreTextColor(p.avg) }}>
             <GoldStar className="w-3 h-3" />{p.avg.toFixed(2)}
           </span>
         </>

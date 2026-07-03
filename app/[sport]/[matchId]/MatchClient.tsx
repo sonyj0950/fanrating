@@ -22,6 +22,7 @@ import type { ShareCardData } from "@/lib/shareCard";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
+import { scoreChipStyle, isPerfect } from "@/lib/scoreColor";
 
 function segmentsFor(sport: string) {
   if (sport === "kleague" || sport === "epl") return [
@@ -598,14 +599,6 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     const medal = mode === "high" && rank <= 3;
     const rkClass = !medal ? "text-wmute"
       : rank === 1 ? "bg-gold text-ink" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
-    // 점수 배지색
-    const worst = mode === "low" && rank === 1;
-    const best = mode === "high" && rank === 1;
-    const scClass = best ? "bg-gold text-ink shadow-md shadow-gold/40"
-      : worst ? "bg-live text-white shadow-md shadow-live/40"
-      : v < 4 ? "bg-[#f7e7e2] text-live"
-      : v >= 7 ? "bg-goldbg text-golddim"
-      : "bg-wgray text-wgraytx";
     return (
       <button onClick={() => onPick(p)}
         className="w-full flex items-center gap-2.5 px-3 py-2 border-t border-wsoft first:border-t-0 hover:bg-paper text-left">
@@ -616,7 +609,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
           {p.role && <span className="text-[10px] font-bold text-wfaint bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
           <SubBadge pid={p.playerId} />
         </span>
-        <span className={`w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums ${scClass}`}>{v}</span>
+        <span className="w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums" style={scoreChipStyle(v)}>{v}</span>
       </button>
     );
   }
@@ -641,8 +634,8 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
           <span className={`relative z-10 text-[13.5px] truncate max-w-[88px] ${
             win ? "font-extrabold text-ink" : "font-semibold text-wgraytx"}`}>{p.name}</span>
           <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 tabular-nums ${
-            win ? "bg-gold text-ink border-2 border-ink"
-                : rated ? "bg-wgray text-wgraytx" : "bg-paper text-wmute"}`}>
+            win ? "border-2 border-ink" : ""} ${!rated ? "bg-paper text-wmute" : ""}`}
+            style={rated ? scoreChipStyle(p.avg!) : undefined}>
             {rated ? p.avg : "–"}
           </span>
         </button>
@@ -1661,12 +1654,16 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                 <>
                   <p className="text-sm font-semibold mb-2">평점 매기기 (1~10)</p>
                   <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
-                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                      <button key={n} onClick={() => setScore(n)}
-                        className={`h-10 rounded border text-sm ${score===n?"bg-gray-900 text-white":"bg-white"}`}>
-                        {n}
-                      </button>
-                    ))}
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                      const on = score === n;
+                      return (
+                        <button key={n} onClick={() => setScore(n)}
+                          className={`h-10 rounded-lg text-sm font-bold transition ${on ? "border-2 border-ink" : "border border-wline bg-card text-wfaint hover:text-wsub"}`}
+                          style={on ? scoreChipStyle(n) : undefined}>
+                          {n}
+                        </button>
+                      );
+                    })}
                   </div>
                   <textarea value={comment} onChange={e=>setComment(e.target.value)}
                     placeholder="코멘트 (선택)"
@@ -1769,7 +1766,9 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
   return (
     <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-goldbg border-goldline" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
       <div className="flex justify-between text-xs text-gray-500 mb-1">
-        <span><Author id={c.userId} name={c.username} /> · ⭐ {c.score}{isAdmin && c.reportCount > 0 ? <span className="text-red-500"> · 🚩 {c.reportCount}</span> : null}</span>
+        <span className="inline-flex items-center gap-1.5"><Author id={c.userId} name={c.username} />
+          <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded-md text-[11px] font-extrabold" style={scoreChipStyle(c.score)}>{c.score}</span>
+          {isAdmin && c.reportCount > 0 ? <span className="text-red-500">🚩 {c.reportCount}</span> : null}</span>
         {!c.blinded && <button onClick={onLike} className="hover:text-red-500">👍 {c.likes}</button>}
       </div>
 

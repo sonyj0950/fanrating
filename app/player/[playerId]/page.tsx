@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { isNationalTeamMatch, seasonStarts, seasonLabels } from "@/lib/rankings";
 import { badgeLabel, badgeTextColor, teamColor } from "@/lib/teamColors";
 import { GoldStar, SPORT_LABEL, StatusBadge, teamLabel } from "@/app/MatchCard";
+import { scoreTextColor } from "@/lib/scoreColor";
 import { sportPath } from "@/lib/sportUrl";
 
 export const dynamic = "force-dynamic";
@@ -181,12 +182,12 @@ export default async function PlayerPage({ params }: { params: { playerId: strin
           {/* 시즌 요약 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <Metric label="시즌 평균"
-              value={<span className="inline-flex items-center gap-1"><GoldStar className="w-3.5 h-3.5" />{avg!.toFixed(2)}</span>}
+              value={<span className="inline-flex items-center gap-1" style={{ color: scoreTextColor(avg!) }}><GoldStar className="w-3.5 h-3.5" />{avg!.toFixed(2)}</span>}
               sub={`평가 ${total.toLocaleString()}회`} />
             <Metric label="평가된 경기" value={points.length} sub="경기" />
-            <Metric label="최고 평점" value={best!.avg.toFixed(2)}
+            <Metric label="최고 평점" value={<span style={{ color: scoreTextColor(best!.avg) }}>{best!.avg.toFixed(2)}</span>}
               sub={opponentOf(best!) ? `vs ${teamLabel(sport, opponentOf(best!)!)}` : undefined} />
-            <Metric label="최저 평점" value={worst!.avg.toFixed(2)}
+            <Metric label="최저 평점" value={<span style={{ color: scoreTextColor(worst!.avg) }}>{worst!.avg.toFixed(2)}</span>}
               sub={opponentOf(worst!) ? `vs ${teamLabel(sport, opponentOf(worst!)!)}` : undefined} />
           </div>
 
