@@ -287,7 +287,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {shareCard && <ShareCardPanel data={shareCard} canPreview={isAdmin} />}
 
-      {seg !== "mine" && (
+      {seg !== "mine" && isAdmin && (
         <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
           segLabel={segments.find(s => s.key === seg)?.label ?? ""} teamColors={teamColors} />
       )}
