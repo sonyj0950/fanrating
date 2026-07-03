@@ -3,9 +3,9 @@ import DeleteMatchButton from "@/components/DeleteMatchButton";
 import { KBO_TEAM_LABELS } from "@/lib/kboTeams";
 import { sportPath } from "@/lib/sportUrl";
 
-// kleague는 국대 A매치 등 K리그가 아닌 축구 경기도 담는 버킷이라 리그명이 아닌 "축구"로 표기
+// kleague·lck는 A매치·MSI 등 해당 리그가 아닌 경기도 담는 버킷이라 리그명이 아닌 종목명으로 표기
 export const SPORT_LABEL: Record<string, string> = {
-  kbo: "KBO", kleague: "축구", lck: "LCK", epl: "EPL",
+  kbo: "KBO", kleague: "축구", lck: "LoL", epl: "EPL",
 };
 
 // 종목별 최고 평점 선수 라벨
