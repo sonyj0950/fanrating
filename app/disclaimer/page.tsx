@@ -2,9 +2,9 @@ export const metadata = { title: "면책 조항 · fanarena.kr" };
 
 export default function DisclaimerPage() {
   return (
-    <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
+    <div className="bg-card rounded-lg border p-6 leading-relaxed text-sm text-ink">
       <h1 className="text-xl font-bold mb-1">면책 조항 (Disclaimer)</h1>
-      <p className="text-gray-500 mb-6">시행일: 2026-06-24</p>
+      <p className="text-wsub mb-6">시행일: 2026-06-24</p>
 
       <p className="mb-6">
         fanarena.kr(이하 “서비스”)은 야구·축구·e스포츠 경기에 대한 팬들의 평점과 의견을 나누기 위한
@@ -41,7 +41,7 @@ export default function DisclaimerPage() {
           관련 제작·운영 주체의 견해를 반영하지 않습니다. League of Legends 및 관련 자산은 라이엇 게임즈의
           상표 또는 등록상표입니다.
         </p>
-        <p className="mt-2 text-gray-500">
+        <p className="mt-2 text-wsub">
           fanarena.kr isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games
           or anyone officially involved in producing or managing Riot Games properties. Riot Games and all
           associated properties are trademarks or registered trademarks of Riot Games, Inc.
@@ -70,7 +70,7 @@ export default function DisclaimerPage() {
         <p className="mt-2">권리 침해 신고, 데이터 정정, 기타 문의는 위 연락처로 접수해 주시기 바랍니다.</p>
       </Section>
 
-      <p className="text-gray-500 mt-6">본 면책 조항은 2026-06-24부터 시행합니다.</p>
+      <p className="text-wsub mt-6">본 면책 조항은 2026-06-24부터 시행합니다.</p>
     </div>
   );
 }
@@ -79,7 +79,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="mb-5">
       <h2 className="font-semibold mb-1">{title}</h2>
-      <div className="text-gray-700">{children}</div>
+      <div className="text-ink">{children}</div>
     </section>
   );
 }

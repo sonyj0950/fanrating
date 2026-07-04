@@ -11,7 +11,7 @@ export default function Header() {
       <div className="max-w-3xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <span aria-hidden="true"
-            className="w-[26px] h-[26px] rounded-lg bg-ink text-gold grid place-items-center text-[15px] font-black leading-none">
+            className="w-[26px] h-[26px] rounded-lg bg-gold text-deep grid place-items-center text-[15px] font-black leading-none">
             F
           </span>
           <span className="font-extrabold text-lg sm:text-xl tracking-tight text-ink" style={{ letterSpacing: "-0.5px" }}>

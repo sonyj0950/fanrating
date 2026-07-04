@@ -29,10 +29,10 @@ export default async function ProfilePage({ params }: any) {
   // 비공개 프로필: 본인·관리자만 열람. 그 외에는 최소 정보만 노출.
   if (!user.profilePublic && !isOwner && !viewerIsAdmin) {
     return (
-      <div className="bg-white border rounded-xl p-8 text-center max-w-md mx-auto mt-6">
-        <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-2xl mx-auto mb-3">🔒</div>
+      <div className="bg-card border rounded-xl p-8 text-center max-w-md mx-auto mt-6">
+        <div className="w-14 h-14 rounded-full bg-wgray text-wfaint flex items-center justify-center text-2xl mx-auto mb-3">🔒</div>
         <div className="text-lg font-bold">{user.nickname}</div>
-        <p className="text-sm text-gray-500 mt-2">비공개 프로필입니다. 활동 내역이 공개되어 있지 않습니다.</p>
+        <p className="text-sm text-wsub mt-2">비공개 프로필입니다. 활동 내역이 공개되어 있지 않습니다.</p>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export default async function ProfilePage({ params }: any) {
   return (
     <div className="space-y-4">
       {/* 헤더 */}
-      <div className="bg-white border rounded-xl p-5">
+      <div className="bg-card border rounded-xl p-5">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-bold shrink-0">{initial}</div>
           <div className="flex-1 min-w-0">
@@ -85,15 +85,15 @@ export default async function ProfilePage({ params }: any) {
               {user.role === "admin" && <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5">운영자</span>}
               {user.emailVerified
                 ? <span className="text-xs bg-green-50 text-green-700 rounded-full px-2 py-0.5">✓ 인증</span>
-                : <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">미인증</span>}
+                : <span className="text-xs bg-wgray text-wsub rounded-full px-2 py-0.5">미인증</span>}
               {!user.profilePublic && (isOwner || viewerIsAdmin) && (
-                <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">🔒 비공개</span>
+                <span className="text-xs bg-wgray text-wsub rounded-full px-2 py-0.5">🔒 비공개</span>
               )}
             </div>
-            <div className="text-sm text-gray-500 mt-1">{joined} 가입</div>
+            <div className="text-sm text-wsub mt-1">{joined} 가입</div>
           </div>
           {isOwner && (
-            <Link href="/account" className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50 shrink-0">프로필 편집</Link>
+            <Link href="/account" className="text-sm px-3 py-1.5 rounded border hover:bg-wgray shrink-0">프로필 편집</Link>
           )}
         </div>
 
@@ -108,12 +108,12 @@ export default async function ProfilePage({ params }: any) {
 
       {/* 자주 평가한 팀 */}
       {topTeams.length > 0 && (
-        <div className="bg-white border rounded-xl p-5">
-          <div className="text-sm text-gray-500 mb-2">자주 평가한 팀</div>
+        <div className="bg-card border rounded-xl p-5">
+          <div className="text-sm text-wsub mb-2">자주 평가한 팀</div>
           <div className="flex gap-2 flex-wrap">
             {topTeams.map(([team, n]) => (
-              <span key={team} className="inline-flex items-center gap-1.5 text-sm bg-gray-50 border rounded-full px-3 py-1.5">
-                {team} <span className="text-gray-400">{n}</span>
+              <span key={team} className="inline-flex items-center gap-1.5 text-sm bg-wgray border rounded-full px-3 py-1.5">
+                {team} <span className="text-wfaint">{n}</span>
               </span>
             ))}
           </div>
@@ -122,25 +122,25 @@ export default async function ProfilePage({ params }: any) {
 
       {/* 평점 성향 */}
       {avg != null && (
-        <div className="bg-white border rounded-xl p-5">
+        <div className="bg-card border rounded-xl p-5">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-500">평점 성향</span>
+            <span className="text-wsub">평점 성향</span>
             <span className="text-amber-700 font-medium">{tendency}</span>
           </div>
-          <div className="relative h-2 bg-gray-100 rounded-full">
+          <div className="relative h-2 bg-wgray rounded-full">
             <div className="absolute w-4 h-4 rounded-full bg-amber-500 border-2 border-white top-1/2" style={{ left: `${pos}%`, transform: "translate(-50%,-50%)" }} />
           </div>
-          <div className="flex justify-between text-[11px] text-gray-400 mt-1">
+          <div className="flex justify-between text-[11px] text-wfaint mt-1">
             <span>짜게 줌</span><span>평균</span><span>후하게 줌</span>
           </div>
         </div>
       )}
 
       {/* 최근 평점 */}
-      <div className="bg-white border rounded-xl p-5">
-        <div className="text-sm text-gray-500 mb-3">최근 평점</div>
+      <div className="bg-card border rounded-xl p-5">
+        <div className="text-sm text-wsub mb-3">최근 평점</div>
         {recent.length === 0 ? (
-          <p className="text-sm text-gray-400">아직 남긴 평점이 없습니다.</p>
+          <p className="text-sm text-wfaint">아직 남긴 평점이 없습니다.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {recent.map((r, i) => (
@@ -148,11 +148,11 @@ export default async function ProfilePage({ params }: any) {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm">
                     {r.player.name}
-                    <Link href={`/${sportPath(r.match.sport)}/${r.match.id}`} className="text-gray-400 text-xs ml-1 hover:text-blue-600">
+                    <Link href={`/${sportPath(r.match.sport)}/${r.match.id}`} className="text-wfaint text-xs ml-1 hover:text-blue-600">
                       · {r.match.homeTeam} vs {r.match.awayTeam}
                     </Link>
                   </div>
-                  {r.comment.trim() && <div className="text-xs text-gray-500 mt-0.5 truncate">"{r.comment.trim()}"</div>}
+                  {r.comment.trim() && <div className="text-xs text-wsub mt-0.5 truncate">"{r.comment.trim()}"</div>}
                 </div>
                 <span className="text-sm font-semibold bg-amber-100 text-amber-800 rounded px-2 py-0.5 shrink-0">{r.score}</span>
               </div>
@@ -166,9 +166,9 @@ export default async function ProfilePage({ params }: any) {
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-gray-50 rounded-lg py-3 text-center">
+    <div className="bg-wgray rounded-lg py-3 text-center">
       <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+      <div className="text-xs text-wsub mt-0.5">{label}</div>
     </div>
   );
 }

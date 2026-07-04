@@ -89,7 +89,7 @@ function Chip({ p, color, sub, kind, onPick }:
   return (
     <button onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
       className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
-        hover:bg-white hover:border-wsub active:scale-95 transition group">
+        hover:bg-wgray hover:border-wsub active:scale-95 transition group">
       <SubBadge s={sub} />
       <span style={{ boxShadow: ringShadow(color), ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
         className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
@@ -111,7 +111,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
   { players: Player[]; onPick: (p: Player) => void; isHome?: boolean; teamLabel?: string;
     subInfo?: SubInfo; subKind?: SubKind; highlightId?: string | null; teamColors?: Record<string, string> }) {
   if (players.length === 0)
-    return <p className="text-sm text-gray-400 bg-white border rounded p-4">등록된 선수가 없습니다.</p>;
+    return <p className="text-sm text-wfaint bg-card border rounded p-4">등록된 선수가 없습니다.</p>;
 
   // 구단색 (오버라이드 > 공식색 > 홈/원정 기본)
   const color = teamColor(teamLabel, teamColors, isHome ? DEFAULT_HOME : DEFAULT_AWAY);
@@ -172,32 +172,32 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <defs>
               <clipPath id="kbo-fld"><path d="M160 272 L18 152 Q160 -108 302 152 Z" /></clipPath>
               <pattern id="kbo-grass" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="26" height="26" fill="#62885a" />
-                <rect width="13" height="13" fill="#6b9161" />
-                <rect x="13" y="13" width="13" height="13" fill="#6b9161" />
+                <rect width="26" height="26" fill="#2b4d39" />
+                <rect width="13" height="13" fill="#315641" />
+                <rect x="13" y="13" width="13" height="13" fill="#315641" />
               </pattern>
             </defs>
             {/* 워닝트랙(흙) 테두리 + 체커 잔디 (웜톤) */}
-            <path d="M160 272 L18 152 Q160 -108 302 152 Z" fill="#62885a" stroke="#d9b98a" strokeWidth="14" strokeLinejoin="round" />
+            <path d="M160 272 L18 152 Q160 -108 302 152 Z" fill="#2b4d39" stroke="#7a6248" strokeWidth="14" strokeLinejoin="round" />
             <g clipPath="url(#kbo-fld)"><rect x="0" y="0" width="320" height="292" fill="url(#kbo-grass)" /></g>
             {/* 파울라인 */}
-            <line x1="160" y1="264" x2="32" y2="158" stroke="#fbfaf4" strokeWidth="2.6" strokeLinecap="round" />
-            <line x1="160" y1="264" x2="288" y2="158" stroke="#fbfaf4" strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="32" y2="158" stroke="#dfe9e2" strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="288" y2="158" stroke="#dfe9e2" strokeWidth="2.6" strokeLinecap="round" />
             {/* 내야 흙 부채꼴 */}
-            <path d="M160 256 L64 176 Q160 88 256 176 Z" fill="#c8a877" />
+            <path d="M160 256 L64 176 Q160 88 256 176 Z" fill="#7d6245" />
             {/* 내야 잔디 다이아몬드 */}
-            <path d="M160 224 L214 174 L160 124 L106 174 Z" fill="#6f9563" />
+            <path d="M160 224 L214 174 L160 124 L106 174 Z" fill="#33593f" />
             {/* 베이스 (2·1·3루) */}
-            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" fill="#fbfaf4" />
-            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" fill="#fbfaf4" />
-            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" fill="#fbfaf4" />
+            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" fill="#dfe9e2" />
+            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" fill="#dfe9e2" />
+            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" fill="#dfe9e2" />
             {/* 흙 마운드(투수) */}
-            <circle cx="160" cy="175" r="17" fill="#a97b4f" />
+            <circle cx="160" cy="175" r="17" fill="#6b5236" />
             {/* 흙 홈써클(포수) + 홈플레이트 + 타석 */}
-            <circle cx="160" cy="258" r="18" fill="#a97b4f" />
-            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" fill="#fbfaf4" />
-            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" stroke="#fbfaf4" strokeWidth="1.6" />
-            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" stroke="#fbfaf4" strokeWidth="1.6" />
+            <circle cx="160" cy="258" r="18" fill="#6b5236" />
+            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" fill="#dfe9e2" />
+            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" stroke="#dfe9e2" strokeWidth="1.6" />
+            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" stroke="#dfe9e2" strokeWidth="1.6" />
           </svg>
 
           {teamLabel && (

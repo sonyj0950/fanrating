@@ -43,7 +43,7 @@ export function MatchCard({ m }: { m: any }) {
     <div className="group relative rounded-2xl border border-wline bg-card p-4 shadow-[0_1px_2px_rgba(60,50,20,.05)] transition hover:-translate-y-0.5 hover:shadow-md">
       <Link href={`/${sportPath(m.sport)}/${m.id}`} className="block">
         <div className="flex items-center gap-2 text-[11px] text-wfaint mb-3">
-          <span className="text-[#5c584c] font-bold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
+          <span className="text-wsub font-bold">{SPORT_LABEL[m.sport] ?? m.sport}</span>
           <StatusBadge status={m.status} />
           {m.round && <span className="text-wsub font-medium truncate">{m.round}</span>}
           <span className="ml-auto shrink-0">

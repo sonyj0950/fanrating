@@ -274,7 +274,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       )}
       {isAdmin && (match.sport === "kleague" || match.sport === "epl") && (
         <button onClick={regenSeed}
-          className="text-xs px-2 py-1 mb-4 border rounded bg-white text-gray-500 hover:bg-gray-50">
+          className="text-xs px-2 py-1 mb-4 border rounded bg-card text-wsub hover:bg-wgray">
           🔄 토론거리 자동 생성/갱신
         </button>
       )}
@@ -326,12 +326,12 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
       {seg !== "mine" && (
       <div className="mb-4 flex gap-2 justify-end">
         {match.sport === "kbo" && (
-          <button onClick={() => setShowAll(!showAll)} className="text-sm px-3 py-1 border rounded bg-white">
+          <button onClick={() => setShowAll(!showAll)} className="text-sm px-3 py-1 border rounded bg-card">
             {showAll ? "우선 선수만" : `전체 선수 보기 (${players.length}명)`}
           </button>
         )}
         {isAdmin && (
-          <button onClick={() => setAddOpen(true)} className="text-sm px-3 py-1 border rounded bg-amber-50 text-gray-900">
+          <button onClick={() => setAddOpen(true)} className="text-sm px-3 py-1 border rounded bg-amber-50 text-ink">
             + 선수 추가
           </button>
         )}
@@ -355,7 +355,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         )}
         {isAdmin && (match.sport === "kleague" || match.sport === "epl") && editPos && (
           <button onClick={resetPositions}
-            className="text-sm px-3 py-1 border rounded bg-white text-gray-600">
+            className="text-sm px-3 py-1 border rounded bg-card text-wsub">
             ↺ 위치 초기화
           </button>
         )}
@@ -507,21 +507,21 @@ function SubstitutionEditor({ matchId, players, homeTeam, awayTeam, onChanged }:
   return (
     <div className="mb-4 bg-amber-50/60 border border-amber-200 rounded-xl p-3.5">
       <h3 className="text-sm font-bold text-amber-800 mb-0.5">🔁 교체 정보 입력</h3>
-      <p className="text-[11px] text-amber-600 mb-3">"분 · 나간 선수(OUT) → 들어온 선수(IN)"를 등록하면 마커·리스트에 교체 표시가 나타납니다.</p>
+      <p className="text-[11px] text-golddim mb-3">"분 · 나간 선수(OUT) → 들어온 선수(IN)"를 등록하면 마커·리스트에 교체 표시가 나타납니다.</p>
 
       {rows.map((r, i) => (
         <div key={i} className="flex items-center gap-1.5 mb-2 flex-wrap">
           <input value={r.minute} onChange={e => upd(i, "minute", e.target.value)}
             inputMode="numeric" placeholder="분" className="w-12 border rounded px-2 py-1.5 text-sm text-center" />
-          <span className="text-[11px] text-gray-400">분</span>
+          <span className="text-[11px] text-wfaint">분</span>
           <select value={r.outPlayerId} onChange={e => upd(i, "outPlayerId", e.target.value)}
-            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-white">
+            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-card">
             <option value="">나간 선수(OUT)</option>
             {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
           <span className="text-green-600 font-extrabold">→</span>
           <select value={r.inPlayerId} onChange={e => upd(i, "inPlayerId", e.target.value)}
-            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-white">
+            className="flex-1 min-w-[100px] border rounded px-2 py-1.5 text-sm bg-card">
             <option value="">들어온 선수(IN)</option>
             {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
@@ -530,7 +530,7 @@ function SubstitutionEditor({ matchId, players, homeTeam, awayTeam, onChanged }:
       ))}
 
       <div className="flex items-center gap-3 mt-2">
-        <button onClick={add} className="text-sm text-gray-900 font-semibold">+ 교체 추가</button>
+        <button onClick={add} className="text-sm text-ink font-semibold">+ 교체 추가</button>
         {msg && <span className="text-xs text-amber-700">{msg}</span>}
         <button onClick={save} disabled={busy}
           className="ml-auto text-sm px-4 py-1.5 rounded-lg bg-amber-600 text-white font-semibold disabled:opacity-40">
@@ -632,7 +632,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     // 순위 메달색 (높은순 1~3위만)
     const medal = mode === "high" && rank <= 3;
     const rkClass = !medal ? "text-wmute"
-      : rank === 1 ? "bg-gold text-ink" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
+      : rank === 1 ? "bg-gold text-deep" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
 
     const pc = cdata?.players?.[p.playerId];
     const best = pc?.top?.[0];
@@ -868,31 +868,31 @@ function LineupManager({ players, onChanged }: { players: Player[]; onChanged: (
 
   return (
     <div className="border rounded-lg bg-amber-50/50 p-3 mb-4 text-sm">
-      <p className="font-semibold mb-2">⚙️ 명단 관리 <span className="font-normal text-xs text-gray-500">— 선발/후보와 출전 구간을 바꿀 수 있습니다</span></p>
+      <p className="font-semibold mb-2">⚙️ 명단 관리 <span className="font-normal text-xs text-wsub">— 선발/후보와 출전 구간을 바꿀 수 있습니다</span></p>
       {Object.keys(byTeam).map(team => {
         const starters = byTeam[team].filter(p => p.isDefault !== false).length;
         return (
         <div key={team} className="mb-3">
-          <p className="text-xs font-semibold text-gray-500 mb-1">{team} <span className="text-gray-400">· 선발 {starters}명</span></p>
+          <p className="text-xs font-semibold text-wsub mb-1">{team} <span className="text-wfaint">· 선발 {starters}명</span></p>
           <div className="space-y-1">
             {byTeam[team].map(p => {
               const isStarter = p.isDefault !== false;
               return (
-              <div key={p.mpId} className="flex items-center gap-2 bg-white border rounded px-2 py-1.5">
-                <span className="flex-1 truncate min-w-0">{p.name} <span className="text-xs text-gray-400">{p.role}</span></span>
+              <div key={p.mpId} className="flex items-center gap-2 bg-card border rounded px-2 py-1.5">
+                <span className="flex-1 truncate min-w-0">{p.name} <span className="text-xs text-wfaint">{p.role}</span></span>
                 {/* 선발/후보 토글 */}
                 <div className="flex rounded overflow-hidden border shrink-0">
                   <button disabled={busy === p.mpId} onClick={() => setStarter(p, true)}
-                    className={`px-2 py-0.5 text-xs ${isStarter ? "bg-green-600 text-white" : "bg-white hover:bg-gray-50"}`}>선발</button>
+                    className={`px-2 py-0.5 text-xs ${isStarter ? "bg-green-600 text-white" : "bg-card hover:bg-wgray"}`}>선발</button>
                   <button disabled={busy === p.mpId} onClick={() => setStarter(p, false)}
-                    className={`px-2 py-0.5 text-xs ${!isStarter ? "bg-gray-700 text-white" : "bg-white hover:bg-gray-50"}`}>후보</button>
+                    className={`px-2 py-0.5 text-xs ${!isStarter ? "bg-gray-700 text-white" : "bg-card hover:bg-wgray"}`}>후보</button>
                 </div>
                 <div className="flex rounded overflow-hidden border shrink-0">
                   {SEGS.map(s => (
                     <button key={s.key} disabled={busy === p.mpId}
                       onClick={() => setSegment(p, s.key)}
                       className={`px-2 py-0.5 text-xs ${ (p.segment || "all") === s.key
-                        ? "bg-gray-900 text-white" : "bg-white hover:bg-gray-50"}`}>
+                        ? "bg-gold text-deep" : "bg-card hover:bg-wgray"}`}>
                       {s.label}
                     </button>
                   ))}
@@ -987,17 +987,17 @@ function ScoreEditor({ matchId, homeTeam, awayTeam, homeScore, awayScore, onChan
   const changed = h !== (homeScore?.toString() ?? "") || a !== (awayScore?.toString() ?? "");
 
   return (
-    <div className="flex items-center gap-2 mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
-      <span className="text-gray-500 text-xs">스코어</span>
+    <div className="flex items-center gap-2 mb-3 text-sm bg-wgray border rounded px-3 py-2">
+      <span className="text-wsub text-xs">스코어</span>
       <span className="font-medium">{homeTeam}</span>
       <input type="number" min={0} max={99} value={h} onChange={e => setH(e.target.value)}
         className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
-      <span className="text-gray-400">:</span>
+      <span className="text-wfaint">:</span>
       <input type="number" min={0} max={99} value={a} onChange={e => setA(e.target.value)}
         className="w-12 border rounded px-1 py-0.5 text-center" placeholder="-" />
       <span className="font-medium">{awayTeam}</span>
       <button onClick={save} disabled={busy || !changed}
-        className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
+        className="ml-auto text-xs px-3 py-1 rounded bg-gold text-deep disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>
     </div>
@@ -1026,12 +1026,12 @@ function DateEditor({ matchId, date, onChanged }:
   }
 
   return (
-    <div className="flex items-center gap-2 mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
-      <span className="text-gray-500 text-xs">경기 시간</span>
+    <div className="flex items-center gap-2 mb-3 text-sm bg-wgray border rounded px-3 py-2">
+      <span className="text-wsub text-xs">경기 시간</span>
       <input type="datetime-local" value={v} onChange={e => setV(e.target.value)}
         className="border rounded px-2 py-0.5" />
       <button onClick={save} disabled={busy || v === initial || !v}
-        className="ml-auto text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
+        className="ml-auto text-xs px-3 py-1 rounded bg-gold text-deep disabled:opacity-40">
         {busy ? "저장중" : "저장"}
       </button>
     </div>
@@ -1058,14 +1058,14 @@ function RoundEditor({ matchId, sport, round, onChanged }:
   }
 
   return (
-    <div className="mb-3 text-sm bg-gray-50 border rounded px-3 py-2">
+    <div className="mb-3 text-sm bg-wgray border rounded px-3 py-2">
       <div className="flex items-center gap-2">
-        <span className="text-gray-500 text-xs shrink-0">라운드/단계</span>
+        <span className="text-wsub text-xs shrink-0">라운드/단계</span>
         <input type="text" value={v} onChange={e => setV(e.target.value)}
           placeholder="예: 프리미어리그 7라운드"
           className="border rounded px-2 py-0.5 flex-1 min-w-0" />
         <button onClick={save} disabled={busy || v === initial}
-          className="ml-auto shrink-0 text-xs px-3 py-1 rounded bg-gray-900 text-white disabled:opacity-40">
+          className="ml-auto shrink-0 text-xs px-3 py-1 rounded bg-gold text-deep disabled:opacity-40">
           {busy ? "저장중" : "저장"}
         </button>
       </div>
@@ -1074,13 +1074,13 @@ function RoundEditor({ matchId, sport, round, onChanged }:
           {presets.map(p => (
             <button type="button" key={p} onClick={() => setV(p)}
               className={`text-xs px-2 py-1 rounded-full border transition ${
-                v === p ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"}`}>
+                v === p ? "bg-gold text-deep border-gray-900" : "bg-card text-wsub border-wline hover:bg-wgray"}`}>
               {p}
             </button>
           ))}
           {v && (
             <button type="button" onClick={() => setV("")}
-              className="text-xs px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:bg-gray-100">
+              className="text-xs px-2 py-1 rounded-full border border-dashed border-wline text-wfaint hover:bg-wgray">
               지우기
             </button>
           )}
@@ -1116,29 +1116,29 @@ function LckSetResults({ matchId, homeTeam, awayTeam, initial, onChanged }:
   const aw = Object.values(results).filter(v => v === "away").length;
 
   return (
-    <div className="mb-3 bg-gray-50 border rounded px-3 py-2.5 text-sm">
+    <div className="mb-3 bg-wgray border rounded px-3 py-2.5 text-sm">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-gray-500 text-xs">🎮 세트별 승팀</span>
+        <span className="text-wsub text-xs">🎮 세트별 승팀</span>
         <span className="ml-auto font-semibold">{homeTeam} {hw} : {aw} {awayTeam}</span>
       </div>
       <div className="space-y-1.5">
         {SETS.map((sk, i) => (
           <div key={sk} className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 w-10 shrink-0">{i + 1}세트</span>
+            <span className="text-xs text-wfaint w-10 shrink-0">{i + 1}세트</span>
             <div className="flex rounded overflow-hidden border flex-1">
               <button disabled={busy} onClick={() => setWin(sk, "home")}
-                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "home" ? "bg-amber-500 text-white" : "bg-white hover:bg-gray-50"}`}>
+                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "home" ? "bg-amber-500 text-white" : "bg-card hover:bg-wgray"}`}>
                 {homeTeam}
               </button>
               <button disabled={busy} onClick={() => setWin(sk, "away")}
-                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "away" ? "bg-red-500 text-white" : "bg-white hover:bg-gray-50"}`}>
+                className={`flex-1 px-2 py-1 text-xs truncate ${results[sk] === "away" ? "bg-red-500 text-white" : "bg-card hover:bg-wgray"}`}>
                 {awayTeam}
               </button>
             </div>
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-gray-400 mt-2">같은 버튼을 다시 누르면 미정으로 돌아갑니다. 승팀을 정하면 위 스코어가 자동 반영됩니다.</p>
+      <p className="text-[11px] text-wfaint mt-2">같은 버튼을 다시 누르면 미정으로 돌아갑니다. 승팀을 정하면 위 스코어가 자동 반영됩니다.</p>
     </div>
   );
 }
@@ -1164,16 +1164,16 @@ function StatusSwitcher({ matchId, status, onChanged }:
   }
   return (
     <div className="flex items-center gap-2 mb-4 text-sm">
-      <span className="text-gray-500 text-xs">경기 상태:</span>
+      <span className="text-wsub text-xs">경기 상태:</span>
       <div className="flex rounded overflow-hidden border">
         {OPTS.map(o => (
           <button key={o.key} disabled={busy} onClick={() => setStatus(o.key)}
-            className={`px-3 py-1 text-xs ${status === o.key ? "bg-gray-900 text-white" : "bg-white hover:bg-gray-50"}`}>
+            className={`px-3 py-1 text-xs ${status === o.key ? "bg-gold text-deep" : "bg-card hover:bg-wgray"}`}>
             {o.label}
           </button>
         ))}
       </div>
-      <span className="text-xs text-gray-400">진행중=전반/1세트만, 종료=전 구간 평점 가능</span>
+      <span className="text-xs text-wfaint">진행중=전반/1세트만, 종료=전 구간 평점 가능</span>
     </div>
   );
 }
@@ -1283,7 +1283,7 @@ function MyRatingsHeader({ matchId, match }: { matchId: string; match: any }) {
   }, [matchId]);
 
   if (data && !data.loggedIn)
-    return <p className="text-sm text-gray-500 mb-4">로그인 후 이용할 수 있습니다.</p>;
+    return <p className="text-sm text-wsub mb-4">로그인 후 이용할 수 있습니다.</p>;
 
   const count = data?.count ?? 0;
 
@@ -1359,11 +1359,11 @@ function SeedBanner({ matchId, seed, isAdmin, loggedIn, onChanged }:
         <div className="space-y-2">
           <textarea value={text} onChange={e => setText(e.target.value)} maxLength={300}
             placeholder="토론 주제를 입력하세요 (비우면 삭제됩니다)"
-            className="w-full border border-wline rounded p-2 text-sm h-20 bg-white" />
+            className="w-full border border-wline rounded p-2 text-sm h-20 bg-card" />
           <div className="flex gap-2 justify-end">
             <span className="text-[11px] text-wfaint mr-auto self-center">{text.length}/300</span>
             <button onClick={() => { setText(seed || ""); setEditing(false); }}
-              className="text-xs px-3 py-1 border border-wline rounded bg-white">취소</button>
+              className="text-xs px-3 py-1 border border-wline rounded bg-card">취소</button>
             <button onClick={save} disabled={busy}
               className="text-xs px-3 py-1 rounded bg-ink text-paper disabled:opacity-40">저장</button>
           </div>
@@ -1488,11 +1488,11 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
             {items.map(c => (
               <div key={c.id} className="bg-paper border border-wsoft rounded-lg px-2.5 py-1.5">
                 <div className="flex justify-between items-start gap-2">
-                  <Author id={c.userId} name={c.username} className="text-[11px] text-gray-500" />
+                  <Author id={c.userId} name={c.username} className="text-[11px] text-wsub" />
                   <div className="flex gap-2 shrink-0">
                     {isAdmin && (c.blinded
                       ? <button onClick={() => setBlind(c.id, false)} className="text-[10px] text-green-600">복구</button>
-                      : <button onClick={() => setBlind(c.id, true)} className="text-[10px] text-amber-600">블라인드</button>)}
+                      : <button onClick={() => setBlind(c.id, true)} className="text-[10px] text-golddim">블라인드</button>)}
                     {(isAdmin || c.mine) && (
                       <button onClick={() => remove(c.id)} className="text-[10px] text-red-400">삭제</button>
                     )}
@@ -1500,7 +1500,7 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
                 </div>
 
                 {c.blinded
-                  ? <p className="text-sm text-gray-400 italic">🚫 신고 누적으로 가려진 댓글입니다.</p>
+                  ? <p className="text-sm text-wfaint italic">🚫 신고 누적으로 가려진 댓글입니다.</p>
                   : <p className="text-sm whitespace-pre-wrap break-words">{c.text}</p>}
 
                 {/* 액션 바 */}
@@ -1522,7 +1522,7 @@ function DiscussionThread({ matchId, loggedIn }: { matchId: string; loggedIn: bo
                     <input value={replyText} onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") submitReply(c.id); }}
                       placeholder="답글 입력" maxLength={300}
-                      className="flex-1 border border-wline rounded px-2 py-1 text-xs bg-white" />
+                      className="flex-1 border border-wline rounded px-2 py-1 text-xs bg-card" />
                     <button onClick={() => submitReply(c.id)} disabled={!replyText.trim()}
                       className="text-xs px-2 bg-ink text-paper rounded disabled:opacity-40">등록</button>
                   </div>
@@ -1613,7 +1613,7 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
           )}
           {isAdmin && !editing && (
             <button onClick={() => { setText(record || ""); setEditing(true); }}
-              className="text-xs text-gray-900 hover:underline">{record ? "수정" : "+ 입력"}</button>
+              className="text-xs text-ink hover:underline">{record ? "수정" : "+ 입력"}</button>
           )}
         </div>
       </div>
@@ -1625,7 +1625,7 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
           <div className="flex gap-2 justify-end mt-1">
             <button onClick={() => setEditing(false)} className="px-3 py-1 border rounded text-xs">취소</button>
             <button onClick={save} disabled={saving}
-              className="px-3 py-1 bg-gray-900 text-white rounded text-xs disabled:opacity-40">저장</button>
+              className="px-3 py-1 bg-gold text-deep rounded text-xs disabled:opacity-40">저장</button>
           </div>
         </div>
       ) : record ? (
@@ -1704,11 +1704,11 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b sticky top-0 bg-white flex justify-between">
+      <div className="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b sticky top-0 bg-card flex justify-between">
           <div>
             <h3 className="text-xl font-bold">{player.name}</h3>
-            <p className="text-sm text-gray-500">{player.team} · {player.role}</p>
+            <p className="text-sm text-wsub">{player.team} · {player.role}</p>
             {data && <p className="text-sm mt-1 inline-flex items-center gap-1">전체 평균 <GoldStar className="w-3.5 h-3.5" /> <b className="tabular-nums">{data.avg}</b> ({data.count}명)</p>}
           </div>
           <div className="flex items-start gap-2">
@@ -1734,7 +1734,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                       <button key={s.key} type="button" disabled={locked}
                         onClick={() => setSeg(s.key)}
                         title={locked ? "아직 입력할 수 없는 구간입니다." : ""}
-                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-gray-900 text-white":"bg-gray-100"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
+                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-gold text-deep":"bg-wgray"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
                         {locked ? "🔒 " : ""}{s.label}
                       </button>
                     );
@@ -1742,7 +1742,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                 </div>
               )}
               {segLocked(seg) ? (
-                <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-3">
+                <p className="text-sm text-golddim bg-goldbg border border-goldline rounded p-3">
                   🔒 {lockMsg}
                 </p>
               ) : (
@@ -1763,26 +1763,26 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                   <textarea value={comment} onChange={e=>setComment(e.target.value)}
                     placeholder="코멘트 (선택)"
                     className="w-full border rounded p-2 h-20 text-sm"/>
-                  <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                  <p className="text-[11px] text-wfaint mt-1 leading-snug">
                     특정인(선수·감독·심판 등 포함)에 대한 과도한 욕설·비방·모욕, 근거 없는 명예훼손은
                     통보 없이 삭제될 수 있습니다. 평점·코멘트는 작성자 개인의 의견입니다.
                   </p>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">{comment.length}자</span>
+                    <span className="text-xs text-wsub">{comment.length}자</span>
                     <button onClick={submit} disabled={score===null}
-                      className="bg-gray-900 text-white px-4 py-1.5 rounded disabled:opacity-40">등록</button>
+                      className="bg-gold text-deep px-4 py-1.5 rounded disabled:opacity-40">등록</button>
                   </div>
                   {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}
                 </>
               )}
             </>
-          ) : <p className="text-sm text-gray-500">로그인 후 평점을 등록할 수 있습니다.</p>}
+          ) : <p className="text-sm text-wsub">로그인 후 평점을 등록할 수 있습니다.</p>}
         </div>
 
         <div className="p-5">
           <h4 className="font-semibold mb-3">코멘트 {data ? `(${data.comments.length})` : ""}</h4>
-          {!data && <p className="text-sm text-gray-400">불러오는 중...</p>}
-          {data && data.comments.length === 0 && <p className="text-sm text-gray-400">아직 코멘트가 없습니다.</p>}
+          {!data && <p className="text-sm text-wfaint">불러오는 중...</p>}
+          {data && data.comments.length === 0 && <p className="text-sm text-wfaint">아직 코멘트가 없습니다.</p>}
           {top3.length > 0 && (
             <div className="mb-3">
               <p className="text-xs text-golddim font-bold mb-1">인기 코멘트</p>
@@ -1859,8 +1859,8 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
   const hidden = c.blinded && !isAdmin && !revealed;
 
   return (
-    <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-goldbg border-goldline" : ""} ${c.blinded ? "bg-gray-50 border-gray-200" : ""}`}>
-      <div className="flex justify-between text-xs text-gray-500 mb-1">
+    <div className={`border rounded p-3 mb-2 ${highlight && !c.blinded ? "bg-goldbg border-goldline" : ""} ${c.blinded ? "bg-wgray border-wline" : ""}`}>
+      <div className="flex justify-between text-xs text-wsub mb-1">
         <span className="inline-flex items-center gap-1.5"><Author id={c.userId} name={c.username} />
           <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded-md text-[11px] font-extrabold" style={scoreChipStyle(c.score)}>{c.score}</span>
           {isAdmin && c.reportCount > 0 ? <span className="text-red-500">🚩 {c.reportCount}</span> : null}</span>
@@ -1868,14 +1868,14 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
       </div>
 
       {hidden ? (
-        <p className="text-sm text-gray-400 italic">
+        <p className="text-sm text-wfaint italic">
           🚫 신고가 누적되어 가려진 코멘트입니다.
           <button onClick={() => setRevealed(true)} className="ml-2 text-blue-500 underline not-italic">보기</button>
         </p>
       ) : (
         <>
           {c.blinded && (
-            <p className="text-xs text-amber-600 mb-1">🚫 {isAdmin ? "신고 누적으로 자동 블라인드됨" : "신고에 의해 가려진 코멘트"}</p>
+            <p className="text-xs text-golddim mb-1">🚫 {isAdmin ? "신고 누적으로 자동 블라인드됨" : "신고에 의해 가려진 코멘트"}</p>
           )}
           <p className="text-sm whitespace-pre-wrap">{c.text}</p>
         </>
@@ -1884,12 +1884,12 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
       <div className="mt-1 flex items-center gap-3">
         <button
           onClick={() => loggedIn ? setReplyOpen(!replyOpen) : alert("로그인이 필요합니다.")}
-          className="text-xs text-gray-400 hover:text-gray-900">
+          className="text-xs text-wfaint hover:text-ink">
           💬 답글{replies.length > 0 ? ` ${replies.length}` : ""}
         </button>
         {!c.mine && (
           <button onClick={report} disabled={busy || c.reportedByMe}
-            className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-40">
+            className="text-xs text-wfaint hover:text-red-500 disabled:opacity-40">
             🚩 {c.reportedByMe ? "신고됨" : "신고"}
           </button>
         )}
@@ -1897,17 +1897,17 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
           <>
             {c.blinded
               ? <button onClick={() => setBlind(false)} disabled={busy} className="text-xs text-green-600 hover:underline">복구</button>
-              : <button onClick={() => setBlind(true)} disabled={busy} className="text-xs text-amber-600 hover:underline">블라인드</button>}
+              : <button onClick={() => setBlind(true)} disabled={busy} className="text-xs text-golddim hover:underline">블라인드</button>}
             <button onClick={removeComment} disabled={busy} className="text-xs text-red-500 hover:underline">삭제</button>
           </>
         )}
       </div>
 
       {replies.length > 0 && !hidden && (
-        <div className="mt-2 space-y-1.5 border-l-2 border-gray-200 pl-3">
+        <div className="mt-2 space-y-1.5 border-l-2 border-wline pl-3">
           {replies.map(r => (
             <div key={r.id} className="text-sm">
-              <span className="text-xs text-gray-500 mr-1.5">↳ <Author id={r.userId} name={r.username} /></span>
+              <span className="text-xs text-wsub mr-1.5">↳ <Author id={r.userId} name={r.username} /></span>
               <span className="whitespace-pre-wrap">{r.text}</span>
             </div>
           ))}
@@ -1920,7 +1920,7 @@ function CommentRow({ c, onLike, onReload, loggedIn, isAdmin, highlight }:
             onKeyDown={e => { if (e.key === "Enter") submitReply(); }}
             placeholder="답글 입력" className="flex-1 border rounded px-2 py-1 text-sm"/>
           <button onClick={submitReply} disabled={busy || !replyText.trim()}
-            className="text-xs px-3 bg-gray-900 text-white rounded disabled:opacity-40">등록</button>
+            className="text-xs px-3 bg-gold text-deep rounded disabled:opacity-40">등록</button>
         </div>
       )}
     </div>
@@ -1956,7 +1956,7 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-md w-full p-5 space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="bg-card rounded-xl max-w-md w-full p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-bold">선수 추가</h3>
 
         <input className="border rounded w-full p-2" placeholder="선수 이름" value={name} onChange={e=>setName(e.target.value)}/>
@@ -1970,11 +1970,11 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
         {/* 선발 / 후보 토글 */}
         <div className="flex gap-2">
           <button type="button" onClick={() => setStarter(true)}
-            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${starter ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500"}`}>
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${starter ? "bg-gold text-deep border-gray-900" : "bg-card text-wsub"}`}>
             ⚽ 선발 (피치)
           </button>
           <button type="button" onClick={() => setStarter(false)}
-            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${!starter ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500"}`}>
+            className={`flex-1 py-2 rounded-lg border text-sm font-bold ${!starter ? "bg-gold text-deep border-gray-900" : "bg-card text-wsub"}`}>
             🔁 후보/교체
           </button>
         </div>
@@ -1982,11 +1982,11 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
         {/* 선발이면 역할군 선택 */}
         {starter && (
           <div>
-            <p className="text-xs text-gray-500 mb-1.5">역할군 (등록 후 드래그하면 그 위치의 세부 포지션으로 자동 변경)</p>
+            <p className="text-xs text-wsub mb-1.5">역할군 (등록 후 드래그하면 그 위치의 세부 포지션으로 자동 변경)</p>
             <div className="grid grid-cols-4 gap-1.5">
               {GROUPS.map(g => (
                 <button key={g.key} type="button" onClick={() => setGroup(g.key)}
-                  className={`py-2 rounded-lg border text-xs font-bold ${group === g.key ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600"}`}>
+                  className={`py-2 rounded-lg border text-xs font-bold ${group === g.key ? "bg-amber-500 text-white border-amber-500" : "bg-card text-wsub"}`}>
                   {g.label}
                 </button>
               ))}
@@ -2003,7 +2003,7 @@ function AddPlayerModal({ matchId, homeTeam, awayTeam, onClose }:
         {msg && <p className="text-red-500 text-sm">{msg}</p>}
         <div className="flex gap-2 justify-end">
           <button onClick={onClose} className="px-4 py-1.5 border rounded">취소</button>
-          <button onClick={submit} className="px-4 py-1.5 bg-gray-900 text-white rounded">추가</button>
+          <button onClick={submit} className="px-4 py-1.5 bg-gold text-deep rounded">추가</button>
         </div>
       </div>
     </div>

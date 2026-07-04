@@ -2,9 +2,9 @@ export const metadata = { title: "개인정보 처리방침 · fanarena.kr" };
 
 export default function PrivacyPage() {
   return (
-    <div className="bg-white rounded-lg border p-6 leading-relaxed text-sm text-gray-800">
+    <div className="bg-card rounded-lg border p-6 leading-relaxed text-sm text-ink">
       <h1 className="text-xl font-bold mb-1">개인정보 처리방침</h1>
-      <p className="text-gray-500 mb-6">시행일: 2026-06-10</p>
+      <p className="text-wsub mb-6">시행일: 2026-06-10</p>
 
       <p className="mb-6">
         fanarena.kr(이하 “서비스”)은 「개인정보 보호법」 등 관련 법령을 준수하며, 이용자의 개인정보를
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
         <p>본 방침의 내용이 변경되는 경우 시행일 및 변경 사항을 서비스 화면에 공지합니다.</p>
       </Section>
 
-      <p className="text-gray-500 mt-6">부칙: 본 방침은 2026-06-10부터 시행합니다.</p>
+      <p className="text-wsub mt-6">부칙: 본 방침은 2026-06-10부터 시행합니다.</p>
     </div>
   );
 }
@@ -108,7 +108,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="mb-5">
       <h2 className="font-semibold mb-1">{title}</h2>
-      <div className="text-gray-700">{children}</div>
+      <div className="text-ink">{children}</div>
     </section>
   );
 }

@@ -43,12 +43,12 @@ export default function WelcomePage() {
   }
 
   if (status === "loading" || !ready)
-    return <p className="text-sm text-gray-400 mt-10 text-center">불러오는 중…</p>;
+    return <p className="text-sm text-wfaint mt-10 text-center">불러오는 중…</p>;
 
   return (
-    <div className="max-w-sm mx-auto mt-10 bg-white rounded-xl shadow p-6">
+    <div className="max-w-sm mx-auto mt-10 bg-card rounded-xl shadow p-6">
       <h1 className="text-xl font-bold mb-1">환영합니다! 👋</h1>
-      <p className="text-sm text-gray-500 mb-4">사이트에서 사용할 닉네임을 정해주세요. (2~12자)</p>
+      <p className="text-sm text-wsub mb-4">사이트에서 사용할 닉네임을 정해주세요. (2~12자)</p>
       <form onSubmit={submit} className="space-y-3">
         <input
           className="border rounded w-full p-2"

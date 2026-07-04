@@ -85,12 +85,12 @@ export default async function SharePage({ params }: any) {
           ? <span className="text-blue-700 font-bold text-sm">최고 ⭐ {topName} {topScore}</span>
           : <span className="text-blue-700 font-bold">⭐ {avg}</span>}
       </div>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-wsub mb-4">
         {m.homeTeam} {m.homeScore ?? "-"} : {m.awayScore ?? "-"} {m.awayTeam}
       </p>
 
       {ratings.length === 0 ? (
-        <p className="text-sm text-gray-400 bg-white border rounded-lg p-4">아직 매긴 평점이 없습니다.</p>
+        <p className="text-sm text-wfaint bg-card border rounded-lg p-4">아직 매긴 평점이 없습니다.</p>
       ) : (
         <SharePitch sport={m.sport} players={players} homeTeam={m.homeTeam} awayTeam={m.awayTeam}
           subs={m.substitutions.map(s => ({ minute: s.minute, outPlayerId: s.outPlayerId, inPlayerId: s.inPlayerId }))} />

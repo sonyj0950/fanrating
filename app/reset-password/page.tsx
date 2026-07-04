@@ -37,17 +37,17 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-10 bg-white rounded-xl shadow p-6">
+    <div className="max-w-sm mx-auto mt-10 bg-card rounded-xl shadow p-6">
       <h1 className="text-xl font-bold mb-4">비밀번호 재설정</h1>
       {done ? (
-        <div className="text-sm text-gray-700 space-y-3">
+        <div className="text-sm text-ink space-y-3">
           <p>비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요.</p>
           <button onClick={() => router.push("/login")} className="w-full bg-blue-600 text-white rounded py-2">
             로그인하기
           </button>
         </div>
       ) : !token ? (
-        <div className="text-sm text-gray-700 space-y-3">
+        <div className="text-sm text-ink space-y-3">
           <p className="text-red-500">유효하지 않은 접근입니다. 이메일의 재설정 링크로 다시 접속해 주세요.</p>
           <Link href="/forgot-password" className="text-blue-600 underline">비밀번호 찾기</Link>
         </div>

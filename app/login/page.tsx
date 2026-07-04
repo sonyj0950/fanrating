@@ -74,7 +74,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-10 bg-white rounded-xl shadow p-6">
+    <div className="max-w-sm mx-auto mt-10 bg-card rounded-xl shadow p-6">
       <h1 className="text-xl font-bold mb-4">{mode === "login" ? "로그인" : "회원가입"}</h1>
       <form onSubmit={submit} className="space-y-3">
         <input className="border rounded w-full p-2" placeholder="아이디"
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
         {mode === "register" && (
           <div className="space-y-2 pt-1">
-            <label className="flex items-start gap-2 text-sm text-gray-600">
+            <label className="flex items-start gap-2 text-sm text-wsub">
               <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5" />
               <span>
                 [필수]{" "}
@@ -100,7 +100,7 @@ export default function LoginPage() {
                 <a href="/privacy" target="_blank" className="text-blue-600 underline">개인정보 처리방침</a>에 동의합니다.
               </span>
             </label>
-            <label className="flex items-start gap-2 text-sm text-gray-600">
+            <label className="flex items-start gap-2 text-sm text-wsub">
               <input type="checkbox" checked={ageOk} onChange={e => setAgeOk(e.target.checked)} className="mt-0.5" />
               <span>[필수] 만 14세 이상입니다.</span>
             </label>
@@ -119,11 +119,11 @@ export default function LoginPage() {
         <>
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">또는</span>
+            <span className="text-xs text-wfaint">또는</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
           <button onClick={() => signIn("google", { callbackUrl: "/welcome" })}
-            className="w-full flex items-center justify-center gap-2 border rounded py-2 text-sm hover:bg-gray-50">
+            className="w-full flex items-center justify-center gap-2 border rounded py-2 text-sm hover:bg-wgray">
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
               <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -136,18 +136,18 @@ export default function LoginPage() {
       )}
 
       {mode === "login" && resendEmail && (
-        <button onClick={resend} className="mt-3 text-sm text-gray-500 hover:text-blue-600 block">
+        <button onClick={resend} className="mt-3 text-sm text-wsub hover:text-blue-600 block">
           인증 메일 다시 받기
         </button>
       )}
 
       <div className="mt-3 flex items-center justify-between text-sm">
         <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setMsg(""); setNotice(""); }}
-          className="text-gray-500 hover:text-blue-600">
+          className="text-wsub hover:text-blue-600">
           {mode === "login" ? "계정이 없나요? 회원가입" : "이미 계정이 있나요? 로그인"}
         </button>
         {mode === "login" && (
-          <Link href="/forgot-password" className="text-gray-500 hover:text-blue-600">비밀번호 찾기</Link>
+          <Link href="/forgot-password" className="text-wsub hover:text-blue-600">비밀번호 찾기</Link>
         )}
       </div>
     </div>

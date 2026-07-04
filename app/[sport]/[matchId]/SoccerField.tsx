@@ -125,6 +125,22 @@ function staggerRows(stacks: Stack[]): Stack[] {
       s.members = s.members.map(m => ({ ...m, top: m.top + d[i] }));
     });
   }
+  // 전역 충돌 완화: V자 이동 후에도 수직·수평 모두 가까운 쌍(예: 수비 중앙 ↔ GK)은 위아래로 밀어 분리
+  const move = (s: Stack, d: number) => {
+    const nd = Math.max(3, Math.min(96.5, s.top + d)) - s.top;
+    if (!nd) return;
+    s.top += nd;
+    s.members = s.members.map(m => ({ ...m, top: m.top + nd }));
+  };
+  for (let iter = 0; iter < 3; iter++) {
+    for (let i = 0; i < stacks.length; i++) for (let j = i + 1; j < stacks.length; j++) {
+      const a = stacks[i], b = stacks[j];
+      if (Math.abs(a.left - b.left) >= 17 || Math.abs(a.top - b.top) >= 4.4) continue;
+      const push = (4.4 - Math.abs(a.top - b.top)) / 2 + 0.1;
+      const [up, dn] = a.top <= b.top ? [a, b] : [b, a];
+      move(up, -push); move(dn, push);
+    }
+  }
   return stacks;
 }
 
@@ -250,7 +266,7 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
         </span>
         {/* 같은 자리 N명 더 (스택) */}
         {stackCount > 0 && (
-          <span className="absolute -top-2.5 left-2 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gray-900 text-white
+          <span className="absolute -top-2.5 left-2 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gold text-deep
             text-[9px] font-extrabold flex items-center justify-center shadow z-20">
             +{stackCount}
           </span>
@@ -412,7 +428,7 @@ export default function SoccerField({
         {/* 좌측 스태프 (감독/코치) — 데스크톱만 */}
         {hasStaff && (
           <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-end pb-2">
-            <p className="text-[10px] text-gray-400 text-center">{leftLabel}</p>
+            <p className="text-[10px] text-wfaint text-center">{leftLabel}</p>
             {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
         )}
@@ -422,7 +438,7 @@ export default function SoccerField({
           ref={pitchRef}
           onClick={() => { if (!editMode && expanded) setExpanded(null); }}
           className="relative w-full max-w-md rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
-            bg-gradient-to-b from-[#6d905f] to-[#63875a]
+            bg-gradient-to-b from-[#224536] to-[#1e3d30]
             border border-wline"
           style={{ aspectRatio: "2 / 3.8" }}
         >
@@ -431,11 +447,11 @@ export default function SoccerField({
             style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0 8%, transparent 8% 16%)" }} />
 
           {/* 필드 라인 */}
-          <div className="absolute inset-2 border-2 border-[#fbfaf4]/60 rounded-sm pointer-events-none" />
-          <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-[#fbfaf4]/60 pointer-events-none" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26%] aspect-square rounded-full border-2 border-[#fbfaf4]/60 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-[#fbfaf4]/60 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-[#fbfaf4]/60 pointer-events-none" />
+          <div className="absolute inset-2 border-2 border-[#dfe9e2]/60 rounded-sm pointer-events-none" />
+          <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-[#dfe9e2]/60 pointer-events-none" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26%] aspect-square rounded-full border-2 border-[#dfe9e2]/60 pointer-events-none" />
+          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-[#dfe9e2]/60 pointer-events-none" />
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-[#dfe9e2]/60 pointer-events-none" />
 
           {/* 팀 표시 */}
           <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{topLabel}</span>
@@ -458,7 +474,7 @@ export default function SoccerField({
         {/* 우측 스태프 (감독/코치) — 데스크톱만 */}
         {hasStaff && (
           <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-start pt-2">
-            <p className="text-[10px] text-gray-400 text-center">{rightLabel}</p>
+            <p className="text-[10px] text-wfaint text-center">{rightLabel}</p>
             {rightStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
         )}
@@ -468,11 +484,11 @@ export default function SoccerField({
       {hasStaff && (
         <div className="md:hidden mt-2 grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400">{leftLabel}</p>
+            <p className="text-[10px] text-wfaint">{leftLabel}</p>
             {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400">{rightLabel}</p>
+            <p className="text-[10px] text-wfaint">{rightLabel}</p>
             {rightStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
         </div>
@@ -496,8 +512,8 @@ export default function SoccerField({
 
       {/* 팀 색 범례 */}
       <div className="flex justify-center gap-4 mt-2 text-xs text-wsub">
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(homeTeam, teamColors, DEFAULT_HOME)) }} /> {homeTeam ?? "홈"}</span>
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-white inline-block" style={{ boxShadow: ringShadow(teamColor(awayTeam, teamColors, DEFAULT_AWAY)) }} /> {awayTeam ?? "원정"}</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-card inline-block" style={{ boxShadow: ringShadow(teamColor(homeTeam, teamColors, DEFAULT_HOME)) }} /> {homeTeam ?? "홈"}</span>
+        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-card inline-block" style={{ boxShadow: ringShadow(teamColor(awayTeam, teamColors, DEFAULT_AWAY)) }} /> {awayTeam ?? "원정"}</span>
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
@@ -523,11 +539,11 @@ function BenchColumn({ team, list, color, onPick, subInfo = {} }:
     subInfo?: Record<string, { dir: "in" | "out"; min: number }> }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+      <p className="text-[11px] font-semibold text-wsub mb-1.5 flex items-center gap-1">
         <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />{team}
       </p>
       {list.length === 0 ? (
-        <p className="text-[11px] text-gray-300">없음</p>
+        <p className="text-[11px] text-wmute">없음</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {list.map(p => {
@@ -536,7 +552,7 @@ function BenchColumn({ team, list, color, onPick, subInfo = {} }:
             return (
               <button key={p.mpId} onClick={() => onPick(p)} title={`${p.name} 평점 매기기`}
                 className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
-                  hover:bg-white hover:border-wsub active:scale-95 transition group">
+                  hover:bg-wgray hover:border-wsub active:scale-95 transition group">
                 {s && (
                   <span className={`absolute -top-1.5 -left-1 h-[14px] px-1 rounded-md flex items-center
                     text-[8px] font-extrabold text-white shadow whitespace-nowrap

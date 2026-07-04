@@ -31,11 +31,11 @@ export function isPerfect(score: number): boolean {
   return score >= 9.75;
 }
 
-// 평균(소수) → 밝은 배경 위 텍스트 색 (구간별)
+// 평균(소수) → 어두운 배경 위 텍스트 색 (구간별, 미드나잇 그린 테마)
 export function scoreTextColor(avg: number): string {
-  if (avg >= 9.75) return "#8a6d00"; // 만점권 (골드)
-  if (avg >= 7.5) return "#2a6fb2";  // 파랑 (8~9)
-  if (avg >= 5.5) return "#348a41";  // 초록 (6~7)
-  if (avg >= 3.5) return "#c07110";  // 주황 (4~5)
-  return "#b5533f";                  // 빨강 (1~3)
+  if (avg >= 9.75) return "#f5b301"; // 만점권 (골드)
+  if (avg >= 7.5) return "#5fa8e8";  // 파랑 (8~9)
+  if (avg >= 5.5) return "#56c374";  // 초록 (6~7)
+  if (avg >= 3.5) return "#e8a24a";  // 주황 (4~5)
+  return "#e8705c";                  // 빨강 (1~3)
 }

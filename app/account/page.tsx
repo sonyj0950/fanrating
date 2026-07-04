@@ -39,7 +39,7 @@ export default function AccountPage() {
   const [delBusy, setDelBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 
-  if (status === "loading") return <p className="text-sm text-gray-400">불러오는 중…</p>;
+  if (status === "loading") return <p className="text-sm text-wfaint">불러오는 중…</p>;
   if (!session) {
     return <p className="text-sm">로그인이 필요합니다. <a href="/login" className="text-blue-600 underline">로그인</a></p>;
   }
@@ -75,15 +75,15 @@ export default function AccountPage() {
   return (
     <div className="max-w-md mx-auto space-y-6">
       <h1 className="text-xl font-bold">내 계정</h1>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-wsub">
         {(session.user as any)?.name}님 ·{" "}
         <Link href={`/u/${(session.user as any)?.id}`} className="text-blue-600 underline">내 프로필 보기</Link>
       </p>
 
       {/* 프로필 공개 설정 */}
-      <section className="bg-white border rounded-lg p-4 space-y-2">
+      <section className="bg-card border rounded-lg p-4 space-y-2">
         <h2 className="font-semibold text-sm">프로필 공개</h2>
-        <p className="text-xs text-gray-500">공개하면 다른 이용자가 내 평점·통계를 볼 수 있습니다. 비공개하면 본인만 볼 수 있습니다.</p>
+        <p className="text-xs text-wsub">공개하면 다른 이용자가 내 평점·통계를 볼 수 있습니다. 비공개하면 본인만 볼 수 있습니다.</p>
         <div className="flex items-center justify-between pt-1">
           <span className="text-sm">
             {pub === null ? "불러오는 중…" : pub ? "🌐 공개 중" : "🔒 비공개"}
@@ -98,7 +98,7 @@ export default function AccountPage() {
       </section>
 
       {/* 비밀번호 변경 */}
-      <section className="bg-white border rounded-lg p-4 space-y-2">
+      <section className="bg-card border rounded-lg p-4 space-y-2">
         <h2 className="font-semibold text-sm">비밀번호 변경</h2>
         <input type="password" className="border rounded w-full p-2 text-sm" placeholder="현재 비밀번호"
           value={cur} onChange={e => setCur(e.target.value)} />
@@ -110,9 +110,9 @@ export default function AccountPage() {
       </section>
 
       {/* 회원 탈퇴 */}
-      <section className="bg-white border border-red-200 rounded-lg p-4 space-y-2">
+      <section className="bg-card border border-red-200 rounded-lg p-4 space-y-2">
         <h2 className="font-semibold text-sm text-red-600">회원 탈퇴</h2>
-        <p className="text-xs text-gray-500">탈퇴 시 작성한 평점·코멘트·답글이 모두 삭제되며 복구할 수 없습니다.</p>
+        <p className="text-xs text-wsub">탈퇴 시 작성한 평점·코멘트·답글이 모두 삭제되며 복구할 수 없습니다.</p>
         {!confirmDel ? (
           <button onClick={() => setConfirmDel(true)}
             className="border border-red-300 text-red-600 rounded px-4 py-1.5 text-sm hover:bg-red-50">탈퇴하기</button>
