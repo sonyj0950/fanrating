@@ -1,6 +1,6 @@
 "use client";
 import type { Player } from "./types";
-import { teamColor, ringShadow, badgeLabel, badgeTextColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { scoreChipStyle } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
 
@@ -11,13 +11,13 @@ type SubKind = Record<string, string>; // playerId → 교체 종류(투수교�
 const POS_COORDS: Record<string, { left: number; top: number }> = {
   투수: { left: 50, top: 57 },
   포수: { left: 50, top: 88 },
-  "1루수": { left: 71, top: 65 },   // 캡슐 마커 겹침 방지: 투수 줄과 상하 스태거
-  "2루수": { left: 64, top: 43 },
+  "1루수": { left: 71, top: 65 },   // F안 노드(원+명찰) 겹침 방지: 내야·외야 줄 간격 확보
+  "2루수": { left: 64, top: 45 },
   "3루수": { left: 29, top: 65 },
-  유격수: { left: 36, top: 43 },
-  좌익수: { left: 28, top: 33 },
-  중견수: { left: 50, top: 24 },
-  우익수: { left: 72, top: 33 },
+  유격수: { left: 36, top: 45 },
+  좌익수: { left: 26, top: 29 },
+  중견수: { left: 50, top: 21 },
+  우익수: { left: 74, top: 29 },
 };
 
 // 마커/칩에 붙일 짧은 포지션 라벨
@@ -26,11 +26,11 @@ const POS_SHORT: Record<string, string> = {
   유격수: "유", 좌익수: "좌", 중견수: "중", 우익수: "우", 지명타자: "지",
 };
 
-// 교체 배지 — 초록 N회↑ 투입 / 빨강 N회↓ 아웃 (캡슐 오른쪽 위 모서리)
+// 교체 배지 — 초록 N회↑ 투입 / 빨강 N회↓ 아웃 (원 왼쪽 위 모서리)
 function SubBadge({ s }: { s?: { dir: "in" | "out"; min: number } }) {
   if (!s) return null;
   return (
-    <span className={`absolute -top-2 -right-1.5 h-[14px] px-1 rounded flex items-center
+    <span className={`absolute -top-1.5 -left-2.5 h-[14px] px-1 rounded flex items-center
       text-[8px] font-extrabold text-white shadow z-20 whitespace-nowrap
       ${s.dir === "in" ? "bg-[#2e7d3c]" : "bg-[#c0392b]"}`}>
       {s.min ? `${s.min}회` : ""}{s.dir === "in" ? "↑" : "↓"}
@@ -38,7 +38,7 @@ function SubBadge({ s }: { s?: { dir: "in" | "out"; min: number } }) {
   );
 }
 
-// 필드 위 선수 마커 (평점 원 + 이름)
+// 필드 위 선수 마커 — F안 노드: [등급색 원(평점)] + [아래 명찰(포지션·이름)] — 테두리 없음
 function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
   { p: Player; left: number; top: number; color: string; highlight?: boolean;
     onPick: (p: Player) => void; sub?: { dir: "in" | "out"; min: number } }) {
@@ -48,35 +48,27 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
       style={{ left: `${left}%`, top: `${top}%` }}
       className="absolute w-max -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20">
-      {/* 캡슐: [팀 배지 원]포지션·이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
-      <span className={`relative flex items-stretch rounded-lg group-hover:scale-105 transition`}
-        style={{
-          background: rated ? (scoreChipStyle(p.avg as number).background as string) : "rgba(13,17,23,.93)",
-          boxShadow: highlight
-            ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
-            : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
-        }}>
-        <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] sm:-left-[13px] w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]
-            rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
-          aria-hidden="true"
-          style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
-            fontSize: badgeLabel(p.team).length >= 3 ? 7.5 : 9.5,
-            boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
-          {badgeLabel(p.team)}
+      <span className="relative flex flex-col items-center gap-[3px] group-hover:scale-105 transition">
+        <span className={`relative w-[30px] h-[30px] sm:w-[38px] sm:h-[38px] rounded-full grid place-items-center
+            text-[10.5px] sm:text-[12.5px] font-black tabular-nums leading-none
+            ${rated ? "text-white" : "text-white/55"}`}
+          style={{
+            background: rated ? (scoreChipStyle(p.avg as number).background as string) : "rgba(13,17,23,.9)",
+            boxShadow: highlight
+              ? "0 0 0 2px #F5B301, 0 2px 8px rgba(0,0,0,.45)"
+              : "0 2px 8px rgba(0,0,0,.45)",
+            textShadow: "0 1px 1px rgba(0,0,0,.35)",
+          }}>
+          {rated ? p.avg : "–"}
+          <SubBadge s={sub} />
         </span>
-        <span className="flex items-center gap-1 pl-[14px] sm:pl-[17px] pr-1 sm:pr-1.5 py-[3px] sm:py-1
-            text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap"
-          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
+        <span className="flex items-center gap-1 px-1.5 py-[2px] rounded-md whitespace-nowrap
+            bg-[rgba(9,15,12,.85)] text-[9px] sm:text-[10.5px] font-bold text-white"
+          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)", border: "1px solid rgba(255,255,255,.08)" }}>
           {highlight && <GoldStar className="w-2.5 h-2.5" />}
-          {posShort && <span className="text-white/80 font-extrabold">{posShort}</span>}
+          {posShort && <span className="text-white/70 font-extrabold">{posShort}</span>}
           {p.name}
         </span>
-        <span className={`min-w-[20px] sm:min-w-[28px] px-0.5 rounded-r-lg flex items-center justify-center
-            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "text-white" : "bg-white/10 text-white/50"}`}
-          style={rated ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
-          {rated ? p.avg : "–"}
-        </span>
-        <SubBadge s={sub} />
       </span>
     </button>
   );
@@ -91,9 +83,9 @@ function Chip({ p, color, sub, kind, onPick }:
       className="relative flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-wline bg-paper
         hover:bg-wgray hover:border-wsub active:scale-95 transition group">
       <SubBadge s={sub} />
-      <span style={{ boxShadow: ringShadow(color), ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
+      <span style={rated ? scoreChipStyle(p.avg as number) : undefined}
         className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
-        ${rated ? "" : "bg-card text-wmute"}
+        ${rated ? "" : "bg-card text-wmute border border-wsoft"}
         group-hover:scale-105 transition`}>
         {rated ? p.avg : "–"}
       </span>
@@ -212,37 +204,10 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
               highlight={p.playerId === highlightId} onPick={onPick} sub={subInfo[p.playerId]} />
           ))}
 
-          {/* 지명타자: 타석(홈플레이트) 옆 캡슐 */}
+          {/* 지명타자: 타석(홈플레이트) 옆 노드 */}
           {dh && (
-            <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
-              className="absolute w-max left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10 group">
-              <span className="relative flex items-stretch rounded-lg group-hover:scale-105 transition"
-                style={{
-                  background: dh.avg !== null ? (scoreChipStyle(dh.avg as number).background as string) : "rgba(13,17,23,.93)",
-                  boxShadow: dh.playerId === highlightId
-                    ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
-                    : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
-                }}>
-                <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] w-[22px] h-[22px]
-                    rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
-                  aria-hidden="true"
-                  style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
-                    fontSize: badgeLabel(dh.team).length >= 3 ? 7.5 : 9.5,
-                    boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
-                  {badgeLabel(dh.team)}
-                </span>
-                <span className="flex items-center gap-1 pl-[14px] pr-1 py-[3px] text-[9.5px] sm:text-[11px] font-bold text-white whitespace-nowrap"
-                  style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
-                  {dh.playerId === highlightId && <GoldStar className="w-2.5 h-2.5" />}
-                  <span className="text-white/80 font-extrabold">지</span>{dh.name}
-                </span>
-                <span className={`min-w-[22px] px-0.5 rounded-r-lg flex items-center justify-center
-                    text-[9.5px] sm:text-[11px] font-extrabold tabular-nums ${dh.avg !== null ? "text-white" : "bg-white/10 text-white/50"}`}
-                  style={dh.avg !== null ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
-                  {dh.avg !== null ? dh.avg : "–"}
-                </span>
-              </span>
-            </button>
+            <FieldMarker p={dh} left={84} top={88} color={color}
+              highlight={dh.playerId === highlightId} onPick={onPick} sub={subInfo[dh.playerId]} />
           )}
         </div>
 

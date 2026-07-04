@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { Section } from "./MatchCard";
-import SportTabs from "./SportTabs";
 import { standingsVisibleOnHome } from "@/lib/standings";
+import HomeClient from "./HomeClient";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +24,20 @@ export default async function Home() {
       const avg = a.sum / a.n;
       if (!pog || avg > pog.avg) pog = { name: mp.player.name, avg: Number(avg.toFixed(1)) };
     }
-    return { ...m, pog, ratingCount: m.ratings.length };
+    // 홈/원정 팬 평점 우세 (히어로 바) — 선수 소속으로 갈라 평균, 양쪽 다 평가가 있어야 유효
+    let split: { home: number; away: number } | null = null;
+    const side = { home: { sum: 0, n: 0 }, away: { sum: 0, n: 0 } };
+    for (const mp of m.players) {
+      const a = agg[mp.playerId];
+      if (!a) continue;
+      if (mp.player.team === m.homeTeam) { side.home.sum += a.sum; side.home.n += a.n; }
+      else if (mp.player.team === m.awayTeam) { side.away.sum += a.sum; side.away.n += a.n; }
+    }
+    if (side.home.n >= 3 && side.away.n >= 3) {
+      const h = side.home.sum / side.home.n, w = side.away.sum / side.away.n;
+      split = { home: Number(h.toFixed(2)), away: Number(w.toFixed(2)) };
+    }
+    return { ...m, pog, split, ratingCount: m.ratings.length };
   });
 
   // "오늘"을 한국 시간(KST, UTC+9) 기준으로 계산
@@ -40,6 +52,7 @@ export default async function Home() {
     id: m.id, sport: m.sport, date: m.date.toISOString(),
     homeTeam: m.homeTeam, awayTeam: m.awayTeam, homeScore: m.homeScore, awayScore: m.awayScore,
     status: m.status, round: m.round ?? null, pog: m.pog, ratingCount: m.ratingCount,
+    split: m.split ?? null,
   });
 
   const today = matches.filter(m => m.date >= start && m.date <= end).map(slim);
@@ -63,14 +76,37 @@ export default async function Home() {
   const teamColors: Record<string, string> = {};
   for (const c of colorRows) teamColors[c.team] = c.color;
 
-  return (
-    <div>
-      {/* 오늘의 경기 — 모든 종목 */}
-      <Section title="오늘의 경기" matches={today} empty="오늘 등록된 경기가 없습니다." />
+  // ── 사이드바 데이터 ──
+  // 이번 주(최근 7일) 평점 TOP 5: 최근 7일간 등록된 평점을 선수별 집계 (5개 이상)
+  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const weekRatings = await prisma.rating.findMany({
+    where: { createdAt: { gte: weekAgo } },
+    select: { playerId: true, score: true, player: { select: { name: true, team: true } } },
+  });
+  const perPlayer = new Map<string, { name: string; team: string; sum: number; n: number }>();
+  for (const r of weekRatings) {
+    let a = perPlayer.get(r.playerId);
+    if (!a) { a = { name: r.player.name, team: r.player.team, sum: 0, n: 0 }; perPlayer.set(r.playerId, a); }
+    a.sum += r.score; a.n++;
+  }
+  const weekTop5 = Array.from(perPlayer.entries())
+    .filter(([, a]) => a.n >= 5)
+    .map(([playerId, a]) => ({ playerId, name: a.name, team: a.team, avg: Number((a.sum / a.n).toFixed(1)), count: a.n }))
+    .sort((a, b) => b.avg - a.avg || b.count - a.count)
+    .slice(0, 5);
 
-      {/* 종목별 탭 — 순위표 + 예정·이전 경기 */}
-      <SportTabs upcoming={upcoming} past={past}
-        standings={standings} standingsAsOf={standingsAsOf} teamColors={teamColors} />
-    </div>
+  // 주간 베스트 경기: 최근 7일 경기 중 평점 참여수 상위 3
+  const weekBest = matches
+    .filter(m => m.date >= weekAgo && m.ratingCount > 0)
+    .sort((a, b) => b.ratingCount - a.ratingCount)
+    .slice(0, 3)
+    .map(slim);
+
+  return (
+    <HomeClient
+      today={today} upcoming={upcoming} past={past}
+      standings={standings} standingsAsOf={standingsAsOf} teamColors={teamColors}
+      weekTop5={weekTop5} weekBest={weekBest}
+    />
   );
 }

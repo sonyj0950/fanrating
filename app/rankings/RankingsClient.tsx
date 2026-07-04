@@ -64,19 +64,24 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
   const [minRatings, setMinRatings] = useState(5);
   const [sort, setSort] = useState<"avg" | "count">("avg");
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [query, setQuery] = useState("");
 
   const all = bySport[sport] ?? [];
   const teams = useMemo(() => Array.from(new Set(all.map(r => r.team))).sort((a, b) => a.localeCompare(b, "ko")), [all]);
   const positions = useMemo(() => Array.from(new Set(all.map(r => r.position).filter(Boolean))) as string[], [all]);
+  // 지금 많이 평가되는 선수 (평가 수 상위 5) — 히어로 칩
+  const hotChips = useMemo(() => [...all].sort((a, b) => b.ratingCount - a.ratingCount).slice(0, 5), [all]);
 
   const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
     const filtered = all.filter(r =>
       r.ratingCount >= minRatings &&
       (team === "all" || r.team === team) &&
-      (position === "all" || r.position === position));
+      (position === "all" || r.position === position) &&
+      (!q || r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q)));
     if (sort === "count") return [...filtered].sort((a, b) => b.ratingCount - a.ratingCount || b.avg - a.avg);
     return filtered; // 서버에서 평균순 정렬됨
-  }, [all, team, position, minRatings, sort]);
+  }, [all, team, position, minRatings, sort, query]);
 
   const switchTab = (s: string) => {
     setSport(s); setTeam("all"); setPosition("all"); setLimit(PAGE_SIZE);
@@ -92,11 +97,35 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
 
   return (
     <div>
-      <h1 className="flex items-baseline gap-2 text-lg font-extrabold text-ink px-1">
-        선수 랭킹
-        <span className="text-xs text-wsub font-semibold">{seasons[sport]}</span>
-      </h1>
-      <p className="text-xs text-wfaint px-1 mb-4">팬 평점 평균 기준 · 시즌 누적</p>
+      {/* 데이터 센터 히어로 (3안) — 검색 + 지금 많이 평가되는 선수 */}
+      <div className="rounded-2xl border border-wline px-4 sm:px-5 py-5 mb-5"
+        style={{ background: "radial-gradient(90% 140% at 80% -20%, #20362a 0%, transparent 55%), #0e1713" }}>
+        <h1 className="flex items-baseline gap-2 text-lg font-extrabold text-ink">
+          선수 랭킹
+          <span className="text-xs text-wsub font-semibold">{seasons[sport]} · 팬 평점 평균</span>
+        </h1>
+        <div className="flex items-center gap-2.5 mt-3 bg-paper border-[1.5px] border-wline rounded-xl px-3.5 py-2.5 focus-within:border-gold transition max-w-xl">
+          <span className="text-golddim font-black text-sm" aria-hidden="true">◎</span>
+          <input value={query} onChange={e => { setQuery(e.target.value); setLimit(PAGE_SIZE); }}
+            placeholder="선수 · 팀 검색"
+            className="flex-1 bg-transparent outline-none text-sm text-ink placeholder:text-wmute font-semibold min-w-0"
+            aria-label="선수 팀 검색" />
+          {query && (
+            <button onClick={() => setQuery("")} className="text-wfaint hover:text-ink text-xs font-bold shrink-0" aria-label="검색어 지우기">✕</button>
+          )}
+        </div>
+        {hotChips.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap text-[11.5px]">
+            <span className="text-wfaint font-extrabold shrink-0">지금 많이 평가되는</span>
+            {hotChips.map((r, i) => (
+              <Link key={r.playerId} href={`/player/${r.playerId}`}
+                className="border border-wsoft bg-card rounded-full px-2.5 py-1 font-bold text-wsub hover:text-ink hover:border-wsub transition tabular-nums">
+                <b className="text-golddim mr-1">{i + 1}</b>{r.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* 종목 탭 — 골드 언더라인 */}
       <div className="flex gap-6 mb-4 sticky top-14 z-10 bg-paper/90 backdrop-blur border-b border-wline px-1">
@@ -142,7 +171,7 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
       ) : (
         <>
           {/* TOP 3 */}
-          {sort === "avg" && team === "all" && position === "all" && top3.length === 3 && (
+          {sort === "avg" && team === "all" && position === "all" && !query && top3.length === 3 && (
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
               {top3.map((r, i) => <TopCard key={r.playerId} row={r} rank={i + 1} sport={sport} colors={teamColors} />)}
             </div>
@@ -156,7 +185,7 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
               <span className="w-16 text-right hidden sm:block">최근 5경기</span>
               <span className="w-12 text-right">평균</span>
             </div>
-            {(sort === "avg" && team === "all" && position === "all" && top3.length === 3 ? rest : rows.slice(0, limit + 3)).map(r => {
+            {(sort === "avg" && team === "all" && position === "all" && !query && top3.length === 3 ? rest : rows.slice(0, limit + 3)).map(r => {
               const rank = rows.indexOf(r) + 1;
               return (
                 <Link key={r.playerId} href={`/player/${r.playerId}`}

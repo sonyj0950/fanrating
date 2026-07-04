@@ -2,8 +2,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
-import { teamColor, ringShadow, badgeLabel, badgeTextColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
-import { scoreChipStyle, scoreTextColor } from "@/lib/scoreColor";
+import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { scoreChipStyle, scoreTextColor, RAINBOW } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
 
 type Side = "home" | "away";
@@ -126,6 +126,8 @@ function staggerRows(stacks: Stack[]): Stack[] {
     });
   }
   // 전역 충돌 완화: V자 이동 후에도 수직·수평 모두 가까운 쌍(예: 수비 중앙 ↔ GK)은 위아래로 밀어 분리
+  // F안 노드(원+명찰)는 캡슐보다 세로로 길어 수직 임계값을 넓게 잡는다
+  const V_TH = 7.5, H_TH = 14;
   const move = (s: Stack, d: number) => {
     const nd = Math.max(3, Math.min(96.5, s.top + d)) - s.top;
     if (!nd) return;
@@ -135,8 +137,8 @@ function staggerRows(stacks: Stack[]): Stack[] {
   for (let iter = 0; iter < 3; iter++) {
     for (let i = 0; i < stacks.length; i++) for (let j = i + 1; j < stacks.length; j++) {
       const a = stacks[i], b = stacks[j];
-      if (Math.abs(a.left - b.left) >= 17 || Math.abs(a.top - b.top) >= 4.4) continue;
-      const push = (4.4 - Math.abs(a.top - b.top)) / 2 + 0.1;
+      if (Math.abs(a.left - b.left) >= H_TH || Math.abs(a.top - b.top) >= V_TH) continue;
+      const push = (V_TH - Math.abs(a.top - b.top)) / 2 + 0.1;
       const [up, dn] = a.top <= b.top ? [a, b] : [b, a];
       move(up, -push); move(dn, push);
     }
@@ -236,49 +238,42 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
       className={`absolute w-max -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20
         ${editMode ? "cursor-move" : ""}`}
     >
-      {/* 캡슐: [팀 배지 원]이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
-      <span className={`relative flex items-stretch rounded-lg transition
-          ${editMode ? "ring-2 ring-amber-400" : "group-hover:scale-105"}`}
-        style={{
-          background: rated ? (scoreChipStyle(player.avg as number).background as string) : "rgba(13,17,23,.93)",
-          boxShadow: highlight
-            ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
-            : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
-        }}>
-        {/* 팀 배지 (배지2 재사용) */}
-        <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] sm:-left-[13px] w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]
-            rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
-          aria-hidden="true"
-          style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
-            fontSize: badgeLabel(player.team).length >= 3 ? 7.5 : 9.5,
-            boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
-          {badgeLabel(player.team)}
+      {/* F안 노드: [등급색 원(평점)] + [아래 명찰] — 테두리 없음. 팀 구분은 진영 라벨·명찰 옆 팀 점으로 */}
+      <span className={`relative flex flex-col items-center gap-[3px] transition ${editMode ? "" : "group-hover:scale-105"}`}>
+        <span className={`relative w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-full grid place-items-center
+            text-[11px] sm:text-[13px] font-black tabular-nums leading-none
+            ${rated ? "text-white" : "text-white/55"} ${editMode ? "ring-2 ring-amber-400" : ""}`}
+          style={{
+            background: rated ? (scoreChipStyle(player.avg as number).background as string) : "rgba(13,17,23,.9)",
+            boxShadow: highlight
+              ? "0 0 0 2px #F5B301, 0 2px 8px rgba(0,0,0,.45)"
+              : "0 2px 8px rgba(0,0,0,.45)",
+            textShadow: "0 1px 1px rgba(0,0,0,.35)",
+          }}>
+          {rated ? player.avg : "–"}
+          {/* 같은 자리 N명 더 (스택) — 오른쪽 위 */}
+          {stackCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gold text-deep
+              text-[9px] font-extrabold flex items-center justify-center shadow z-20">
+              +{stackCount}
+            </span>
+          )}
+          {/* 교체 배지 — 왼쪽 위: 초록 N'↑ 투입 / 빨강 N'↓ 아웃 */}
+          {sub && (
+            <span className={`absolute -top-1.5 -left-2.5 h-[14px] px-1 rounded flex items-center
+              text-[8px] sm:text-[9px] font-extrabold text-white shadow z-20 whitespace-nowrap
+              ${sub.dir === "in" ? "bg-[#2e7d3c]" : "bg-[#c0392b]"}`}>
+              {sub.min}'{sub.dir === "in" ? "↑" : "↓"}
+            </span>
+          )}
         </span>
-        <span className="flex items-center gap-1 pl-[14px] sm:pl-[17px] pr-1 sm:pr-1.5 py-[3px] sm:py-1
-            text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap"
-          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
+        {/* 명찰 — 팀 점(구단색) + 이름 */}
+        <span className="flex items-center gap-1 px-1.5 sm:px-2 py-[2px] rounded-md whitespace-nowrap
+            bg-[rgba(9,15,12,.85)] text-[9px] sm:text-[11px] font-bold text-white"
+          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)", border: "1px solid rgba(255,255,255,.08)" }}>
+          <span className="w-[5px] h-[5px] rounded-full shrink-0" aria-hidden="true" style={{ background: color }} />
           {highlight && <GoldStar className="w-2.5 h-2.5" />}{short}
         </span>
-        <span className={`min-w-[20px] sm:min-w-[28px] px-0.5 rounded-r-lg flex items-center justify-center
-            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "text-white" : "bg-white/10 text-white/50"}`}
-          style={rated ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
-          {rated ? player.avg : "–"}
-        </span>
-        {/* 같은 자리 N명 더 (스택) */}
-        {stackCount > 0 && (
-          <span className="absolute -top-2.5 left-2 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gold text-deep
-            text-[9px] font-extrabold flex items-center justify-center shadow z-20">
-            +{stackCount}
-          </span>
-        )}
-        {/* 교체 배지 — 초록 N'↑ 투입 / 빨강 N'↓ 아웃 */}
-        {sub && (
-          <span className={`absolute -top-2 -right-1.5 h-[14px] px-1 rounded flex items-center
-            text-[8px] sm:text-[9px] font-extrabold text-white shadow z-20 whitespace-nowrap
-            ${sub.dir === "in" ? "bg-[#2e7d3c]" : "bg-[#c0392b]"}`}>
-            {sub.min}'{sub.dir === "in" ? "↑" : "↓"}
-          </span>
-        )}
         {/* 줄임된 이름은 호버 시 전체 이름 표시 (데스크톱) */}
         {isShortened && (
           <span className="hidden sm:group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5
@@ -510,10 +505,16 @@ export default function SoccerField({
         </div>
       )}
 
-      {/* 팀 색 범례 */}
-      <div className="flex justify-center gap-4 mt-2 text-xs text-wsub">
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-card inline-block" style={{ boxShadow: ringShadow(teamColor(homeTeam, teamColors, DEFAULT_HOME)) }} /> {homeTeam ?? "홈"}</span>
-        <span className="flex items-center gap-1"><i className="w-3 h-3 rounded-full bg-card inline-block" style={{ boxShadow: ringShadow(teamColor(awayTeam, teamColors, DEFAULT_AWAY)) }} /> {awayTeam ?? "원정"}</span>
+      {/* 범례: 팀 점 + 점수 색 등급 */}
+      <div className="flex justify-center flex-wrap gap-x-3.5 gap-y-1 mt-2 text-[11px] text-wsub font-semibold">
+        <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-full inline-block" style={{ background: teamColor(homeTeam, teamColors, DEFAULT_HOME) }} /> {homeTeam ?? "홈"}</span>
+        <span className="flex items-center gap-1"><i className="w-2 h-2 rounded-full inline-block" style={{ background: teamColor(awayTeam, teamColors, DEFAULT_AWAY) }} /> {awayTeam ?? "원정"}</span>
+        <span className="text-wmute">|</span>
+        <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-full inline-block bg-[#c0392b]" /> 1~3</span>
+        <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-full inline-block bg-[#d97a14]" /> 4~5</span>
+        <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-full inline-block bg-[#2f9e48]" /> 6~7</span>
+        <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-full inline-block bg-[#2f7fc1]" /> 8~9</span>
+        <span className="flex items-center gap-1"><i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: RAINBOW }} /> 10</span>
       </div>
 
       {/* 후보/교체 (포지션 코드가 없는 선수) — 팀별 분리 */}
@@ -560,9 +561,9 @@ function BenchColumn({ team, list, color, onPick, subInfo = {} }:
                     {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
                   </span>
                 )}
-                <span style={{ boxShadow: ringShadow(color), ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
+                <span style={rated ? scoreChipStyle(p.avg as number) : undefined}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
-                  ${rated ? "" : "bg-card text-wmute"}
+                  ${rated ? "" : "bg-card text-wmute border border-wsoft"}
                   group-hover:scale-105 transition`}>
                   {rated ? p.avg : "–"}
                 </span>

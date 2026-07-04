@@ -5,4 +5,6 @@
 body {
   color: #eef4f0;
   background-color: #0b1210;
+  /* 홈·랭킹의 풀블리드(와이드) 섹션이 100vw를 쓸 때 스크롤바 폭만큼 넘치는 것 차단 */
+  overflow-x: clip;
 }
