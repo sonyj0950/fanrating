@@ -47,7 +47,7 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
   return (
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
       style={{ left: `${left}%`, top: `${top}%` }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20">
+      className="absolute w-max -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20">
       {/* 캡슐: [팀 배지 원]포지션·이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
       <span className={`relative flex items-stretch rounded-lg group-hover:scale-105 transition`}
         style={{
@@ -215,7 +215,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
           {/* 지명타자: 타석(홈플레이트) 옆 캡슐 */}
           {dh && (
             <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
-              className="absolute left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10 group">
+              className="absolute w-max left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10 group">
               <span className="relative flex items-stretch rounded-lg group-hover:scale-105 transition"
                 style={{
                   background: dh.avg !== null ? (scoreChipStyle(dh.avg as number).background as string) : "rgba(13,17,23,.93)",

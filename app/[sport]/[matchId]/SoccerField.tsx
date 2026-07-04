@@ -97,6 +97,37 @@ function place(players: Player[], side: Side, flipped: boolean,
 // 대표 선정: (1) 해당 구간에 실제로 뛴 선수 우선(전반=선발/아웃, 후반=교체 인)
 //            (2) 평점 높은 순 (3) 선발 우선
 interface Stack { id: string; left: number; top: number; members: Placed[]; }
+
+// 같은 줄에서 이웃 스택이 가까우면 V자 대형으로 — 양끝은 제자리, 중앙으로 갈수록 아래로 (캡슐 겹침 방지)
+function staggerRows(stacks: Stack[]): Stack[] {
+  const ROW_TH = 4;  // 같은 줄로 보는 top 차이(%)
+  const GAP_TH = 24; // 이웃 간격이 이 미만이면 V자 적용(%)
+  const DEPTH = 5;   // 중앙 최대 하강(%)
+  const rows: Stack[][] = [];
+  for (const s of [...stacks].sort((a, b) => a.top - b.top)) {
+    const row = rows.find(r => Math.abs(r[0].top - s.top) < ROW_TH);
+    if (row) row.push(s); else rows.push([s]);
+  }
+  for (const row of rows) {
+    if (row.length < 2) continue;
+    row.sort((a, b) => a.left - b.left);
+    const tight = row.some((s, i) => i > 0 && s.left - row[i - 1].left < GAP_TH);
+    if (!tight) continue;
+    const c = (row.length - 1) / 2;
+    const d = row.map((_, i) => (c > 0 ? DEPTH * (1 - Math.abs(i - c) / c) : 0));
+    // 같은 깊이로 나란해진 이웃(짝수 줄 중앙 쌍 등)은 한쪽을 더 내려 분리
+    for (let i = 1; i < row.length; i++)
+      if (Math.abs(d[i] - d[i - 1]) < 1.2 && row[i].left - row[i - 1].left < GAP_TH) d[i] += 2.6;
+    row.forEach((s, i) => {
+      if (!d[i]) return;
+      // 원본 Placed는 memoize돼 재사용되므로 복제해서 이동 (탭 전환 시 오프셋 누적 방지)
+      s.top += d[i];
+      s.members = s.members.map(m => ({ ...m, top: m.top + d[i] }));
+    });
+  }
+  return stacks;
+}
+
 function buildStacks(placed: Placed[], seg?: string,
   subInfo: Record<string, { dir: "in" | "out"; min: number }> = {}): Stack[] {
   const stacks: Stack[] = [];
@@ -186,7 +217,7 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
       title={player.name}
       style={{ left: `${p.left}%`, top: `${p.top}%`, touchAction: editMode ? "none" : undefined,
         transition: "left .3s ease, top .3s ease" }}
-      className={`absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20
+      className={`absolute w-max -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20
         ${editMode ? "cursor-move" : ""}`}
     >
       {/* 캡슐: [팀 배지 원]이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
@@ -309,8 +340,8 @@ export default function SoccerField({
   }
   const homeR = useMemo(() => resolvePitch(homeP.placed, homeP.bench), [homeP, subs]);
   const awayR = useMemo(() => resolvePitch(awayP.placed, awayP.bench), [awayP, subs]);
-  const homeStacks = useMemo(() => buildStacks(homeR.placed, seg, subInfo), [homeR, seg, subInfo]);
-  const awayStacks = useMemo(() => buildStacks(awayR.placed, seg, subInfo), [awayR, seg, subInfo]);
+  const homeStacks = useMemo(() => staggerRows(buildStacks(homeR.placed, seg, subInfo)), [homeR, seg, subInfo]);
+  const awayStacks = useMemo(() => staggerRows(buildStacks(awayR.placed, seg, subInfo)), [awayR, seg, subInfo]);
 
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;
