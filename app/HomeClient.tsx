@@ -3,7 +3,7 @@
 //  - 상단: 라이브 경기 히어로 스트립 (라이브 있을 때만) — 메인 1 + 미니 2
 //  - 본문: 전체 탭 = 고밀도 한 줄 리스트(불판), 종목 탭 = C안 2열 카드 그리드 + 순위표
 //  - 우측: 사이드바 (이번 주 평점 TOP5 · 순위표 요약 · 주간 베스트 경기)
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Wide from "@/components/Wide";
 import StandingsTable from "./StandingsTable";
@@ -228,14 +228,17 @@ function daySection(label: string) {
   );
 }
 
-export default function HomeClient({ today, upcoming, past, standings, standingsAsOf, teamColors, weekTop5, weekBest }: {
+export default function HomeClient({ today, upcoming, past, standings, standingsAsOf, teamColors, weekTop5, weekBest, initialTab = "all" }: {
   today: Slim[]; upcoming: Slim[]; past: Slim[];
   standings: Record<string, any[]>; standingsAsOf: Record<string, string>; teamColors: Record<string, string>;
   weekTop5: { playerId: string; name: string; team: string; avg: number; count: number }[];
   weekBest: Slim[];
+  initialTab?: string;
 }) {
-  const [tab, setTab] = useState<string>("all");
+  const [tab, setTab] = useState<string>(initialTab);
   const [pastLimit, setPastLimit] = useState(15);
+  // /soccer ↔ /baseball 등 같은 페이지 컴포넌트 간 이동 시 상태 동기화
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
   const cur = TABS.find(t => t.key === tab) ?? TABS[0];
 
   // 히어로: 라이브 경기(참여 많은 순) — 메인 1 + 미니 2 (모자라면 다음 예정 경기로 채움)
