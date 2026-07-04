@@ -48,8 +48,8 @@ export default function ResetPasswordPage() {
         </div>
       ) : !token ? (
         <div className="text-sm text-ink space-y-3">
-          <p className="text-red-500">유효하지 않은 접근입니다. 이메일의 재설정 링크로 다시 접속해 주세요.</p>
-          <Link href="/forgot-password" className="text-blue-600 underline">비밀번호 찾기</Link>
+          <p className="text-live">유효하지 않은 접근입니다. 이메일의 재설정 링크로 다시 접속해 주세요.</p>
+          <Link href="/forgot-password" className="text-golddim underline">비밀번호 찾기</Link>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-3">
@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
           />
-          {msg && <p className="text-sm text-red-500">{msg}</p>}
+          {msg && <p className="text-sm text-live">{msg}</p>}
           <button disabled={busy} className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-40">
             비밀번호 변경
           </button>

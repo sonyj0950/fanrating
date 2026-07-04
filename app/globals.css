@@ -7,4 +7,17 @@ body {
   background-color: #0b1210;
   /* 홈·랭킹의 풀블리드(와이드) 섹션이 100vw를 쓸 때 스크롤바 폭만큼 넘치는 것 차단 */
   overflow-x: clip;
+  /* 네이티브 컨트롤(날짜 선택기·드롭다운·스크롤바)을 다크로 */
+  color-scheme: dark;
 }
+
+/* 네이티브 폼 컨트롤 전역 다크 테마 (로그인·회원가입·관리자 등 흰 입력창 대비 문제 해결).
+   엘리먼트 선택자(낮은 특정성)라 Tailwind 배경·글자 유틸을 쓴 커스텀 입력은 그대로 우선. */
+input, select, textarea {
+  background-color: #0b1210;
+  color: #eef4f0;
+  border-color: #3a4d41;
+}
+input::placeholder, textarea::placeholder { color: #5b6f62; }
+select option { background-color: #0b1210; color: #eef4f0; }
+input[type="checkbox"], input[type="radio"] { accent-color: #f5b301; }

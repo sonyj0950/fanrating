@@ -96,8 +96,8 @@ export default function LoginPage() {
               <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className="mt-0.5" />
               <span>
                 [필수]{" "}
-                <a href="/terms" target="_blank" className="text-blue-600 underline">이용약관</a> 및{" "}
-                <a href="/privacy" target="_blank" className="text-blue-600 underline">개인정보 처리방침</a>에 동의합니다.
+                <a href="/terms" target="_blank" className="text-golddim underline">이용약관</a> 및{" "}
+                <a href="/privacy" target="_blank" className="text-golddim underline">개인정보 처리방침</a>에 동의합니다.
               </span>
             </label>
             <label className="flex items-start gap-2 text-sm text-wsub">
@@ -107,8 +107,8 @@ export default function LoginPage() {
           </div>
         )}
 
-        {notice && <p className="text-sm text-green-600">{notice}</p>}
-        {msg && <p className="text-sm text-red-500">{msg}</p>}
+        {notice && <p className="text-sm text-emerald-300">{notice}</p>}
+        {msg && <p className="text-sm text-live">{msg}</p>}
         <button disabled={busy}
           className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-40">
           {mode === "login" ? "로그인" : "가입하고 인증메일 받기"}
@@ -118,9 +118,9 @@ export default function LoginPage() {
       {googleOn && (
         <>
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-wsoft" />
             <span className="text-xs text-wfaint">또는</span>
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-wsoft" />
           </div>
           <button onClick={() => signIn("google", { callbackUrl: "/welcome" })}
             className="w-full flex items-center justify-center gap-2 border rounded py-2 text-sm hover:bg-wgray">
@@ -136,18 +136,18 @@ export default function LoginPage() {
       )}
 
       {mode === "login" && resendEmail && (
-        <button onClick={resend} className="mt-3 text-sm text-wsub hover:text-blue-600 block">
+        <button onClick={resend} className="mt-3 text-sm text-wsub hover:text-golddim block">
           인증 메일 다시 받기
         </button>
       )}
 
       <div className="mt-3 flex items-center justify-between text-sm">
         <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setMsg(""); setNotice(""); }}
-          className="text-wsub hover:text-blue-600">
+          className="text-wsub hover:text-golddim">
           {mode === "login" ? "계정이 없나요? 회원가입" : "이미 계정이 있나요? 로그인"}
         </button>
         {mode === "login" && (
-          <Link href="/forgot-password" className="text-wsub hover:text-blue-600">비밀번호 찾기</Link>
+          <Link href="/forgot-password" className="text-wsub hover:text-golddim">비밀번호 찾기</Link>
         )}
       </div>
     </div>

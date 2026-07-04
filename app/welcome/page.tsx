@@ -58,7 +58,7 @@ export default function WelcomePage() {
           maxLength={12}
           autoFocus
         />
-        {msg && <p className="text-sm text-red-500">{msg}</p>}
+        {msg && <p className="text-sm text-live">{msg}</p>}
         <button disabled={busy || !nickname.trim()}
           className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-40">
           시작하기

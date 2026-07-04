@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
       {done ? (
         <div className="text-sm text-ink space-y-3">
           <p>입력하신 이메일로 가입된 계정이 있다면 비밀번호 재설정 링크를 보냈습니다. 메일함(스팸함 포함)을 확인해 주세요.</p>
-          <Link href="/login" className="text-blue-600 underline">로그인으로 돌아가기</Link>
+          <Link href="/login" className="text-golddim underline">로그인으로 돌아가기</Link>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-3">
@@ -44,11 +44,11 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          {msg && <p className="text-sm text-red-500">{msg}</p>}
+          {msg && <p className="text-sm text-live">{msg}</p>}
           <button disabled={busy} className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-40">
             재설정 링크 받기
           </button>
-          <Link href="/login" className="block text-sm text-wsub hover:text-blue-600">
+          <Link href="/login" className="block text-sm text-wsub hover:text-golddim">
             로그인으로 돌아가기
           </Link>
         </form>

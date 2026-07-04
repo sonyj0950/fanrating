@@ -41,7 +41,7 @@ export default function AccountPage() {
 
   if (status === "loading") return <p className="text-sm text-wfaint">불러오는 중…</p>;
   if (!session) {
-    return <p className="text-sm">로그인이 필요합니다. <a href="/login" className="text-blue-600 underline">로그인</a></p>;
+    return <p className="text-sm">로그인이 필요합니다. <a href="/login" className="text-golddim underline">로그인</a></p>;
   }
 
   async function changePw() {
@@ -77,7 +77,7 @@ export default function AccountPage() {
       <h1 className="text-xl font-bold">내 계정</h1>
       <p className="text-sm text-wsub">
         {(session.user as any)?.name}님 ·{" "}
-        <Link href={`/u/${(session.user as any)?.id}`} className="text-blue-600 underline">내 프로필 보기</Link>
+        <Link href={`/u/${(session.user as any)?.id}`} className="text-golddim underline">내 프로필 보기</Link>
       </p>
 
       {/* 프로필 공개 설정 */}
@@ -104,23 +104,23 @@ export default function AccountPage() {
           value={cur} onChange={e => setCur(e.target.value)} />
         <input type="password" className="border rounded w-full p-2 text-sm" placeholder="새 비밀번호 (4자 이상)"
           value={next} onChange={e => setNext(e.target.value)} />
-        {pwMsg && <p className={`text-xs ${pwMsg.includes("변경되") ? "text-green-600" : "text-red-500"}`}>{pwMsg}</p>}
+        {pwMsg && <p className={`text-xs ${pwMsg.includes("변경되") ? "text-emerald-300" : "text-live"}`}>{pwMsg}</p>}
         <button onClick={changePw} disabled={pwBusy || !cur || !next}
           className="bg-blue-600 text-white rounded px-4 py-1.5 text-sm disabled:opacity-40">변경</button>
       </section>
 
       {/* 회원 탈퇴 */}
       <section className="bg-card border border-red-200 rounded-lg p-4 space-y-2">
-        <h2 className="font-semibold text-sm text-red-600">회원 탈퇴</h2>
+        <h2 className="font-semibold text-sm text-live">회원 탈퇴</h2>
         <p className="text-xs text-wsub">탈퇴 시 작성한 평점·코멘트·답글이 모두 삭제되며 복구할 수 없습니다.</p>
         {!confirmDel ? (
           <button onClick={() => setConfirmDel(true)}
-            className="border border-red-300 text-red-600 rounded px-4 py-1.5 text-sm hover:bg-red-50">탈퇴하기</button>
+            className="border border-[#5c2a2a] text-live rounded px-4 py-1.5 text-sm hover:bg-[#241310]">탈퇴하기</button>
         ) : (
           <div className="space-y-2">
             <input type="password" className="border rounded w-full p-2 text-sm" placeholder="비밀번호 확인"
               value={delPw} onChange={e => setDelPw(e.target.value)} />
-            {delMsg && <p className="text-xs text-red-500">{delMsg}</p>}
+            {delMsg && <p className="text-xs text-live">{delMsg}</p>}
             <div className="flex gap-2">
               <button onClick={() => { setConfirmDel(false); setDelPw(""); setDelMsg(""); }}
                 className="border rounded px-4 py-1.5 text-sm">취소</button>
