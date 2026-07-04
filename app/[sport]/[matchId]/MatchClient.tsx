@@ -584,6 +584,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     matchId: string; seg: string; loggedIn: boolean; rev: number }) {
   const [mode, setMode] = useState<"high" | "low" | "pos">("high");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false); // 6위부터 접힘 → 펼치기
   const [cdata, setCdata] = useState<CommentSummary | null>(null);
   const all = [...home, ...away];
 
@@ -845,14 +846,20 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
         ) : ratedSorted.length === 0 ? (
           <p className="text-sm text-wfaint text-center py-6">아직 평점이 없습니다.</p>
         ) : mode === "high" && !isMine && ratedSorted.length >= 3 ? (
-          /* R4: TOP3 포디움 + 4위부터 컴팩트 리스트 */
+          /* R4: TOP3 포디움 + 4~5위 컴팩트 리스트, 6위부터 접힘 */
           <>
             <Podium top={ratedSorted.slice(0, 3)} />
             {(() => {
               const op = ratedSorted.slice(0, 3).find(p => p.playerId === expanded);
               return op ? <div className="border-b border-wsoft"><ExpandedPanel p={op} indent={false} /></div> : null;
             })()}
-            {ratedSorted.slice(3).map((p, i) => <Row key={p.mpId} p={p} rank={i + 4} />)}
+            {(showAll ? ratedSorted.slice(3) : ratedSorted.slice(3, 5)).map((p, i) => <Row key={p.mpId} p={p} rank={i + 4} />)}
+            {ratedSorted.length > 5 && (
+              <button onClick={() => setShowAll(v => !v)}
+                className="w-full py-2 border-t border-wsoft text-[12px] font-bold text-wsub hover:text-ink hover:bg-paper transition tabular-nums">
+                {showAll ? "접기 ▴" : `6위부터 펼치기 · ${ratedSorted.length - 5}명 ▾`}
+              </button>
+            )}
           </>
         ) : (
           ratedSorted.map((p, i) => <Row key={p.mpId} p={p} rank={i + 1} />)
