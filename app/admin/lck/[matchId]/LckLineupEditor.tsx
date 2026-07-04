@@ -59,7 +59,7 @@ export default function LckLineupEditor({ matchId }: { matchId: string }) {
     })();
   }, [matchId]);
 
-  if (loading) return <p className="text-sm text-gray-500">불러오는 중…</p>;
+  if (loading) return <p className="text-sm text-wfaint">불러오는 중…</p>;
   if (!match) return <p className="text-sm text-red-600">{msg || "경기를 찾을 수 없습니다."}</p>;
 
   const hw = sets.filter(s => s.winner === "home").length;
@@ -92,7 +92,7 @@ export default function LckLineupEditor({ matchId }: { matchId: string }) {
       <div className="text-sm font-semibold mb-1.5">{team}</div>
       {LCK_LANES.map(l => (
         <div key={l.code} className="flex items-center gap-2 mb-1.5">
-          <span className="w-9 text-[11px] text-gray-500 shrink-0">{l.label}</span>
+          <span className="w-9 text-[11px] text-wfaint shrink-0">{l.label}</span>
           <input list={listId} value={names[l.code]} onChange={e => setNames(n => ({ ...n, [l.code]: e.target.value }))}
             className="border rounded p-1.5 text-sm flex-1" placeholder="선수명" />
         </div>
@@ -102,55 +102,55 @@ export default function LckLineupEditor({ matchId }: { matchId: string }) {
 
   return (
     <div>
-      <a href="/admin" className="text-sm text-gray-500 hover:underline">← 관리자</a>
+      <a href="/admin" className="text-sm text-wfaint hover:underline">← 관리자</a>
 
       <datalist id="home-roster">{homeRoster.map(n => <option key={n} value={n} />)}</datalist>
       <datalist id="away-roster">{awayRoster.map(n => <option key={n} value={n} />)}</datalist>
 
-      <div className="bg-white rounded p-4 shadow my-3 flex items-center justify-center gap-3 flex-wrap">
+      <div className="bg-card rounded p-4 shadow my-3 flex items-center justify-center gap-3 flex-wrap">
         <span className="font-semibold">{match.awayTeam}</span>
-        <span className="text-xs text-gray-400">원정</span>
+        <span className="text-xs text-wfaint">원정</span>
         <span className="text-lg font-bold">{aw} : {hw}</span>
         <span className="font-semibold">{match.homeTeam}</span>
-        <span className="text-xs text-blue-700 bg-blue-50 rounded px-1.5 py-0.5">홈</span>
+        <span className="text-xs text-golddim bg-goldbg rounded px-1.5 py-0.5">홈</span>
         <select className="border rounded p-1 text-sm" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="finished">종료</option><option value="live">진행중</option><option value="scheduled">예정</option>
         </select>
       </div>
 
-      {msg && <p className="text-sm mb-3 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm mb-3 bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
 
-      <div className="bg-white rounded p-4 shadow mb-3">
+      <div className="bg-card rounded p-4 shadow mb-3">
         <div className="text-sm font-semibold mb-2">선수 명단 (라인별)</div>
         <div className="grid sm:grid-cols-2 gap-4">
           <NameCol team={match.homeTeam} names={homeNames} setNames={setHomeNames} listId="home-roster" />
           <NameCol team={match.awayTeam} names={awayNames} setNames={setAwayNames} listId="away-roster" />
         </div>
-        <p className="text-[11px] text-gray-400 mt-2">한 번 입력한 선수는 다음 경기에서 자동완성으로 뜹니다.</p>
+        <p className="text-[11px] text-wfaint mt-2">한 번 입력한 선수는 다음 경기에서 자동완성으로 뜹니다.</p>
       </div>
 
       {sets.map((s, idx) => (
-        <div key={idx} className="bg-white rounded p-4 shadow mb-3">
+        <div key={idx} className="bg-card rounded p-4 shadow mb-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold">세트 {idx + 1}</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-gray-400">승팀</span>
+              <span className="text-[11px] text-wfaint">승팀</span>
               {(["home", "away"] as const).map(w => (
                 <button key={w} onClick={() => setSets(ss => ss.map((x, i) => i === idx ? { ...x, winner: x.winner === w ? "" : w } : x))}
-                  className={`text-xs px-2 py-1 rounded border ${s.winner === w ? "bg-blue-600 text-white border-blue-600" : "bg-white"}`}>
+                  className={`text-xs px-2 py-1 rounded border ${s.winner === w ? "bg-blue-600 text-white border-blue-600" : "bg-card"}`}>
                   {w === "home" ? match.homeTeam : match.awayTeam}
                 </button>
               ))}
-              <button onClick={() => setSets(ss => ss.filter((_, i) => i !== idx))} className="text-gray-400 hover:text-red-600 text-xs px-1" aria-label="세트 삭제">✕</button>
+              <button onClick={() => setSets(ss => ss.filter((_, i) => i !== idx))} className="text-wfaint hover:text-red-600 text-xs px-1" aria-label="세트 삭제">✕</button>
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             {(["home", "away"] as const).map(side => (
               <div key={side}>
-                <div className="text-[11px] text-gray-500 mb-1">{side === "home" ? match.homeTeam : match.awayTeam} 챔피언</div>
+                <div className="text-[11px] text-wfaint mb-1">{side === "home" ? match.homeTeam : match.awayTeam} 챔피언</div>
                 {LCK_LANES.map(l => (
                   <div key={l.code} className="flex items-center gap-2 mb-1.5">
-                    <span className="w-9 text-[11px] text-gray-500 shrink-0">{l.label}</span>
+                    <span className="w-9 text-[11px] text-wfaint shrink-0">{l.label}</span>
                     <input value={s[side][l.code]} onChange={e => setChamp(idx, side, l.code, e.target.value)}
                       className="border rounded p-1.5 text-sm flex-1" placeholder="챔피언" />
                   </div>
@@ -162,7 +162,7 @@ export default function LckLineupEditor({ matchId }: { matchId: string }) {
       ))}
 
       <button onClick={() => setSets(ss => [...ss, { winner: "", home: blank(), away: blank() }])}
-        className="text-sm mb-3 px-3 py-1.5 border rounded hover:bg-gray-50">+ 세트 추가</button>
+        className="text-sm mb-3 px-3 py-1.5 border rounded hover:bg-paper">+ 세트 추가</button>
 
       <button onClick={save} disabled={saving}
         className="w-full py-2.5 rounded bg-blue-600 text-white font-semibold disabled:opacity-40">

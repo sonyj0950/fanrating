@@ -57,7 +57,7 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
     })();
   }, [matchId]);
 
-  if (loading) return <p className="text-sm text-gray-500">불러오는 중…</p>;
+  if (loading) return <p className="text-sm text-wfaint">불러오는 중…</p>;
   if (!match) return <p className="text-sm text-red-600">{msg || "경기를 찾을 수 없습니다."}</p>;
 
   const side = tab === "home" ? home : away;
@@ -182,17 +182,17 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
 
   return (
     <div>
-      <a href="/admin" className="text-sm text-gray-500 hover:underline">← 관리자</a>
+      <a href="/admin" className="text-sm text-wfaint hover:underline">← 관리자</a>
 
-      <div className="bg-white rounded p-4 shadow my-3">
+      <div className="bg-card rounded p-4 shadow my-3">
         <div className="flex items-center justify-center gap-3 flex-wrap">
           <span className="font-semibold">{KBO_TEAM_LABELS[match.awayTeam] || match.awayTeam}</span>
-          <span className="text-xs text-gray-400">원정</span>
+          <span className="text-xs text-wfaint">원정</span>
           <input className="border rounded p-1 w-14 text-center text-lg" value={form.awayScore} onChange={e => setForm({ ...form, awayScore: e.target.value })} />
-          <span className="text-gray-400">:</span>
+          <span className="text-wfaint">:</span>
           <input className="border rounded p-1 w-14 text-center text-lg" value={form.homeScore} onChange={e => setForm({ ...form, homeScore: e.target.value })} />
           <span className="font-semibold">{KBO_TEAM_LABELS[match.homeTeam] || match.homeTeam}</span>
-          <span className="text-xs text-blue-700 bg-blue-50 rounded px-1.5 py-0.5">홈</span>
+          <span className="text-xs text-golddim bg-goldbg rounded px-1.5 py-0.5">홈</span>
           <select className="border rounded p-1 text-sm" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
             <option value="finished">종료</option><option value="live">진행중</option><option value="scheduled">예정</option>
           </select>
@@ -202,51 +202,51 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
       <div className="flex gap-2 mb-3">
         {(["home", "away"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`text-sm px-3 py-1.5 rounded border ${tab === t ? "bg-blue-600 text-white border-blue-600" : "bg-white"}`}>
+            className={`text-sm px-3 py-1.5 rounded border ${tab === t ? "bg-blue-600 text-white border-blue-600" : "bg-card"}`}>
             {(KBO_TEAM_LABELS[t === "home" ? match.homeTeam : match.awayTeam] || "")} · {t === "home" ? "홈" : "원정"}
           </button>
         ))}
       </div>
 
-      {msg && <p className="text-sm mb-3 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm mb-3 bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
 
       {/* 빠른 입력 도구 — 현재 탭 팀에만 적용 */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <button onClick={loadRecent}
-          className="text-sm px-3 py-1.5 rounded border bg-white hover:bg-gray-50 font-semibold">
+          className="text-sm px-3 py-1.5 rounded border bg-card hover:bg-paper font-semibold">
           ↩ 최근 라인업 불러오기
         </button>
         <button onClick={() => setPasteOpen(v => !v)}
-          className={`text-sm px-3 py-1.5 rounded border font-semibold ${pasteOpen ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white hover:bg-gray-50"}`}>
+          className={`text-sm px-3 py-1.5 rounded border font-semibold ${pasteOpen ? "bg-goldbg border-goldline text-golddim" : "bg-card hover:bg-paper"}`}>
           📋 붙여넣기로 채우기
         </button>
-        <span className="text-[11px] text-gray-400">
+        <span className="text-[11px] text-wfaint">
           {KBO_TEAM_LABELS[curTeam] || curTeam} 탭에 적용됩니다
         </span>
       </div>
       {pasteOpen && (
-        <div className="bg-white rounded p-3 shadow mb-3">
+        <div className="bg-card rounded p-3 shadow mb-3">
           <textarea className="border rounded p-2 w-full h-28 text-sm" value={pasteText}
             placeholder={"한 줄에 한 명 — 타순·이름·포지션 순서, 괄호·쉼표 섞여도 OK\n1 신민재 2루수\n2 박해민 (중견수)\n…\n선발 임찬규"}
             onChange={e => setPasteText(e.target.value)} />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-[11px] text-gray-400">이름이 1군 로스터와 일치해야 채워집니다 (없으면 확인 목록으로 표시)</span>
+            <span className="text-[11px] text-wfaint">이름이 1군 로스터와 일치해야 채워집니다 (없으면 확인 목록으로 표시)</span>
             <button onClick={applyPaste} disabled={!pasteText.trim()}
               className="text-sm px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40">적용</button>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded p-4 shadow mb-3">
+      <div className="bg-card rounded p-4 shadow mb-3">
         <div className="flex items-center gap-3 pb-2 mb-2 border-b">
-          <span className="text-sm font-semibold text-blue-800 w-16">선발투수</span>
+          <span className="text-sm font-semibold text-sky-300 w-16">선발투수</span>
           <select className="border rounded p-1.5 text-sm flex-1" value={side.pitcherId} onChange={e => setSide(s => ({ ...s, pitcherId: e.target.value }))}>
             {opt(pitchers, side.pitcherId)}
           </select>
         </div>
         {side.batters.map((bt, i) => (
           <div key={i} className="grid grid-cols-[28px_1fr_120px] gap-2 items-center py-1 border-b last:border-0">
-            <span className="text-sm font-semibold text-center text-emerald-800 bg-emerald-50 rounded py-1">{i + 1}</span>
+            <span className="text-sm font-semibold text-center text-emerald-300 bg-wsoft rounded py-1">{i + 1}</span>
             <select className="border rounded p-1.5 text-sm" value={bt.playerId} onChange={e => setBatter(i, { playerId: e.target.value })}>
               {opt(batters, bt.playerId)}
             </select>
@@ -256,10 +256,10 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
             </select>
           </div>
         ))}
-        <p className="text-[11px] text-gray-400 mt-2">선수는 정비된 1군 로스터에서만 선택됩니다.</p>
+        <p className="text-[11px] text-wfaint mt-2">선수는 정비된 1군 로스터에서만 선택됩니다.</p>
       </div>
 
-      <div className="bg-white rounded p-4 shadow mb-3">
+      <div className="bg-card rounded p-4 shadow mb-3">
         <div className="text-sm font-semibold mb-2">교체 기록</div>
         {subs.map((s, i) => (
           <div key={i} className="grid grid-cols-[48px_84px_1fr_18px_1fr_28px] gap-1.5 items-center py-1">
@@ -271,15 +271,15 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
             <select className="border rounded p-1 text-sm" value={s.outPlayerId} onChange={e => setSubs(v => v.map((x, j) => j === i ? { ...x, outPlayerId: e.target.value } : x))}>
               <option value="">나간 선수</option>{allRoster.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <span className="text-center text-gray-400">→</span>
+            <span className="text-center text-wfaint">→</span>
             <select className="border rounded p-1 text-sm" value={s.inPlayerId} onChange={e => setSubs(v => v.map((x, j) => j === i ? { ...x, inPlayerId: e.target.value } : x))}>
               <option value="">들어온 선수</option>{allRoster.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <button onClick={() => setSubs(v => v.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-600" aria-label="삭제">✕</button>
+            <button onClick={() => setSubs(v => v.filter((_, j) => j !== i))} className="text-wfaint hover:text-red-600" aria-label="삭제">✕</button>
           </div>
         ))}
         <button onClick={() => setSubs(v => [...v, { minute: "", kind: "", outPlayerId: "", inPlayerId: "" }])}
-          className="text-sm mt-2 px-3 py-1 border rounded hover:bg-gray-50">+ 교체 추가</button>
+          className="text-sm mt-2 px-3 py-1 border rounded hover:bg-paper">+ 교체 추가</button>
       </div>
 
       <button onClick={save} disabled={saving}

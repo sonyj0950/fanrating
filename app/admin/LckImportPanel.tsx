@@ -6,8 +6,8 @@ type Item = { id: string; label: string; date: string; state: "scheduled" | "liv
 
 const STATE_BADGE: Record<string, { label: string; cls: string }> = {
   live: { label: "진행중", cls: "bg-red-100 text-red-600" },
-  scheduled: { label: "예정", cls: "bg-gray-100 text-gray-500" },
-  finished: { label: "종료", cls: "bg-blue-100 text-gray-700" },
+  scheduled: { label: "예정", cls: "bg-wsoft text-wfaint" },
+  finished: { label: "종료", cls: "bg-blue-100 text-wsub" },
 };
 
 export default function LckImportPanel() {
@@ -52,23 +52,23 @@ export default function LckImportPanel() {
   }
 
   return (
-    <div className="bg-white rounded p-4 shadow mb-6">
+    <div className="bg-card rounded p-4 shadow mb-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-bold">🎮 LCK 경기 가져오기 <span className="text-xs font-normal text-gray-500">(자동)</span></h2>
+        <h2 className="font-bold">🎮 LCK 경기 가져오기 <span className="text-xs font-normal text-wfaint">(자동)</span></h2>
         <button onClick={load} disabled={loading}
-          className="text-sm px-3 py-1 border rounded bg-gray-50 hover:bg-gray-100 disabled:opacity-40">
+          className="text-sm px-3 py-1 border rounded bg-paper hover:bg-wsoft disabled:opacity-40">
           {loading ? "불러오는 중…" : items ? "↻ 새로고침" : "경기 목록 불러오기"}
         </button>
       </div>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-wfaint mb-3">
         진행중·예정 경기는 미리 [등록]해두면 라이브 중 경기 페이지에서 세트 결과를 바로 입력할 수 있어요.
         세트가 끝난 뒤 [갱신]을 누르면 라인업·챔피언이 최신으로 채워집니다.
       </p>
 
-      {msg && <p className="text-sm mb-3 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm mb-3 bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
 
       {items && items.length === 0 && !loading && (
-        <p className="text-sm text-gray-400">표시할 경기가 없습니다. (비시즌이거나 일정 미정)</p>
+        <p className="text-sm text-wfaint">표시할 경기가 없습니다. (비시즌이거나 일정 미정)</p>
       )}
 
       {items && items.length > 0 && (
@@ -82,7 +82,7 @@ export default function LckImportPanel() {
               <div key={it.id} className="flex items-center gap-2 border rounded px-3 py-2 text-sm">
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${b.cls}`}>{b.label}</span>
                 <span className="flex-1 min-w-0 truncate font-medium">{it.label}</span>
-                <span className="text-xs text-gray-400 shrink-0 hidden sm:inline">{d}</span>
+                <span className="text-xs text-wfaint shrink-0 hidden sm:inline">{d}</span>
                 <button onClick={() => importOne(it)} disabled={busyId === it.id}
                   className="text-xs px-3 py-1 rounded bg-blue-600 text-white shrink-0 disabled:opacity-40">
                   {busyId === it.id ? "처리중…" : it.state === "finished" ? "등록/갱신" : "등록"}

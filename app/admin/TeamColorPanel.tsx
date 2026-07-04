@@ -52,19 +52,19 @@ export default function TeamColorPanel() {
   }
 
   return (
-    <div className="bg-white rounded p-4 shadow mb-6">
+    <div className="bg-card rounded p-4 shadow mb-6">
       <button onClick={() => setOpen(!open)} className="flex items-center gap-2 w-full text-left">
         <h2 className="font-bold">🎨 구단 색상</h2>
-        <span className="text-xs text-gray-400">공식색이 기본 · 바꾸면 평점 마커·범례에 적용</span>
-        <span className="ml-auto text-gray-400">{open ? "▲" : "▼"}</span>
+        <span className="text-xs text-wfaint">공식색이 기본 · 바꾸면 평점 마커·범례에 적용</span>
+        <span className="ml-auto text-wfaint">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
         <div className="mt-3 space-y-4">
-          {msg && <p className="text-sm bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+          {msg && <p className="text-sm bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
           {GROUPS.map(g => (
             <div key={g.label}>
-              <p className="text-[11px] font-semibold text-gray-500 mb-1.5">{g.label}</p>
+              <p className="text-[11px] font-semibold text-wfaint mb-1.5">{g.label}</p>
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
                 {g.teams.map(team => {
                   const color = colorOf(team);
@@ -76,10 +76,10 @@ export default function TeamColorPanel() {
                         {g.labelMap?.[team] ?? team}
                         {custom && <span className="text-[10px] text-amber-600 ml-1">수정됨</span>}
                       </span>
-                      {!custom && <span className="text-[11px] text-gray-400 font-mono">{color.toUpperCase()}</span>}
+                      {!custom && <span className="text-[11px] text-wfaint font-mono">{color.toUpperCase()}</span>}
                       {custom && (
                         <button onClick={() => reset(team)} disabled={busy === team}
-                          className="text-[11px] px-2 py-0.5 border rounded hover:bg-gray-50 disabled:opacity-40">기본</button>
+                          className="text-[11px] px-2 py-0.5 border rounded hover:bg-paper disabled:opacity-40">기본</button>
                       )}
                       <input type="color" value={color.toLowerCase()} disabled={busy === team}
                         onChange={e => save(team, e.target.value)}
@@ -90,7 +90,7 @@ export default function TeamColorPanel() {
               </div>
             </div>
           ))}
-          <p className="text-[11px] text-gray-400">색을 바꾸면 즉시 저장됩니다. 경기 페이지에서 새로고침 시 반영돼요.</p>
+          <p className="text-[11px] text-wfaint">색을 바꾸면 즉시 저장됩니다. 경기 페이지에서 새로고침 시 반영돼요.</p>
         </div>
       )}
     </div>

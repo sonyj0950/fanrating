@@ -60,16 +60,16 @@ export default function RosterPanel() {
       <div className={`flex items-center justify-between py-1.5 border-b last:border-0 ${p.rosterActive ? "" : "opacity-50"}`}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm truncate">{p.name}</span>
-          {p.position && <span className="text-[11px] text-gray-500 bg-gray-100 rounded px-1.5 py-0.5 shrink-0">{p.position}</span>}
-          {!p.rosterActive && <span className="text-[11px] text-red-600 bg-red-50 rounded px-1.5 py-0.5 shrink-0">2군</span>}
+          {p.position && <span className="text-[11px] text-wfaint bg-wsoft rounded px-1.5 py-0.5 shrink-0">{p.position}</span>}
+          {!p.rosterActive && <span className="text-[11px] text-[#ff9d8f] bg-[#3a1512] rounded px-1.5 py-0.5 shrink-0">2군</span>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => patch(p.id, { isPitcher: !p.isPitcher })}
-            className="text-[11px] px-1.5 py-0.5 text-gray-400 hover:text-gray-700" title="투수/타자 전환">
+            className="text-[11px] px-1.5 py-0.5 text-wfaint hover:text-wsub" title="투수/타자 전환">
             {p.isPitcher ? "→타자" : "→투수"}
           </button>
           <button onClick={() => patch(p.id, { rosterActive: !p.rosterActive })}
-            className="text-[11px] px-2 py-0.5 border rounded hover:bg-gray-50">
+            className="text-[11px] px-2 py-0.5 border rounded hover:bg-paper">
             {p.rosterActive ? "말소" : "복귀"}
           </button>
         </div>
@@ -78,44 +78,44 @@ export default function RosterPanel() {
   }
 
   return (
-    <div className="bg-white rounded p-4 shadow mb-6">
+    <div className="bg-card rounded p-4 shadow mb-6">
       <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
-        <h2 className="font-bold">⚾ KBO 로스터 관리 <span className="text-xs font-normal text-gray-500">(매주 월요일 갱신)</span></h2>
+        <h2 className="font-bold">⚾ KBO 로스터 관리 <span className="text-xs font-normal text-wfaint">(매주 월요일 갱신)</span></h2>
         <select className="border rounded p-1.5 text-sm" value={team} onChange={e => setTeam(e.target.value)}>
           {KBO_TEAMS.map(t => <option key={t} value={t}>{KBO_TEAM_LABELS[t]}</option>)}
         </select>
       </div>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-wfaint mb-3">
         1군 등록 <b>{activeCount}</b>명 · 투수 {pitchers.filter(p=>p.rosterActive).length} · 타자 {batters.filter(p=>p.rosterActive).length}
         {loading && " · 불러오는 중…"}
       </p>
 
-      {msg && <p className="text-sm mb-3 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+      {msg && <p className="text-sm mb-3 bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="border rounded p-3">
-          <div className="text-sm font-semibold text-blue-800 mb-1">투수 <span className="text-gray-400 font-normal">{pitchers.length}</span></div>
+          <div className="text-sm font-semibold text-sky-300 mb-1">투수 <span className="text-wfaint font-normal">{pitchers.length}</span></div>
           {pitchers.length ? pitchers.sort(sortActive).map(p => <Row key={p.id} p={p} />)
-            : <p className="text-xs text-gray-400 py-2">선수 없음 — 아래에서 명단을 붙여넣어 추가하세요.</p>}
+            : <p className="text-xs text-wfaint py-2">선수 없음 — 아래에서 명단을 붙여넣어 추가하세요.</p>}
         </div>
         <div className="border rounded p-3">
-          <div className="text-sm font-semibold text-emerald-800 mb-1">타자 <span className="text-gray-400 font-normal">{batters.length}</span></div>
+          <div className="text-sm font-semibold text-emerald-300 mb-1">타자 <span className="text-wfaint font-normal">{batters.length}</span></div>
           {batters.length ? batters.sort(sortActive).map(p => <Row key={p.id} p={p} />)
-            : <p className="text-xs text-gray-400 py-2">선수 없음 — 아래에서 명단을 붙여넣어 추가하세요.</p>}
+            : <p className="text-xs text-wfaint py-2">선수 없음 — 아래에서 명단을 붙여넣어 추가하세요.</p>}
         </div>
       </div>
 
-      <div className="mt-4 bg-gray-50 rounded p-3">
+      <div className="mt-4 bg-paper rounded p-3">
         <div className="text-sm font-semibold mb-1">명단 붙여넣기로 추가 — {KBO_TEAM_LABELS[team]}</div>
         <textarea className="border rounded p-2 w-full h-24 text-sm"
           placeholder={"한 줄에 한 명 (이름,포지션) — 포지션으로 투/타 자동 분류\n예) 임찬규,투수\n홍창기,우익수"}
           value={paste} onChange={e => setPaste(e.target.value)} />
         <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-wsub cursor-pointer">
             <input type="checkbox" checked={sync} onChange={e => setSync(e.target.checked)} />
             전체 명단 동기화 — 붙여넣은 명단에 없는 선수는 자동 말소 (월요일 갱신용, 15명 이상 필요)
           </label>
-          <span className="text-[11px] text-gray-400">관리자가 직접 입력 · 외부 자동수집 없음</span>
+          <span className="text-[11px] text-wfaint">관리자가 직접 입력 · 외부 자동수집 없음</span>
           <button onClick={addPaste} disabled={loading || !paste.trim()}
             className={`text-sm px-3 py-1 rounded text-white disabled:opacity-40 ${sync ? "bg-amber-600" : "bg-blue-600"}`}>
             {sync ? "동기화" : "추가"}

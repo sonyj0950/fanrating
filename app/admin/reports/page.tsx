@@ -18,7 +18,7 @@ export default function ReportsPage() {
   }
   useEffect(() => { if (status === "authenticated") load(); }, [status]);
 
-  if (status === "loading") return <p className="text-sm text-gray-400">불러오는 중…</p>;
+  if (status === "loading") return <p className="text-sm text-wfaint">불러오는 중…</p>;
   if (!session || (session.user as any)?.role !== "admin")
     return <p className="text-sm">관리자만 접근할 수 있습니다.</p>;
 
@@ -40,30 +40,30 @@ export default function ReportsPage() {
   return (
     <div>
       <h1 className="text-xl font-bold mb-1">🚩 신고 관리</h1>
-      <p className="text-sm text-gray-500 mb-4">신고가 접수된 코멘트 목록 (신고 많은 순)</p>
+      <p className="text-sm text-wfaint mb-4">신고가 접수된 코멘트 목록 (신고 많은 순)</p>
 
-      {loading ? <p className="text-sm text-gray-400">불러오는 중…</p>
-        : items.length === 0 ? <p className="text-sm text-gray-400 bg-white border rounded p-4">신고된 코멘트가 없습니다.</p>
+      {loading ? <p className="text-sm text-wfaint">불러오는 중…</p>
+        : items.length === 0 ? <p className="text-sm text-wfaint bg-card border rounded p-4">신고된 코멘트가 없습니다.</p>
         : (
           <div className="space-y-3">
             {items.map(it => (
-              <div key={it.id} className={`border rounded-lg p-3 ${it.blinded ? "bg-gray-50" : "bg-white"}`}>
+              <div key={it.id} className={`border rounded-lg p-3 ${it.blinded ? "bg-paper" : "bg-card"}`}>
                 <div className="flex justify-between items-start gap-2">
-                  <div className="text-xs text-gray-500">
-                    <Link href={`/${sportPath(it.sport)}/${it.matchId}`} className="text-blue-600 underline">{it.matchLabel}</Link>
+                  <div className="text-xs text-wfaint">
+                    <Link href={`/${sportPath(it.sport)}/${it.matchId}`} className="text-golddim underline">{it.matchLabel}</Link>
                     {" · "}{it.player} · 작성자 {it.author}
                   </div>
                   <span className="text-xs font-bold text-red-500 shrink-0">🚩 {it.reportCount}</span>
                 </div>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{it.text || <span className="text-gray-400 italic">(삭제된 코멘트)</span>}</p>
+                <p className="text-sm mt-1 whitespace-pre-wrap">{it.text || <span className="text-wfaint italic">(삭제된 코멘트)</span>}</p>
                 {it.blinded && <p className="text-xs text-amber-600 mt-1">현재 블라인드 상태</p>}
 
                 {it.reasons.length > 0 && (
                   <details className="mt-1">
-                    <summary className="text-xs text-gray-400 cursor-pointer">신고 사유 보기</summary>
-                    <ul className="text-xs text-gray-600 mt-1 space-y-0.5 pl-3">
+                    <summary className="text-xs text-wfaint cursor-pointer">신고 사유 보기</summary>
+                    <ul className="text-xs text-wsub mt-1 space-y-0.5 pl-3">
                       {it.reasons.map((r: any, i: number) => (
-                        <li key={i}>· {r.reason || "(사유 없음)"} <span className="text-gray-400">— {r.by}</span></li>
+                        <li key={i}>· {r.reason || "(사유 없음)"} <span className="text-wfaint">— {r.by}</span></li>
                       ))}
                     </ul>
                   </details>

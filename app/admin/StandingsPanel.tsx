@@ -45,11 +45,11 @@ export default function StandingsPanel() {
   }
 
   return (
-    <div className="bg-white rounded p-4 shadow mb-6">
+    <div className="bg-card rounded p-4 shadow mb-6">
       <button onClick={() => setOpen(!open)} className="flex items-center gap-2 w-full text-left">
         <h2 className="font-bold">🏆 순위 관리</h2>
-        <span className="text-xs text-gray-400">KBO·LCK 수동 입력 · EPL 자동(API)</span>
-        <span className="ml-auto text-gray-400">{open ? "▲" : "▼"}</span>
+        <span className="text-xs text-wfaint">KBO·LCK 수동 입력 · EPL 자동(API)</span>
+        <span className="ml-auto text-wfaint">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
@@ -57,17 +57,17 @@ export default function StandingsPanel() {
           <div className="flex gap-1.5 mb-3">
             {LEAGUES.map(l => (
               <button key={l.key} onClick={() => { setLeague(l.key); setText(""); setMsg(""); }}
-                className={`text-sm px-3 py-1.5 rounded border ${league === l.key ? "bg-blue-600 text-white border-blue-600" : "bg-white"}`}>
+                className={`text-sm px-3 py-1.5 rounded border ${league === l.key ? "bg-blue-600 text-white border-blue-600" : "bg-card"}`}>
                 {l.label}{l.auto ? " ·자동" : ""}
               </button>
             ))}
           </div>
 
-          {msg && <p className="text-sm mb-2 bg-amber-50 border border-amber-200 rounded px-3 py-2">{msg}</p>}
+          {msg && <p className="text-sm mb-2 bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
 
           {cur.auto ? (
-            <div className="border rounded p-3 bg-gray-50">
-              <p className="text-sm text-gray-600 mb-2">EPL은 API-Football에서 자동으로 받아옵니다. 평소엔 동기화 cron이 갱신하고, 아래 버튼으로 즉시 갱신할 수 있습니다.</p>
+            <div className="border rounded p-3 bg-paper">
+              <p className="text-sm text-wsub mb-2">EPL은 API-Football에서 자동으로 받아옵니다. 평소엔 동기화 cron이 갱신하고, 아래 버튼으로 즉시 갱신할 수 있습니다.</p>
               <button onClick={save} disabled={busy}
                 className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white disabled:opacity-40">
                 {busy ? "갱신 중…" : "지금 EPL 순위 갱신"}
@@ -76,14 +76,14 @@ export default function StandingsPanel() {
           ) : (
             <>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-500">{cur.hint}</p>
-                <button onClick={load} className="text-xs px-2 py-0.5 border rounded hover:bg-gray-50">기존 불러오기</button>
+                <p className="text-xs text-wfaint">{cur.hint}</p>
+                <button onClick={load} className="text-xs px-2 py-0.5 border rounded hover:bg-paper">기존 불러오기</button>
               </div>
               <textarea value={text} onChange={e => setText(e.target.value)}
                 placeholder={cur.hint}
                 className="w-full h-40 border rounded p-2 text-sm font-mono" />
               <div className="flex items-center justify-between mt-2">
-                <span className="text-[11px] text-gray-400">승률·게임차 등 파생값은 표시 시 자동 계산</span>
+                <span className="text-[11px] text-wfaint">승률·게임차 등 파생값은 표시 시 자동 계산</span>
                 <button onClick={save} disabled={busy}
                   className="text-sm px-4 py-1.5 rounded bg-blue-600 text-white disabled:opacity-40">
                   {busy ? "저장 중…" : "순위 저장"}

@@ -44,7 +44,7 @@ export default function AdminForm() {
     f.sport === "kleague" ? placeholderSoccer : placeholderKbo;
 
   return (
-    <form onSubmit={submit} className="bg-white rounded p-4 shadow grid grid-cols-2 gap-3">
+    <form onSubmit={submit} className="bg-card rounded p-4 shadow grid grid-cols-2 gap-3">
       <select className="border rounded p-2" value={f.sport} onChange={e=>setF({...f,sport:e.target.value})}>
         <option value="kbo">국내야구</option>
         <option value="kleague">국내축구</option>
@@ -83,13 +83,13 @@ export default function AdminForm() {
           {ROUND_PRESETS[f.sport].map(p => (
             <button type="button" key={p} onClick={()=>setF({...f,round:p})}
               className={`text-xs px-2 py-1 rounded-full border transition ${
-                f.round === p ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}>
+                f.round === p ? "bg-gold text-deep border-goldline" : "bg-card text-wsub border-wline hover:bg-paper"}`}>
               {p}
             </button>
           ))}
           {f.round && (
             <button type="button" onClick={()=>setF({...f,round:""})}
-              className="text-xs px-2 py-1 rounded-full border border-dashed border-gray-300 text-gray-400 hover:bg-gray-50">
+              className="text-xs px-2 py-1 rounded-full border border-dashed border-wline text-wfaint hover:bg-paper">
               지우기
             </button>
           )}
@@ -97,12 +97,12 @@ export default function AdminForm() {
       )}
       <textarea className="border rounded p-2 col-span-2 h-40" placeholder={placeholder} value={f.players} onChange={e=>setF({...f,players:e.target.value})}/>
       {f.sport === "kleague" && (
-        <details className="col-span-2 text-xs text-gray-600 bg-gray-50 border rounded p-2">
+        <details className="col-span-2 text-xs text-wsub bg-paper border rounded p-2">
           <summary className="cursor-pointer font-semibold">⚽ 축구 포지션 코드 보기</summary>
           <div className="mt-2 space-y-1">
             {POSITIONS_BY_LINE.map(g => (
               <div key={g.line} className="flex gap-2">
-                <span className="w-20 shrink-0 text-gray-400">{g.label}</span>
+                <span className="w-20 shrink-0 text-wfaint">{g.label}</span>
                 <span className="font-mono">{g.codes.join(" · ")}</span>
               </div>
             ))}

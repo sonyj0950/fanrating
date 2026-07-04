@@ -64,7 +64,7 @@ export default async function AdminStatsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold mb-1">📊 통계 대시보드</h1>
-        <p className="text-sm text-gray-500">사이트 참여 현황 한눈에 보기</p>
+        <p className="text-sm text-wfaint">사이트 참여 현황 한눈에 보기</p>
       </div>
 
       {/* 회원 */}
@@ -99,31 +99,31 @@ export default async function AdminStatsPage() {
       </Section>
 
       {matchBySport.length > 0 && (
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-wfaint">
           종목별 경기: {matchBySport.map((m) => `${SPORT_LABEL[m.sport] || m.sport} ${m._count.sport}`).join(" · ")}
         </div>
       )}
 
       {/* 인기 경기 */}
-      <div className="bg-white border rounded-lg p-4">
+      <div className="bg-card border rounded-lg p-4">
         <h2 className="text-sm font-semibold mb-2">🔥 평점 많은 경기 TOP 5</h2>
         {topMatchesRaw.length === 0 ? (
-          <p className="text-sm text-gray-400">데이터 없음</p>
+          <p className="text-sm text-wfaint">데이터 없음</p>
         ) : (
           <ol className="space-y-1">
             {topMatchesRaw.map((m, i) => {
               const info = matchMap.get(m.matchId);
               return (
                 <li key={m.matchId} className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-400 w-4">{i + 1}</span>
+                  <span className="text-wfaint w-4">{i + 1}</span>
                   {info ? (
-                    <Link href={`/${sportPath(info.sport)}/${info.id}`} className="flex-1 min-w-0 truncate text-blue-600 hover:underline">
+                    <Link href={`/${sportPath(info.sport)}/${info.id}`} className="flex-1 min-w-0 truncate text-golddim hover:underline">
                       {SPORT_LABEL[info.sport] || info.sport} {info.homeTeam} vs {info.awayTeam}
                     </Link>
                   ) : (
-                    <span className="flex-1 text-gray-400">(삭제된 경기)</span>
+                    <span className="flex-1 text-wfaint">(삭제된 경기)</span>
                   )}
-                  <span className="text-xs font-semibold text-gray-600 shrink-0">{m._count.matchId}개</span>
+                  <span className="text-xs font-semibold text-wsub shrink-0">{m._count.matchId}개</span>
                 </li>
               );
             })}
@@ -132,17 +132,17 @@ export default async function AdminStatsPage() {
       </div>
 
       {/* 활발한 유저 */}
-      <div className="bg-white border rounded-lg p-4">
+      <div className="bg-card border rounded-lg p-4">
         <h2 className="text-sm font-semibold mb-2">🏅 평점 많이 남긴 유저 TOP 5</h2>
         {topRatersRaw.length === 0 ? (
-          <p className="text-sm text-gray-400">데이터 없음</p>
+          <p className="text-sm text-wfaint">데이터 없음</p>
         ) : (
           <ol className="space-y-1">
             {topRatersRaw.map((u, i) => (
               <li key={u.userId} className="flex items-center gap-2 text-sm">
-                <span className="text-gray-400 w-4">{i + 1}</span>
+                <span className="text-wfaint w-4">{i + 1}</span>
                 <span className="flex-1 min-w-0 truncate">{userMap.get(u.userId) || "(탈퇴)"}</span>
-                <span className="text-xs font-semibold text-gray-600 shrink-0">{u._count.userId}개</span>
+                <span className="text-xs font-semibold text-wsub shrink-0">{u._count.userId}개</span>
               </li>
             ))}
           </ol>
@@ -155,7 +155,7 @@ export default async function AdminStatsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-600 mb-2">{title}</h2>
+      <h2 className="text-sm font-semibold text-wsub mb-2">{title}</h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{children}</div>
     </div>
   );
@@ -163,10 +163,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Stat({ label, value, sub, accent, danger }: { label: string; value: number | string; sub?: string; accent?: boolean; danger?: boolean }) {
   return (
-    <div className={`border rounded-lg p-3 ${danger ? "bg-red-50 border-red-100" : accent ? "bg-blue-50 border-blue-100" : "bg-white"}`}>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className={`text-2xl font-bold ${danger ? "text-red-600" : accent ? "text-blue-700" : "text-gray-900"}`}>{value}</div>
-      {sub && <div className="text-xs text-gray-400">{sub}</div>}
+    <div className={`border rounded-lg p-3 ${danger ? "bg-[#241310] border-[#5c2a2a]" : accent ? "bg-goldbg border-goldline" : "bg-card border-wline"}`}>
+      <div className="text-xs text-wfaint">{label}</div>
+      <div className={`text-2xl font-bold tabular-nums ${danger ? "text-live" : accent ? "text-golddim" : "text-ink"}`}>{value}</div>
+      {sub && <div className="text-xs text-wfaint">{sub}</div>}
     </div>
   );
 }

@@ -90,28 +90,28 @@ export default function EplTestPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-extrabold text-gray-900">EPL 데이터 테스트</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-xl font-extrabold text-ink">EPL 데이터 테스트</h1>
+        <p className="text-sm text-wfaint mt-1">
           API-Football에서 EPL 데이터를 받아오는지 확인합니다. (DB에 저장하지 않음)
         </p>
       </div>
 
       <button onClick={loadSeasons} disabled={loading}
-        className="px-4 py-2 rounded bg-amber-500 text-gray-900 font-bold disabled:opacity-40">
+        className="px-4 py-2 rounded bg-wsoft0 text-ink font-bold disabled:opacity-40">
         ⭐ 먼저 확인: 내 키로 받을 수 있는 EPL 시즌
       </button>
 
       {seasons && (
-        <div className="border border-gray-300 rounded-xl overflow-hidden">
-          <div className="bg-gray-900 text-white text-sm font-bold px-3 py-2">
+        <div className="border border-wline rounded-xl overflow-hidden">
+          <div className="bg-ink text-deep text-sm font-bold px-3 py-2">
             이용 가능한 EPL 시즌 {seasons.length}개
           </div>
           {seasons.map((s, i) => (
-            <div key={i} className="px-3 py-2 border-t border-gray-100 text-sm flex items-center gap-2">
-              <span className="font-bold text-gray-900">{s.year}/{(s.year+1)%100}</span>
-              <span className="text-gray-400 text-xs">{s.start} ~ {s.end}</span>
+            <div key={i} className="px-3 py-2 border-t border-wsoft text-sm flex items-center gap-2">
+              <span className="font-bold text-ink">{s.year}/{(s.year+1)%100}</span>
+              <span className="text-wfaint text-xs">{s.start} ~ {s.end}</span>
               {s.current && <span className="text-xs bg-amber-100 text-amber-800 rounded px-1.5">진행중</span>}
-              {s.lineups && <span className="text-xs bg-gray-100 text-gray-600 rounded px-1.5">라인업O</span>}
+              {s.lineups && <span className="text-xs bg-wsoft text-wsub rounded px-1.5">라인업O</span>}
             </div>
           ))}
         </div>
@@ -119,44 +119,44 @@ export default function EplTestPage() {
 
       <div className="flex flex-wrap gap-2">
         <button onClick={() => loadFixtures("last", "2023")} disabled={loading}
-          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          className="px-4 py-2 rounded bg-ink text-deep font-semibold disabled:opacity-40">
           2023시즌
         </button>
         <button onClick={() => loadFixtures("last", "2022")} disabled={loading}
-          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          className="px-4 py-2 rounded bg-ink text-deep font-semibold disabled:opacity-40">
           2022시즌
         </button>
         <button onClick={() => loadFixtures("last", "2021")} disabled={loading}
-          className="px-4 py-2 rounded bg-gray-900 text-white font-semibold disabled:opacity-40">
+          className="px-4 py-2 rounded bg-ink text-deep font-semibold disabled:opacity-40">
           2021시즌
         </button>
         <button onClick={() => loadFixtures("last", "2025")} disabled={loading}
-          className="px-4 py-2 rounded border border-gray-900 text-gray-900 font-semibold disabled:opacity-40">
+          className="px-4 py-2 rounded border border-wline text-ink font-semibold disabled:opacity-40">
           2025시즌
         </button>
         <button onClick={() => loadFixtures("last", "2024")} disabled={loading}
-          className="px-4 py-2 rounded border border-gray-900 text-gray-900 font-semibold disabled:opacity-40">
+          className="px-4 py-2 rounded border border-wline text-ink font-semibold disabled:opacity-40">
           2024시즌
         </button>
       </div>
-      {loading && <p className="text-sm text-gray-500">불러오는 중…</p>}
-      {info && <p className="text-xs text-gray-500">{info}</p>}
+      {loading && <p className="text-sm text-wfaint">불러오는 중…</p>}
+      {info && <p className="text-xs text-wfaint">{info}</p>}
 
       {importMsg && (
-        <div className="text-sm font-semibold text-gray-900 bg-amber-50 border border-amber-300 rounded-lg p-3">
+        <div className="text-sm font-semibold text-ink bg-goldbg border border-goldline rounded-lg p-3">
           {importMsg}
         </div>
       )}
 
-      <div className="border border-gray-300 rounded-xl p-3 space-y-2">
-        <div className="text-sm font-bold text-gray-900">🔍 교체 진단 (경기 ID 입력)</div>
-        <div className="text-xs text-gray-500">경기페이지 주소 /epl/<b>여기부분</b> 을 붙여넣으세요</div>
+      <div className="border border-wline rounded-xl p-3 space-y-2">
+        <div className="text-sm font-bold text-ink">🔍 교체 진단 (경기 ID 입력)</div>
+        <div className="text-xs text-wfaint">경기페이지 주소 /epl/<b>여기부분</b> 을 붙여넣으세요</div>
         <div className="flex gap-2">
           <input value={inspectId} onChange={e => setInspectId(e.target.value)}
-            placeholder="예: clxxxx..." className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm" />
-          <button onClick={runInspect} className="px-3 py-1.5 rounded bg-gray-900 text-white text-sm font-semibold">진단</button>
+            placeholder="예: clxxxx..." className="flex-1 border border-wline rounded px-2 py-1.5 text-sm" />
+          <button onClick={runInspect} className="px-3 py-1.5 rounded bg-ink text-deep text-sm font-semibold">진단</button>
         </div>
-        {inspectData === "loading" && <p className="text-xs text-gray-500">확인 중…</p>}
+        {inspectData === "loading" && <p className="text-xs text-wfaint">확인 중…</p>}
         {inspectData && inspectData !== "loading" && inspectData.error && (
           <p className="text-xs text-red-600">오류: {inspectData.error}</p>
         )}
@@ -167,13 +167,13 @@ export default function EplTestPage() {
             </div>
             <div className="space-y-0.5">
               {inspectData.subsCheck.map((s: any, i: number) => (
-                <div key={i} className={`rounded px-1.5 py-1 ${s.outIsStarter && s.inIsBench ? "bg-green-50" : "bg-red-50"}`}>
+                <div key={i} className={`rounded px-1.5 py-1 ${s.outIsStarter && s.inIsBench ? "bg-[#123120]" : "bg-[#241310]"}`}>
                   {s.minute}분 — OUT {s.outName} {s.outIsStarter ? "✅선발" : s.outInMatch ? "⚠️후보아님" : "❌경기에없음"}
                   {" / "}IN {s.inName} {s.inIsBench ? "✅후보" : s.inInMatch ? "⚠️선발임" : "❌경기에없음"}
                 </div>
               ))}
             </div>
-            <div className="text-gray-500 mt-1">
+            <div className="text-wfaint mt-1">
               초록=정상(끌어올림 가능), 빨강=문제. ❌경기에없음 이 있으면 이름 매칭 실패입니다.
             </div>
           </div>
@@ -181,39 +181,39 @@ export default function EplTestPage() {
       </div>
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+        <div className="text-sm text-[#ff9d8f] bg-[#3a1512] border border-red-200 rounded-lg p-3">
           오류: {error}
         </div>
       )}
 
       {fixtures && (
-        <div className="border border-gray-300 rounded-xl overflow-hidden">
-          <div className="bg-gray-900 text-white text-sm font-bold px-3 py-2">
+        <div className="border border-wline rounded-xl overflow-hidden">
+          <div className="bg-ink text-deep text-sm font-bold px-3 py-2">
             받아온 경기 {fixtures.length}개 — 라인업 보려면 경기 클릭
           </div>
           {fixtures.length === 0 && (
-            <p className="text-sm text-gray-500 p-3">경기가 없습니다 (시즌/리그 확인 필요).</p>
+            <p className="text-sm text-wfaint p-3">경기가 없습니다 (시즌/리그 확인 필요).</p>
           )}
           {fixtures.map(f => (
-            <div key={f.fixtureId} className="border-t border-gray-100 px-3 py-2.5">
+            <div key={f.fixtureId} className="border-t border-wsoft px-3 py-2.5">
               <button onClick={() => loadLineup(f.fixtureId)}
-                className={`w-full text-left hover:bg-amber-50 rounded ${selected===f.fixtureId?"bg-amber-50":""}`}>
-                <div className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+                className={`w-full text-left hover:bg-wsoft rounded ${selected===f.fixtureId?"bg-wsoft":""}`}>
+                <div className="flex items-center gap-2 text-[15px] font-bold text-ink">
                   <span className="flex-1 text-right">{f.home}</span>
-                  <span className="text-gray-400 text-sm shrink-0">
+                  <span className="text-wfaint text-sm shrink-0">
                     {f.homeScore != null ? `${f.homeScore} : ${f.awayScore}` : "vs"}
                   </span>
                   <span className="flex-1">{f.away}</span>
                 </div>
-                <div className="text-[11px] text-gray-400 mt-1 text-center">
+                <div className="text-[11px] text-wfaint mt-1 text-center">
                   {f.round} · {new Date(f.date).toLocaleString("ko-KR")} · {f.status}
                 </div>
               </button>
               <div className="flex gap-2 mt-2">
                 <button onClick={() => loadLineup(f.fixtureId)}
-                  className="text-xs px-2.5 py-1 rounded border border-gray-300 text-gray-600">라인업 보기</button>
+                  className="text-xs px-2.5 py-1 rounded border border-wline text-wsub">라인업 보기</button>
                 <button onClick={() => importFixture(f.fixtureId)}
-                  className="text-xs px-2.5 py-1 rounded bg-gray-900 text-white font-semibold">＋ 사이트에 등록</button>
+                  className="text-xs px-2.5 py-1 rounded bg-ink text-deep font-semibold">＋ 사이트에 등록</button>
               </div>
             </div>
           ))}
@@ -222,28 +222,28 @@ export default function EplTestPage() {
 
       {lineups && (
         <div className="space-y-3">
-          <h2 className="text-sm font-extrabold text-gray-900">② 라인업 결과</h2>
+          <h2 className="text-sm font-extrabold text-ink">② 라인업 결과</h2>
           {lineups.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-wfaint">
               라인업이 아직 없습니다. (보통 킥오프 30~60분 전에 확정됩니다.)
             </p>
           )}
           {lineups.map((lu, i) => (
-            <div key={i} className="border border-gray-300 rounded-xl p-3">
-              <div className="font-bold text-gray-900">
-                {lu.team} <span className="text-gray-400 text-sm font-normal">({lu.formation})</span>
+            <div key={i} className="border border-wline rounded-xl p-3">
+              <div className="font-bold text-ink">
+                {lu.team} <span className="text-wfaint text-sm font-normal">({lu.formation})</span>
               </div>
               <div className="mt-2 text-sm">
-                <div className="font-semibold text-gray-700">선발 XI</div>
-                <ol className="text-gray-600 mt-1 space-y-0.5">
+                <div className="font-semibold text-wsub">선발 XI</div>
+                <ol className="text-wsub mt-1 space-y-0.5">
                   {lu.startXI.map((p, j) => (
-                    <li key={j}>{p.number}. {p.name} <span className="text-gray-400">({p.pos})</span></li>
+                    <li key={j}>{p.number}. {p.name} <span className="text-wfaint">({p.pos})</span></li>
                   ))}
                 </ol>
-                <div className="font-semibold text-gray-700 mt-2">후보</div>
-                <ol className="text-gray-600 mt-1 space-y-0.5">
+                <div className="font-semibold text-wsub mt-2">후보</div>
+                <ol className="text-wsub mt-1 space-y-0.5">
                   {lu.substitutes.map((p, j) => (
-                    <li key={j}>{p.number}. {p.name} <span className="text-gray-400">({p.pos})</span></li>
+                    <li key={j}>{p.number}. {p.name} <span className="text-wfaint">({p.pos})</span></li>
                   ))}
                 </ol>
               </div>
