@@ -401,6 +401,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
           <SoccerField key={seg} home={home} away={away}
             homeStaff={homeStaff} awayStaff={awayStaff} officials={officials}
             homeTeam={match.homeTeam} awayTeam={match.awayTeam} teamColors={teamColors}
+            highlightId={pog?.playerId ?? null}
             flip={seg === "second"} /* 후반: 진영 반대 (총평은 전반 기준 유지) */
             onPick={setOpen}
             subs={subs} subInfo={subInfo} seg={seg}

@@ -4,6 +4,7 @@ import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
 import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { scoreChipStyle, scoreTextColor } from "@/lib/scoreColor";
+import { GoldStar } from "@/app/MatchCard";
 
 type Side = "home" | "away";
 
@@ -134,11 +135,11 @@ function buildStacks(placed: Placed[], seg?: string,
   return stacks;
 }
 
-function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick, sub, teamColors = {} }:
+function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onStackClick, sub, teamColors = {}, highlight = false }:
   { p: Placed; homeTeam?: string; onPick: (pl: Player) => void;
     editMode?: boolean; onDragEnd?: (mpId: string, clientX: number, clientY: number) => void;
     stackCount?: number; onStackClick?: () => void; sub?: { dir: "in" | "out"; min: number };
-    teamColors?: Record<string, string> }) {
+    teamColors?: Record<string, string>; highlight?: boolean }) {
   const { player } = p;
   // 팀별 테두리 색 (구단색 > 공식색 > 홈=파랑/원정=빨강)
   const color = teamColor(player.team, teamColors, player.team === homeTeam ? DEFAULT_HOME : DEFAULT_AWAY);
@@ -185,42 +186,40 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
       title={player.name}
       style={{ left: `${p.left}%`, top: `${p.top}%`, touchAction: editMode ? "none" : undefined,
         transition: "left .3s ease, top .3s ease" }}
-      className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group focus:outline-none z-10 hover:z-20
-        ${editMode ? "cursor-move ring-2 ring-amber-400 rounded-full" : ""}`}
+      className={`absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20
+        ${editMode ? "cursor-move" : ""}`}
     >
-      <span className="relative">
-      <span
-        style={{ boxShadow: `0 0 0 2px #fffdf8, 0 0 0 4px ${color}, 0 1px 5px rgba(0,0,0,.35)`,
-          ...(rated ? scoreChipStyle(player.avg as number) : {}) }}
-        className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full
-          flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold tabular-nums
-          ${rated ? "" : "bg-card text-wfaint"}
-          ${editMode ? "" : "group-hover:scale-110"} transition`}
-      >
-        {rated ? player.avg : "–"}
-      </span>
+      {/* 방송 그래픽식 캡슐: [팀색 바]이름[점수 칩] */}
+      <span className={`relative flex items-stretch rounded-lg shadow-[0_2px_6px_rgba(0,0,0,.4)]
+          ${highlight ? "ring-2 ring-gold" : ""} ${editMode ? "ring-2 ring-amber-400" : "group-hover:scale-105"} transition`}
+        style={{ background: "rgba(13,17,23,.93)" }}>
+        <span className="w-[3px] sm:w-[3.5px] rounded-l-lg shrink-0" style={{ background: color }} />
+        <span className="flex items-center gap-1 px-1 sm:px-2 py-[3px] sm:py-1 text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap">
+          {highlight && <GoldStar className="w-2.5 h-2.5" />}{short}
+        </span>
+        <span className={`min-w-[20px] sm:min-w-[28px] px-0.5 rounded-r-lg flex items-center justify-center
+            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "" : "bg-white/10 text-white/50"}`}
+          style={rated ? scoreChipStyle(player.avg as number) : undefined}>
+          {rated ? player.avg : "–"}
+        </span>
         {/* 같은 자리 N명 더 (스택) */}
         {stackCount > 0 && (
-          <span className="absolute -top-1 -right-1.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-gray-900 text-white
-            text-[9px] sm:text-[10px] font-extrabold flex items-center justify-center shadow z-20">
+          <span className="absolute -top-2 -left-1.5 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gray-900 text-white
+            text-[9px] font-extrabold flex items-center justify-center shadow z-20">
             +{stackCount}
           </span>
         )}
-        {/* 교체 배지 (→들어옴 / ←나감 + 분) — 기능 유지, 톤만 3안 */}
+        {/* 교체 배지 — 초록 N'↑ 투입 / 빨강 N'↓ 아웃 */}
         {sub && (
-          <span className={`absolute -top-1.5 -left-2.5 h-[15px] px-1 rounded-md flex items-center
+          <span className={`absolute -top-2 -right-1.5 h-[14px] px-1 rounded flex items-center
             text-[8px] sm:text-[9px] font-extrabold text-white shadow z-20 whitespace-nowrap
-            ${sub.dir === "in" ? "bg-[#3c7d46]" : "bg-live"}`}>
-            {sub.dir === "in" ? "→" : "←"}{sub.min}{"'"}
+            ${sub.dir === "in" ? "bg-[#2e7d3c]" : "bg-[#c0392b]"}`}>
+            {sub.min}'{sub.dir === "in" ? "↑" : "↓"}
           </span>
         )}
-      </span>
-      <span className="relative text-[9px] sm:text-[11px] leading-tight font-bold text-white drop-shadow
-        whitespace-nowrap bg-black/65 rounded px-1 py-0.5">
-        {short}
         {/* 줄임된 이름은 호버 시 전체 이름 표시 (데스크톱) */}
         {isShortened && (
-          <span className="hidden sm:group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1
+          <span className="hidden sm:group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5
             whitespace-nowrap bg-black/90 text-white rounded px-1.5 py-0.5 text-[11px] z-30 pointer-events-none">
             {player.name}
           </span>
@@ -250,11 +249,11 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
 export default function SoccerField({
   home, away, homeStaff = [], awayStaff = [], officials = [],
   homeTeam, awayTeam, flip = false, onPick, editMode = false, onMove,
-  subs = [], subInfo = {}, seg, teamColors = {},
+  subs = [], subInfo = {}, seg, teamColors = {}, highlightId = null,
 }: {
   home: Player[]; away: Player[];
   homeStaff?: Player[]; awayStaff?: Player[]; officials?: Player[];
-  homeTeam?: string; awayTeam?: string;
+  homeTeam?: string; awayTeam?: string; highlightId?: string | null;
   flip?: boolean; // 후반: 전반과 반대 진영 (총평은 전반 기준 유지)
   onPick: (p: Player) => void;
   editMode?: boolean;                          // 관리자 위치 편집 모드
@@ -314,12 +313,14 @@ export default function SoccerField({
       const isOpen = expanded === s.id;
       if (s.members.length === 1) {
         return <Marker key={s.id} p={s.members[0]} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick}
-          editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[s.members[0].player.playerId]} />;
+          editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[s.members[0].player.playerId]}
+          highlight={s.members[0].player.playerId === highlightId} />;
       }
       if (!isOpen) {
         const rep = s.members[0];
         return <Marker key={s.id} p={rep} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick}
           editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[rep.player.playerId]}
+          highlight={rep.player.playerId === highlightId}
           stackCount={s.members.length - 1} onStackClick={() => setExpanded(s.id)} />;
       }
       const k = s.members.length;
@@ -327,7 +328,8 @@ export default function SoccerField({
         const off = (i - (k - 1) / 2) * 15;
         const left = Math.max(7, Math.min(93, s.left + off));
         return <Marker key={m.player.mpId} p={{ ...m, left }} homeTeam={homeTeam} teamColors={teamColors}
-          onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[m.player.playerId]} />;
+          onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[m.player.playerId]}
+          highlight={m.player.playerId === highlightId} />;
       });
     });
   }
