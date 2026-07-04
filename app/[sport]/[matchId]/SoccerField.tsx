@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
 import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { scoreChipStyle, scoreTextColor } from "@/lib/scoreColor";
 
 type Side = "home" | "away";
 
@@ -142,8 +143,6 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
   // 팀별 테두리 색 (구단색 > 공식색 > 홈=파랑/원정=빨강)
   const color = teamColor(player.team, teamColors, player.team === homeTeam ? DEFAULT_HOME : DEFAULT_AWAY);
   const rated = player.avg !== null;
-  const hot = rated && (player.avg as number) >= 7.5;  // 골드 채움
-  const low = rated && (player.avg as number) < 5.5;   // 적갈색 숫자
   const short = displayName(player.name);
   const isShortened = short !== player.name;
 
@@ -191,10 +190,11 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
     >
       <span className="relative">
       <span
-        style={{ boxShadow: ringShadow(color) }}
+        style={{ boxShadow: `0 0 0 2px #fffdf8, 0 0 0 4px ${color}, 0 1px 5px rgba(0,0,0,.35)`,
+          ...(rated ? scoreChipStyle(player.avg as number) : {}) }}
         className={`min-w-[28px] h-[28px] sm:min-w-[38px] sm:h-[38px] px-0.5 rounded-full
           flex items-center justify-center text-[11px] sm:text-[14px] font-extrabold tabular-nums
-          ${hot ? "bg-gold text-ink" : `bg-card ${low ? "text-live" : rated ? "text-ink" : "text-wfaint"}`}
+          ${rated ? "" : "bg-card text-wfaint"}
           ${editMode ? "" : "group-hover:scale-110"} transition`}
       >
         {rated ? player.avg : "–"}
@@ -238,7 +238,8 @@ function StaffChip({ p, onPick }: { p: Player; onPick: (pl: Player) => void }) {
       <div className="text-[10px] text-wsub leading-none mb-0.5">{p.role || "스태프"}</div>
       <div className="flex items-center justify-between gap-1">
         <span className="text-xs font-semibold truncate">{p.name}</span>
-        <span className={`text-[10px] font-bold shrink-0 tabular-nums ${p.avg !== null ? "text-golddim" : "text-wmute"}`}>
+        <span className={`text-[10px] font-bold shrink-0 tabular-nums ${p.avg !== null ? "" : "text-wmute"}`}
+          style={p.avg !== null ? { color: scoreTextColor(p.avg) } : undefined}>
           {p.avg !== null ? p.avg : "－"}
         </span>
       </div>
@@ -434,8 +435,12 @@ export default function SoccerField({
         <div className="flex justify-center gap-1.5 mt-2 flex-wrap">
           {officials.map(p => (
             <button key={p.mpId} onClick={() => onPick(p)}
-              className="text-xs font-semibold px-2.5 py-1 rounded-full bg-ink text-paper hover:opacity-85">
-              {p.role || "심판"} {p.name}{p.avg !== null ? ` · ${p.avg}` : ""}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-ink text-paper hover:opacity-85">
+              {p.role || "심판"} {p.name}
+              {p.avg !== null && (
+                <span className="min-w-[20px] h-[16px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold tabular-nums"
+                  style={scoreChipStyle(p.avg)}>{p.avg}</span>
+              )}
             </button>
           ))}
         </div>
@@ -491,9 +496,9 @@ function BenchColumn({ team, list, color, onPick, subInfo = {} }:
                     {s.dir === "in" ? "→" : "←"}{s.min}{"'"}
                   </span>
                 )}
-                <span style={{ boxShadow: ringShadow(color) }}
+                <span style={{ boxShadow: ringShadow(color), ...(rated ? scoreChipStyle(p.avg as number) : {}) }}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold tabular-nums
-                  ${rated && (p.avg as number) >= 7.5 ? "bg-gold text-ink" : `bg-card ${rated ? "text-ink" : "text-wmute"}`}
+                  ${rated ? "" : "bg-card text-wmute"}
                   group-hover:scale-105 transition`}>
                   {rated ? p.avg : "–"}
                 </span>

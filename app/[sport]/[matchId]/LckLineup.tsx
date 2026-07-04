@@ -3,6 +3,7 @@ import type { Player } from "./types";
 import { normalizeLane } from "@/lib/lckLanes";
 import { GoldStar } from "@/app/MatchCard";
 import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { scoreChipStyle } from "@/lib/scoreColor";
 
 // POG/POM 골드 배지 (👑 이모지 대체)
 function PogBadge({ kind }: { kind: "POG" | "POM" }) {
@@ -58,8 +59,8 @@ function Row({ p, onPick, seg, highlight }:
         {champ && <span className="text-[11px] text-wfaint truncate shrink-0">{champ}</span>}
         {hl && <PogBadge kind={hl} />}
       </span>
-      <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums
-        ${p.avg !== null ? "bg-goldbg text-golddim" : "bg-wgray text-wfaint"}`}>
+      <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums ${p.avg !== null ? "" : "bg-wgray text-wfaint"}`}
+        style={p.avg !== null ? scoreChipStyle(p.avg) : undefined}>
         {p.avg !== null ? p.avg : "－"}
       </span>
     </button>
@@ -117,8 +118,8 @@ export function LckMatchup({ home, away, homeTeam, awayTeam, onPick, seg, highli
           {champ && <span className="text-[10px] text-wfaint truncate max-w-[88px]">{champ}</span>}
         </span>
         <span className={`relative z-10 w-9 h-9 rounded-[11px] flex items-center justify-center text-[13px] font-extrabold shrink-0 tabular-nums ${
-          win ? "bg-gold text-ink border-2 border-ink"
-              : rated ? "bg-wgray text-wgraytx" : "bg-paper text-wmute"}`}>
+          win ? "border-2 border-ink" : ""} ${!rated ? "bg-paper text-wmute" : ""}`}
+          style={rated ? scoreChipStyle(p.avg as number) : undefined}>
           {rated ? p.avg : "–"}
         </span>
       </button>
