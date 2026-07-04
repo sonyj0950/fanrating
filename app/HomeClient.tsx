@@ -3,7 +3,7 @@
 //  - 상단: 라이브 경기 히어로 스트립 (라이브 있을 때만) — 메인 1 + 미니 2
 //  - 본문: 전체 탭 = 고밀도 한 줄 리스트(불판), 종목 탭 = C안 2열 카드 그리드 + 순위표
 //  - 우측: 사이드바 (이번 주 평점 TOP5 · 순위표 요약 · 주간 베스트 경기)
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Wide from "@/components/Wide";
 import StandingsTable from "./StandingsTable";
@@ -235,11 +235,9 @@ export default function HomeClient({ today, upcoming, past, standings, standings
   weekBest: Slim[];
   initialTab?: string;
 }) {
-  const [tab, setTab] = useState<string>(initialTab);
   const [pastLimit, setPastLimit] = useState(15);
-  // /soccer ↔ /baseball 등 같은 페이지 컴포넌트 간 이동 시 상태 동기화
-  useEffect(() => { setTab(initialTab); }, [initialTab]);
-  const cur = TABS.find(t => t.key === tab) ?? TABS[0];
+  // 탭은 헤더 내비(라우트)가 전담 — 내부 탭 UI 없음 (중복 제거)
+  const cur = TABS.find(t => t.key === initialTab) ?? TABS[0];
 
   // 히어로: 라이브 경기(참여 많은 순) — 메인 1 + 미니 2 (모자라면 다음 예정 경기로 채움)
   const live = [...today, ...past].filter(m => m.status === "live").sort((a, b) => b.ratingCount - a.ratingCount);
@@ -261,17 +259,6 @@ export default function HomeClient({ today, upcoming, past, standings, standings
 
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6 lg:items-start">
         <div className="min-w-0">
-          {/* 탭 */}
-          <div className="flex gap-6 sticky top-14 z-10 bg-paper/90 backdrop-blur border-b border-wline px-1">
-            {TABS.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`pt-1 pb-2.5 text-sm font-bold border-b-[2.5px] -mb-px transition ${
-                  tab === t.key ? "text-ink border-gold" : "text-wfaint border-transparent hover:text-wsub"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
           {cur.key === "all" ? (
             /* ── 전체: 불판 리스트 ── */
             <div>
