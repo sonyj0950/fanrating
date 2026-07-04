@@ -31,11 +31,12 @@ export function isPerfect(score: number): boolean {
   return score >= 9.75;
 }
 
-// 평균(소수) → 어두운 배경 위 텍스트 색 (구간별, 미드나잇 그린 테마)
+// 평균(소수) → 배경 위 텍스트 색 (구간별). 실제 값은 globals.css의 --sc-* 변수가
+// 테마(다크/라이트)에 맞게 공급 — DOM 인라인 스타일 전용 (캔버스에서 쓰면 안 됨).
 export function scoreTextColor(avg: number): string {
-  if (avg >= 9.75) return "#f5b301"; // 만점권 (골드)
-  if (avg >= 7.5) return "#5fa8e8";  // 파랑 (8~9)
-  if (avg >= 5.5) return "#56c374";  // 초록 (6~7)
-  if (avg >= 3.5) return "#e8a24a";  // 주황 (4~5)
-  return "#e8705c";                  // 빨강 (1~3)
+  if (avg >= 9.75) return "var(--sc-gold)";   // 만점권 (골드)
+  if (avg >= 7.5) return "var(--sc-blue)";    // 파랑 (8~9)
+  if (avg >= 5.5) return "var(--sc-green)";   // 초록 (6~7)
+  if (avg >= 3.5) return "var(--sc-orange)";  // 주황 (4~5)
+  return "var(--sc-red)";                     // 빨강 (1~3)
 }

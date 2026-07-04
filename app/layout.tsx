@@ -41,8 +41,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    // suppressHydrationWarning: 첫 페인트 전 스크립트가 data-theme을 붙여 서버 마크업과 달라지는 것 허용
+    <html lang="ko" suppressHydrationWarning>
       <body>
+        {/* 저장된 테마를 첫 페인트 전에 적용 (라이트 모드 FOUC 방지) */}
+        <script dangerouslySetInnerHTML={{ __html:
+          `try{if(localStorage.getItem("theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}` }} />
         <Providers>
           <Header />
           <main className="max-w-3xl mx-auto px-4 py-6">{children}</main>

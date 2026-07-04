@@ -2,22 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  color: #eef4f0;
-  background-color: #0b1210;
-  /* 홈·랭킹의 풀블리드(와이드) 섹션이 100vw를 쓸 때 스크롤바 폭만큼 넘치는 것 차단 */
-  overflow-x: clip;
-  /* 네이티브 컨트롤(날짜 선택기·드롭다운·스크롤바)을 다크로 */
-  color-scheme: dark;
+/* ── 테마 토큰 (RGB 트리플렛 — tailwind.config.ts에서 rgb(var(--x) / alpha)로 소비) ──
+   기본: 미드나잇 그린(다크). [data-theme="light"]: 라이트 세이지(W3 — 미드나잇 그린의 낮 버전). */
+:root {
+  --paper: 11 18 16;     /* #0b1210 */
+  --card: 28 42 35;      /* #1c2a23 */
+  --wline: 58 77 65;     /* #3a4d41 */
+  --wsoft: 42 58 48;     /* #2a3a30 */
+  --ink: 238 244 240;    /* #eef4f0 */
+  --wsub: 166 188 174;   /* #a6bcae */
+  --wfaint: 125 146 133; /* #7d9285 */
+  --wmute: 91 111 98;    /* #5b6f62 */
+  --golddim: 236 198 89; /* #ecc659 */
+  --goldbg: 49 41 15;    /* #31290f */
+  --goldline: 87 71 25;  /* #574719 */
+  --live: 239 99 73;     /* #ef6349 */
+  --wgray: 42 58 48;
+  --wgraytx: 172 205 184; /* #accdb8 */
+  --well: 14 23 19;      /* #0e1713 — 세그먼트·캡슐·검색창 등 움푹한 표면 */
+  --field: 11 18 16;     /* 입력창 배경 */
+  /* 평균 점수 텍스트 색 (다크 배경 위) */
+  --sc-gold: #f5b301; --sc-blue: #5fa8e8; --sc-green: #56c374; --sc-orange: #e8a24a; --sc-red: #e8705c;
+}
+[data-theme="light"] {
+  --paper: 236 242 236;  /* #ecf2ec 연한 잔디빛 */
+  --card: 255 255 255;
+  --wline: 213 225 214;  /* #d5e1d6 */
+  --wsoft: 226 234 226;  /* #e2eae2 */
+  --ink: 18 32 25;       /* #122019 */
+  --wsub: 84 105 91;     /* #54695b */
+  --wfaint: 139 161 144; /* #8ba190 */
+  --wmute: 157 177 162;  /* #9db1a2 */
+  --golddim: 161 122 0;  /* #a17a00 — 라이트 위 골드 텍스트 */
+  --goldbg: 248 238 203; /* #f8eecb */
+  --goldline: 227 210 154; /* #e3d29a */
+  --live: 200 69 46;     /* #c8452e */
+  --wgray: 226 234 226;
+  --wgraytx: 64 88 72;   /* #405848 */
+  --well: 223 232 223;   /* #dfe8df */
+  --field: 255 255 255;
+  /* 평균 점수 텍스트 색 (라이트 배경 위 — 어둡게) */
+  --sc-gold: #a17a00; --sc-blue: #2d6da8; --sc-green: #2e7d43; --sc-orange: #b06812; --sc-red: #bf4936;
 }
 
-/* 네이티브 폼 컨트롤 전역 다크 테마 (로그인·회원가입·관리자 등 흰 입력창 대비 문제 해결).
+body {
+  color: rgb(var(--ink));
+  background-color: rgb(var(--paper));
+  /* 홈·랭킹의 풀블리드(와이드) 섹션이 100vw를 쓸 때 스크롤바 폭만큼 넘치는 것 차단 */
+  overflow-x: clip;
+  /* 네이티브 컨트롤(날짜 선택기·드롭다운·스크롤바) 톤 */
+  color-scheme: dark;
+}
+[data-theme="light"] body { color-scheme: light; }
+
+/* 네이티브 폼 컨트롤 전역 테마 (로그인·회원가입·관리자 등).
    엘리먼트 선택자(낮은 특정성)라 Tailwind 배경·글자 유틸을 쓴 커스텀 입력은 그대로 우선. */
 input, select, textarea {
-  background-color: #0b1210;
-  color: #eef4f0;
-  border-color: #3a4d41;
+  background-color: rgb(var(--field));
+  color: rgb(var(--ink));
+  border-color: rgb(var(--wline));
 }
-input::placeholder, textarea::placeholder { color: #5b6f62; }
-select option { background-color: #0b1210; color: #eef4f0; }
+input::placeholder, textarea::placeholder { color: rgb(var(--wmute)); }
+select option { background-color: rgb(var(--field)); color: rgb(var(--ink)); }
 input[type="checkbox"], input[type="radio"] { accent-color: #f5b301; }
+
+/* ── 테마별 표면 (하드코딩 다크 그라디언트 대체) ── */
+/* 홈 라이브 히어로 카드 */
+.hero-card { background: radial-gradient(130% 180% at 12% 0%, #233c2e 0%, #12201a 50%, #0c1511 100%); }
+[data-theme="light"] .hero-card { background: linear-gradient(135deg, #dceade 0%, #ffffff 70%); }
+/* 라이브 경기 카드 틴트 (컴팩트 카드) */
+.live-card { border-color: #6e3328; background: linear-gradient(180deg, #241310 0%, rgb(var(--card)) 60%); }
+[data-theme="light"] .live-card { border-color: #eac3b8; background: linear-gradient(180deg, #fdeee8 0%, #ffffff 60%); }
+/* 랭킹 데이터 센터 히어로 */
+.data-hero { background: radial-gradient(90% 140% at 80% -20%, #20362a 0%, transparent 55%), #0e1713; }
+[data-theme="light"] .data-hero { background: radial-gradient(90% 140% at 80% -20%, #dceade 0%, transparent 55%), #ffffff; }
+/* 평점 순위 포디움 카드 */
+.podium-card { background: rgb(var(--paper)); }
+.podium-card.podium-gold { background: linear-gradient(180deg, #241d0b 0%, #0b1210 62%); }
+[data-theme="light"] .podium-card.podium-gold { background: linear-gradient(180deg, #f8eecb 0%, #ffffff 62%); }
+
+/* 필드 잔디 — 다크: 야간 잔디 유지, 라이트: L1 미드 그린(낮 경기장) */
+.pitch-soccer { background: linear-gradient(180deg, #224536, #1e3d30); }
+[data-theme="light"] .pitch-soccer { background: linear-gradient(180deg, #418f56, #3a8049); }
+:root {
+  --bb-grass-a: #2b4d39; --bb-grass-b: #315641; --bb-track: #7a6248;
+  --bb-dirt: #7d6245; --bb-mound: #6b5236; --bb-diamond: #33593f; --bb-line: #dfe9e2;
+}
+[data-theme="light"] {
+  --bb-grass-a: #3f8d54; --bb-grass-b: #469a60; --bb-track: #b08a5e;
+  --bb-dirt: #c9a071; --bb-mound: #b38552; --bb-diamond: #35815a; --bb-line: #f4f8f2;
+}
+
+/* 종목 미니 배지 (리스트 행·카드) */
+.spb-kbo { background: #1e3448; color: #8ec9f2; }
+.spb-soccer { background: #173a2a; color: #7fd6a3; }
+.spb-lck { background: #3a2440; color: #d9a7e8; }
+[data-theme="light"] .spb-kbo { background: #dcebf8; color: #20567f; }
+[data-theme="light"] .spb-soccer { background: #ddefe2; color: #1f5c38; }
+[data-theme="light"] .spb-lck { background: #efe2f3; color: #6b3a7a; }

@@ -720,9 +720,8 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
           return (
             <button key={p.mpId}
               onClick={() => isMine ? onPick(p) : setExpanded(isOpen ? null : p.playerId)}
-              className={`text-left rounded-xl border p-2.5 transition hover:-translate-y-0.5 hover:shadow-md ${
-                gold ? "border-goldline col-span-2 sm:col-span-1" : "border-wline"} ${isOpen ? "ring-1 ring-gold" : ""}`}
-              style={{ background: gold ? "linear-gradient(180deg,#241d0b 0%,#0b1210 62%)" : "#0b1210" }}>
+              className={`podium-card ${gold ? "podium-gold" : ""} text-left rounded-xl border p-2.5 transition hover:-translate-y-0.5 hover:shadow-md ${
+                gold ? "border-goldline col-span-2 sm:col-span-1" : "border-wline"} ${isOpen ? "ring-1 ring-gold" : ""}`}>
               <span className={`block text-[10px] font-extrabold mb-1 ${gold ? "text-gold" : "text-wfaint"}`}>
                 {gold && isPog ? `★ 1위 · ${pogLabel(sport || "")}` : `${rank}위`}
               </span>
@@ -817,7 +816,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
 
   return (
     <div className="mt-5">
-      <div className="inline-flex gap-0.5 mb-3 bg-[#0e1713] border border-wsoft rounded-[10px] p-[3px]">
+      <div className="inline-flex gap-0.5 mb-3 bg-well border border-wsoft rounded-[10px] p-[3px]">
         {btn("high", "평점 높은순")}
         {btn("low", "낮은순")}
         {btn("pos", "포지션 비교")}

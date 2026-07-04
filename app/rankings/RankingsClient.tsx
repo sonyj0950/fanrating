@@ -98,8 +98,7 @@ export default function RankingsClient({ bySport, seasons, teamColors }:
   return (
     <div>
       {/* 데이터 센터 히어로 (3안) — 검색 + 지금 많이 평가되는 선수 */}
-      <div className="rounded-2xl border border-wline px-4 sm:px-5 py-5 mb-5"
-        style={{ background: "radial-gradient(90% 140% at 80% -20%, #20362a 0%, transparent 55%), #0e1713" }}>
+      <div className="data-hero rounded-2xl border border-wline px-4 sm:px-5 py-5 mb-5">
         <h1 className="flex items-baseline gap-2 text-lg font-extrabold text-ink">
           선수 랭킹
           <span className="text-xs text-wsub font-semibold">{seasons[sport]} · 팬 평점 평균</span>

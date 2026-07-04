@@ -31,12 +31,12 @@ const TABS = [
 
 const HOT_MIN = 30; // "화제" 배지 기준 (공유카드와 동일한 평점 30개)
 
-// 종목 미니 배지 (리스트 행·카드 공용)
+// 종목 미니 배지 (리스트 행·카드 공용) — 색은 globals.css의 .spb-* (테마별)
 const SPORT_BADGE: Record<string, string> = {
-  kbo: "bg-[#1e3448] text-[#8ec9f2]",
-  kleague: "bg-[#173a2a] text-[#7fd6a3]",
-  epl: "bg-[#173a2a] text-[#7fd6a3]",
-  lck: "bg-[#3a2440] text-[#d9a7e8]",
+  kbo: "spb-kbo",
+  kleague: "spb-soccer",
+  epl: "spb-soccer",
+  lck: "spb-lck",
 };
 function SportBadge({ sport }: { sport: string }) {
   return (
@@ -103,7 +103,7 @@ function CompactCard({ m }: { m: Slim }) {
   return (
     <Link href={href(m)}
       className={`block rounded-xl border p-3 transition hover:-translate-y-0.5 hover:shadow-md ${
-        live ? "border-[#6e3328] bg-gradient-to-b from-[#241310] to-card" : "border-wline bg-card"}`}>
+        live ? "live-card" : "border-wline bg-card"}`}>
       <div className="flex items-center gap-2 text-[10.5px] text-wfaint font-bold mb-2">
         <SportBadge sport={m.sport} />
         <StatusBadge status={m.status} />
@@ -147,8 +147,7 @@ function HeroStrip({ main, minis, teamColors }: { main: Slim; minis: Slim[]; tea
   return (
     <div className="grid md:grid-cols-[1.7fr_1fr_1fr] gap-3 mb-5">
       <Link href={href(main)}
-        className="rounded-2xl border border-goldline p-4 sm:p-5 flex flex-col gap-2.5 transition hover:-translate-y-0.5 hover:shadow-lg"
-        style={{ background: "radial-gradient(130% 180% at 12% 0%, #233c2e 0%, #12201a 50%, #0c1511 100%)" }}>
+        className="hero-card rounded-2xl border border-goldline p-4 sm:p-5 flex flex-col gap-2.5 transition hover:-translate-y-0.5 hover:shadow-lg">
         <div className="flex items-center gap-2 text-[11.5px] text-wsub font-bold">
           <StatusBadge status={main.status} />
           <SportBadge sport={main.sport} />
@@ -163,7 +162,7 @@ function HeroStrip({ main, minis, teamColors }: { main: Slim; minis: Slim[]; tea
         </div>
         {pct != null && (
           <div>
-            <div className="h-[6px] rounded-full overflow-hidden flex bg-[#0e1713]">
+            <div className="h-[6px] rounded-full overflow-hidden flex bg-well">
               <i style={{ width: `${pct}%`, background: hc }} />
               <i style={{ width: `${100 - pct}%`, background: ac }} />
             </div>
@@ -345,7 +344,7 @@ export default function HomeClient({ today, upcoming, past, standings, standings
                         i < 3 ? "bg-gold text-deep" : "bg-wsoft text-wgraytx"}`}>{i + 1}</span>
                       <span className="truncate text-ink">{p.name}</span>
                       <span className="text-[10.5px] text-wfaint font-bold shrink-0">{p.team}</span>
-                      <span className="ml-auto inline-grid place-items-center min-w-[38px] h-[22px] px-1.5 rounded-full text-[12.5px] font-black tabular-nums bg-[#0e1713] border border-wsoft shrink-0"
+                      <span className="ml-auto inline-grid place-items-center min-w-[38px] h-[22px] px-1.5 rounded-full text-[12.5px] font-black tabular-nums bg-well border border-wsoft shrink-0"
                         style={{ color: scoreTextColor(p.avg) }}>
                         {p.avg.toFixed(1)}
                       </span>

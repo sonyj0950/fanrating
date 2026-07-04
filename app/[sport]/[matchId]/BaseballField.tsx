@@ -164,32 +164,32 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
             <defs>
               <clipPath id="kbo-fld"><path d="M160 272 L18 152 Q160 -108 302 152 Z" /></clipPath>
               <pattern id="kbo-grass" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="26" height="26" fill="#2b4d39" />
-                <rect width="13" height="13" fill="#315641" />
-                <rect x="13" y="13" width="13" height="13" fill="#315641" />
+                <rect width="26" height="26" style={{ fill: "var(--bb-grass-a)" }} />
+                <rect width="13" height="13" style={{ fill: "var(--bb-grass-b)" }} />
+                <rect x="13" y="13" width="13" height="13" style={{ fill: "var(--bb-grass-b)" }} />
               </pattern>
             </defs>
-            {/* 워닝트랙(흙) 테두리 + 체커 잔디 (웜톤) */}
-            <path d="M160 272 L18 152 Q160 -108 302 152 Z" fill="#2b4d39" stroke="#7a6248" strokeWidth="14" strokeLinejoin="round" />
+            {/* 워닝트랙(흙) 테두리 + 체커 잔디 — 색은 테마 변수(--bb-*): 다크=야간, 라이트=L1 미드 그린 */}
+            <path d="M160 272 L18 152 Q160 -108 302 152 Z" style={{ fill: "var(--bb-grass-a)", stroke: "var(--bb-track)" }} strokeWidth="14" strokeLinejoin="round" />
             <g clipPath="url(#kbo-fld)"><rect x="0" y="0" width="320" height="292" fill="url(#kbo-grass)" /></g>
             {/* 파울라인 */}
-            <line x1="160" y1="264" x2="32" y2="158" stroke="#dfe9e2" strokeWidth="2.6" strokeLinecap="round" />
-            <line x1="160" y1="264" x2="288" y2="158" stroke="#dfe9e2" strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="32" y2="158" style={{ stroke: "var(--bb-line)" }} strokeWidth="2.6" strokeLinecap="round" />
+            <line x1="160" y1="264" x2="288" y2="158" style={{ stroke: "var(--bb-line)" }} strokeWidth="2.6" strokeLinecap="round" />
             {/* 내야 흙 부채꼴 */}
-            <path d="M160 256 L64 176 Q160 88 256 176 Z" fill="#7d6245" />
+            <path d="M160 256 L64 176 Q160 88 256 176 Z" style={{ fill: "var(--bb-dirt)" }} />
             {/* 내야 잔디 다이아몬드 */}
-            <path d="M160 224 L214 174 L160 124 L106 174 Z" fill="#33593f" />
+            <path d="M160 224 L214 174 L160 124 L106 174 Z" style={{ fill: "var(--bb-diamond)" }} />
             {/* 베이스 (2·1·3루) */}
-            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" fill="#dfe9e2" />
-            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" fill="#dfe9e2" />
-            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" fill="#dfe9e2" />
+            <rect x="156" y="120" width="8" height="8" rx="1.5" transform="rotate(45 160 124)" style={{ fill: "var(--bb-line)" }} />
+            <rect x="210" y="170" width="8" height="8" rx="1.5" transform="rotate(45 214 174)" style={{ fill: "var(--bb-line)" }} />
+            <rect x="102" y="170" width="8" height="8" rx="1.5" transform="rotate(45 106 174)" style={{ fill: "var(--bb-line)" }} />
             {/* 흙 마운드(투수) */}
-            <circle cx="160" cy="175" r="17" fill="#6b5236" />
+            <circle cx="160" cy="175" r="17" style={{ fill: "var(--bb-mound)" }} />
             {/* 흙 홈써클(포수) + 홈플레이트 + 타석 */}
-            <circle cx="160" cy="258" r="18" fill="#6b5236" />
-            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" fill="#dfe9e2" />
-            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" stroke="#dfe9e2" strokeWidth="1.6" />
-            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" stroke="#dfe9e2" strokeWidth="1.6" />
+            <circle cx="160" cy="258" r="18" style={{ fill: "var(--bb-mound)" }} />
+            <rect x="156" y="252" width="8" height="8" transform="rotate(45 160 256)" style={{ fill: "var(--bb-line)" }} />
+            <rect x="139" y="248" width="8" height="18" rx="1" fill="none" style={{ stroke: "var(--bb-line)" }} strokeWidth="1.6" />
+            <rect x="173" y="248" width="8" height="18" rx="1" fill="none" style={{ stroke: "var(--bb-line)" }} strokeWidth="1.6" />
           </svg>
 
           {teamLabel && (

@@ -1,7 +1,29 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+
+// 라이트(세이지) ↔ 다크(미드나잇 그린) 토글 — html[data-theme] + localStorage
+function ThemeToggle() {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
+  }, []);
+  function toggle() {
+    const next = theme === "light" ? "dark" : "light";
+    if (next === "light") document.documentElement.dataset.theme = "light";
+    else delete document.documentElement.dataset.theme;
+    try { localStorage.setItem("theme", next); } catch {}
+    setTheme(next);
+  }
+  return (
+    <button onClick={toggle} aria-label={theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환"}
+      className="w-8 h-8 rounded-full border border-wline grid place-items-center text-[14px] text-wsub hover:text-ink hover:border-ink transition shrink-0">
+      {theme === "light" ? "🌙" : "☀️"}
+    </button>
+  );
+}
 
 // 통합 내비: 홈 · 축구 · 야구 · LoL · 랭킹 · 주간 베스트
 // 종목은 실제 URL(/soccer 등)로 — 경기 상세(/soccer/abc)에서도 해당 종목이 활성으로 보인다.
@@ -58,6 +80,7 @@ export default function Header() {
           )}
         </nav>
         <div className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
+          <ThemeToggle />
           {session ? (
             <>
               <Link href={`/u/${(session.user as any).id}`} className="text-wsub hidden lg:inline hover:text-ink whitespace-nowrap">{session.user?.name}님</Link>

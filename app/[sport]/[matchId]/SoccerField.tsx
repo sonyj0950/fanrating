@@ -432,8 +432,7 @@ export default function SoccerField({
         <div
           ref={pitchRef}
           onClick={() => { if (!editMode && expanded) setExpanded(null); }}
-          className="relative w-full max-w-md rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
-            bg-gradient-to-b from-[#224536] to-[#1e3d30]
+          className="pitch-soccer relative w-full max-w-md rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
             border border-wline"
           style={{ aspectRatio: "2 / 3.8" }}
         >
