@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
-import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { teamColor, ringShadow, badgeLabel, badgeTextColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { scoreChipStyle, scoreTextColor } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
 
@@ -189,22 +189,37 @@ function Marker({ p, homeTeam, onPick, editMode, onDragEnd, stackCount = 0, onSt
       className={`absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20
         ${editMode ? "cursor-move" : ""}`}
     >
-      {/* 방송 그래픽식 캡슐: [팀색 바]이름[점수 칩] */}
-      <span className={`relative flex items-stretch rounded-lg shadow-[0_2px_6px_rgba(0,0,0,.4)]
-          ${highlight ? "ring-2 ring-gold" : ""} ${editMode ? "ring-2 ring-amber-400" : "group-hover:scale-105"} transition`}
-        style={{ background: "rgba(13,17,23,.93)" }}>
-        <span className="w-[3px] sm:w-[3.5px] rounded-l-lg shrink-0" style={{ background: color }} />
-        <span className="flex items-center gap-1 px-1 sm:px-2 py-[3px] sm:py-1 text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap">
+      {/* 캡슐: [팀 배지 원]이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
+      <span className={`relative flex items-stretch rounded-lg transition
+          ${editMode ? "ring-2 ring-amber-400" : "group-hover:scale-105"}`}
+        style={{
+          background: rated ? (scoreChipStyle(player.avg as number).background as string) : "rgba(13,17,23,.93)",
+          boxShadow: highlight
+            ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
+            : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
+        }}>
+        {/* 팀 배지 (배지2 재사용) */}
+        <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] sm:-left-[13px] w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]
+            rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
+          aria-hidden="true"
+          style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
+            fontSize: badgeLabel(player.team).length >= 3 ? 7.5 : 9.5,
+            boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
+          {badgeLabel(player.team)}
+        </span>
+        <span className="flex items-center gap-1 pl-[14px] sm:pl-[17px] pr-1 sm:pr-1.5 py-[3px] sm:py-1
+            text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap"
+          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
           {highlight && <GoldStar className="w-2.5 h-2.5" />}{short}
         </span>
         <span className={`min-w-[20px] sm:min-w-[28px] px-0.5 rounded-r-lg flex items-center justify-center
-            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "" : "bg-white/10 text-white/50"}`}
-          style={rated ? scoreChipStyle(player.avg as number) : undefined}>
+            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "text-white" : "bg-white/10 text-white/50"}`}
+          style={rated ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
           {rated ? player.avg : "–"}
         </span>
         {/* 같은 자리 N명 더 (스택) */}
         {stackCount > 0 && (
-          <span className="absolute -top-2 -left-1.5 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gray-900 text-white
+          <span className="absolute -top-2.5 left-2 min-w-[16px] h-[15px] px-0.5 rounded-full bg-gray-900 text-white
             text-[9px] font-extrabold flex items-center justify-center shadow z-20">
             +{stackCount}
           </span>

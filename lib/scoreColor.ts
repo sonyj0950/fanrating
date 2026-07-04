@@ -10,8 +10,8 @@ const CHIP: Record<number, { bg: string; fg: string }> = {
   3: { bg: "#d14e3b", fg: "#ffffff" },
   4: { bg: "#e08a2c", fg: "#ffffff" },
   5: { bg: "#d97a14", fg: "#ffffff" },
-  6: { bg: "#57a344", fg: "#ffffff" },
-  7: { bg: "#348a41", fg: "#ffffff" },
+  6: { bg: "#3cb256", fg: "#ffffff" }, // 잔디(#5c8454 탁한 초록)와 겹치지 않게 밝고 쨍한 톤
+  7: { bg: "#2f9e48", fg: "#ffffff" },
   8: { bg: "#2f7fc1", fg: "#ffffff" },
   9: { bg: "#1c5a9c", fg: "#ffffff" },
 };

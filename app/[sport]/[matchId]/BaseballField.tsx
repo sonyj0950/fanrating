@@ -1,6 +1,6 @@
 "use client";
 import type { Player } from "./types";
-import { teamColor, ringShadow, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
+import { teamColor, ringShadow, badgeLabel, badgeTextColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { scoreChipStyle } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
 
@@ -48,19 +48,32 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
       style={{ left: `${left}%`, top: `${top}%` }}
       className="absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 hover:z-20">
-      {/* 방송 그래픽식 캡슐: [팀색 바]포지션·이름[점수 칩] */}
-      <span className={`relative flex items-stretch rounded-lg shadow-[0_2px_6px_rgba(0,0,0,.4)]
-          ${highlight ? "ring-2 ring-gold" : ""} group-hover:scale-105 transition`}
-        style={{ background: "rgba(13,17,23,.93)" }}>
-        <span className="w-[3px] sm:w-[3.5px] rounded-l-lg shrink-0" style={{ background: color }} />
-        <span className="flex items-center gap-1 px-1 sm:px-2 py-[3px] sm:py-1 text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap">
+      {/* 캡슐: [팀 배지 원]포지션·이름[점수칸] — 본체가 점수색, 팀은 배지2(구단색 원+약칭) */}
+      <span className={`relative flex items-stretch rounded-lg group-hover:scale-105 transition`}
+        style={{
+          background: rated ? (scoreChipStyle(p.avg as number).background as string) : "rgba(13,17,23,.93)",
+          boxShadow: highlight
+            ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
+            : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
+        }}>
+        <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] sm:-left-[13px] w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]
+            rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
+          aria-hidden="true"
+          style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
+            fontSize: badgeLabel(p.team).length >= 3 ? 7.5 : 9.5,
+            boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
+          {badgeLabel(p.team)}
+        </span>
+        <span className="flex items-center gap-1 pl-[14px] sm:pl-[17px] pr-1 sm:pr-1.5 py-[3px] sm:py-1
+            text-[9.5px] sm:text-[12px] font-bold text-white whitespace-nowrap"
+          style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
           {highlight && <GoldStar className="w-2.5 h-2.5" />}
-          {posShort && <span className="text-[#f5d878] font-extrabold">{posShort}</span>}
+          {posShort && <span className="text-white/80 font-extrabold">{posShort}</span>}
           {p.name}
         </span>
         <span className={`min-w-[20px] sm:min-w-[28px] px-0.5 rounded-r-lg flex items-center justify-center
-            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "" : "bg-white/10 text-white/50"}`}
-          style={rated ? scoreChipStyle(p.avg as number) : undefined}>
+            text-[9.5px] sm:text-[12px] font-extrabold tabular-nums ${rated ? "text-white" : "bg-white/10 text-white/50"}`}
+          style={rated ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
           {rated ? p.avg : "–"}
         </span>
         <SubBadge s={sub} />
@@ -203,17 +216,29 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
           {dh && (
             <button onClick={(e) => { e.stopPropagation(); onPick(dh); }} title={dh.name}
               className="absolute left-[84%] top-[88%] -translate-x-1/2 -translate-y-1/2 z-10 group">
-              <span className={`relative flex items-stretch rounded-lg shadow-[0_2px_6px_rgba(0,0,0,.4)]
-                  ${dh.playerId === highlightId ? "ring-2 ring-gold" : ""} group-hover:scale-105 transition`}
-                style={{ background: "rgba(13,17,23,.93)" }}>
-                <span className="w-[3.5px] rounded-l-lg shrink-0" style={{ background: color }} />
-                <span className="flex items-center gap-1 px-1.5 py-[3px] text-[10px] sm:text-[11px] font-bold text-white whitespace-nowrap">
-                  {dh.playerId === highlightId && <GoldStar className="w-2.5 h-2.5" />}
-                  <span className="text-[#f5d878] font-extrabold">지</span>{dh.name}
+              <span className="relative flex items-stretch rounded-lg group-hover:scale-105 transition"
+                style={{
+                  background: dh.avg !== null ? (scoreChipStyle(dh.avg as number).background as string) : "rgba(13,17,23,.93)",
+                  boxShadow: dh.playerId === highlightId
+                    ? "0 0 0 2px #F5B301, 0 2px 6px rgba(0,0,0,.4)"
+                    : "0 0 0 1.5px rgba(255,255,255,.88), 0 2px 6px rgba(0,0,0,.4)",
+                }}>
+                <span className="absolute top-1/2 -translate-y-1/2 -left-[11px] w-[22px] h-[22px]
+                    rounded-full grid place-items-center font-black leading-none whitespace-nowrap select-none z-10"
+                  aria-hidden="true"
+                  style={{ background: color, color: badgeTextColor(color), letterSpacing: "-0.02em",
+                    fontSize: badgeLabel(dh.team).length >= 3 ? 7.5 : 9.5,
+                    boxShadow: "0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4)" }}>
+                  {badgeLabel(dh.team)}
                 </span>
-                <span className={`min-w-[24px] px-0.5 rounded-r-lg flex items-center justify-center
-                    text-[10px] sm:text-[11px] font-extrabold tabular-nums ${dh.avg !== null ? "" : "bg-white/10 text-white/50"}`}
-                  style={dh.avg !== null ? scoreChipStyle(dh.avg as number) : undefined}>
+                <span className="flex items-center gap-1 pl-[14px] pr-1 py-[3px] text-[9.5px] sm:text-[11px] font-bold text-white whitespace-nowrap"
+                  style={{ textShadow: "0 1px 1px rgba(0,0,0,.35)" }}>
+                  {dh.playerId === highlightId && <GoldStar className="w-2.5 h-2.5" />}
+                  <span className="text-white/80 font-extrabold">지</span>{dh.name}
+                </span>
+                <span className={`min-w-[22px] px-0.5 rounded-r-lg flex items-center justify-center
+                    text-[9.5px] sm:text-[11px] font-extrabold tabular-nums ${dh.avg !== null ? "text-white" : "bg-white/10 text-white/50"}`}
+                  style={dh.avg !== null ? { background: "rgba(0,0,0,.25)", textShadow: "0 1px 1px rgba(0,0,0,.35)" } : undefined}>
                   {dh.avg !== null ? dh.avg : "–"}
                 </span>
               </span>
