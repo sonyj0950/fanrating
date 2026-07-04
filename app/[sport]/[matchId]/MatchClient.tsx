@@ -22,7 +22,7 @@ import type { ShareCardData } from "@/lib/shareCard";
 import type { Player, Agg } from "./types";
 import { POSITION_MAP, normalizeRole, GROUP_DEFAULT } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
-import { scoreChipStyle, isPerfect } from "@/lib/scoreColor";
+import { scoreChipStyle, scoreTextColor, isPerfect } from "@/lib/scoreColor";
 
 function segmentsFor(sport: string) {
   if (sport === "kleague" || sport === "epl") return [
@@ -626,85 +626,122 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     );
   }
 
+  // 펼침 패널: 상위 코멘트 + 좋아요 + 평점 CTA (행·포디움 공용)
+  function ExpandedPanel({ p, indent = true }: { p: Player; indent?: boolean }) {
+    const pc = cdata?.players?.[p.playerId];
+    const myScore = cdata?.myRatings?.[p.playerId]?.[seg];
+    return (
+      <div className={`${indent ? "pl-[44px]" : "pl-3"} pr-3 pb-3 pt-1`}>
+        {(pc?.top ?? []).map(c => (
+          <div key={c.id} className="flex items-center gap-2 py-1.5 border-t border-dashed border-wsoft first:border-t-0">
+            <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold shrink-0" style={scoreChipStyle(c.score)}>{c.score}</span>
+            <span className="text-[13px] text-ink flex-1 min-w-0 break-words">{c.text}</span>
+            <button onClick={() => likeComment(c.id)}
+              className="shrink-0 text-[11px] text-wsub border border-wline rounded-full px-2 py-0.5 hover:border-ink hover:text-ink transition tabular-nums">
+              👍 {c.likes}
+            </button>
+          </div>
+        ))}
+        <div className="flex gap-1.5 mt-2 items-center">
+          <button onClick={() => onPick(p)}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-full py-1.5 text-[12.5px] font-bold transition ${
+              myScore != null
+                ? "bg-card text-ink border-[1.5px] border-ink hover:bg-paper"
+                : "bg-ink text-paper hover:opacity-90"}`}>
+            {myScore != null ? (
+              <>내 평점 수정
+                <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold" style={scoreChipStyle(myScore)}>{myScore}</span>
+              </>
+            ) : (
+              <><GoldStar className="w-3 h-3" /> 내 평점·코멘트 남기기</>
+            )}
+          </button>
+          {pc?.count ? (
+            <button onClick={() => onPick(p)}
+              className="shrink-0 text-[11.5px] font-semibold text-wsub border border-wline bg-card rounded-full px-3 py-1.5 hover:border-ink hover:text-ink transition tabular-nums">
+              전체 {pc.count}개
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // R4 컴팩트 행: 한 줄 고정 — 베스트 한마디는 있는 행만 인라인(데스크톱), 없으면 순수 한 줄
   function Row({ p, rank }: { p: Player; rank: number }) {
     const isHome = p.team === homeTeam;
     const v = p.avg!;
-    // 순위 메달색 (높은순 1~3위만)
-    const medal = mode === "high" && rank <= 3;
-    const rkClass = !medal ? "text-wmute"
-      : rank === 1 ? "bg-gold text-deep" : rank === 2 ? "bg-[#b8b2a2] text-white" : "bg-[#a78455] text-white";
-
+    // 순위 색 (높은순 1~3위 골드/실버/브론즈 텍스트)
+    const rkColor = mode !== "high" ? "text-wmute"
+      : rank === 1 ? "text-gold" : rank === 2 ? "text-[#cfd8cf]" : rank === 3 ? "text-[#c9975a]" : "text-wmute";
     const pc = cdata?.players?.[p.playerId];
     const best = pc?.top?.[0];
     const isOpen = !isMine && expanded === p.playerId;
-    const myScore = cdata?.myRatings?.[p.playerId]?.[seg];
 
     return (
       <div className={`border-t border-wsoft first:border-t-0 ${isOpen ? "border-l-[3px] border-l-gold" : ""}`}>
         <button onClick={() => isMine ? onPick(p) : setExpanded(isOpen ? null : p.playerId)}
-          className="w-full px-3 py-2 hover:bg-paper text-left">
-          <span className="flex items-center gap-2.5">
-            <span className={`w-6 h-6 shrink-0 flex items-center justify-center text-[13px] font-extrabold rounded-lg tabular-nums ${rkClass}`}>{rank}</span>
-            <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: isHome ? hColor : aColor }} />
-            <span className="flex-1 min-w-0 flex items-center gap-1.5">
-              <span className="text-[14.5px] font-bold text-ink truncate">{p.name}</span>
-              {p.role && <span className="text-[10px] font-bold text-wfaint bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
-              <SubBadge pid={p.playerId} />
-            </span>
-            <span className="w-11 h-9 shrink-0 flex items-center justify-center text-[15px] font-extrabold rounded-[10px] tabular-nums" style={scoreChipStyle(v)}>{v}</span>
-            {!isMine && <span className="text-[10px] text-wfaint shrink-0">{isOpen ? "▴" : "▾"}</span>}
-          </span>
-          {/* 베스트 한 줄 (접힘 상태) */}
-          {!isMine && !isOpen && (
-            <span className="flex items-center gap-1.5 mt-1 pl-[38px] pr-1">
-              {best ? (
-                <>
-                  <span className="text-[12px] text-wsub truncate">“{best.text}”</span>
-                  <span className="ml-auto shrink-0 text-[11px] text-wfaint tabular-nums">💬 {pc!.count}</span>
-                </>
-              ) : (
-                <span className="text-[12px] text-wmute italic">첫 한마디를 남겨보세요</span>
+          className="w-full px-3 py-[7px] hover:bg-paper text-left">
+          <span className="flex items-center gap-2">
+            <span className={`w-5 shrink-0 text-center text-[12px] font-extrabold tabular-nums ${rkColor}`}>{rank}</span>
+            <span className="w-[3px] h-[15px] rounded-sm shrink-0" style={{ background: isHome ? hColor : aColor }} />
+            <span className="text-[13px] font-bold text-ink truncate">{p.name}</span>
+            {p.role && <span className="text-[9.5px] font-extrabold text-wgraytx bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
+            <SubBadge pid={p.playerId} />
+            <span className="flex-1 min-w-0 flex items-center justify-end">
+              {!isMine && best && (
+                <span className="hidden sm:inline text-[11px] text-wfaint truncate">
+                  “{best.text}” <b className="text-wsub font-extrabold tabular-nums">👍 {best.likes}</b>
+                </span>
               )}
             </span>
-          )}
+            {!isMine && pc?.count ? <span className="text-[10.5px] text-wfaint shrink-0 tabular-nums">💬 {pc.count}</span> : null}
+            <span className="min-w-[38px] h-[22px] px-1.5 shrink-0 flex items-center justify-center text-[12px] font-extrabold rounded-[7px] tabular-nums" style={scoreChipStyle(v)}>{v}</span>
+            {!isMine && <span className="text-[10px] text-wfaint shrink-0 w-2 text-center">{isOpen ? "▴" : "▾"}</span>}
+          </span>
         </button>
+        {isOpen && <ExpandedPanel p={p} />}
+      </div>
+    );
+  }
 
-        {/* 펼침: 상위 코멘트 + 좋아요 + 평점 모달 CTA */}
-        {isOpen && (
-          <div className="pl-[50px] pr-3 pb-3">
-            {(pc?.top ?? []).map(c => (
-              <div key={c.id} className="flex items-center gap-2 py-1.5 border-t border-dashed border-wsoft first:border-t-0">
-                <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold shrink-0" style={scoreChipStyle(c.score)}>{c.score}</span>
-                <span className="text-[13px] text-ink flex-1 min-w-0 break-words">{c.text}</span>
-                <button onClick={() => likeComment(c.id)}
-                  className="shrink-0 text-[11px] text-wsub border border-wline rounded-full px-2 py-0.5 hover:border-ink hover:text-ink transition tabular-nums">
-                  👍 {c.likes}
-                </button>
-              </div>
-            ))}
-            <div className="flex gap-1.5 mt-2 items-center">
-              <button onClick={() => onPick(p)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-full py-1.5 text-[12.5px] font-bold transition ${
-                  myScore != null
-                    ? "bg-card text-ink border-[1.5px] border-ink hover:bg-paper"
-                    : "bg-ink text-paper hover:opacity-90"}`}>
-                {myScore != null ? (
-                  <>내 평점 수정
-                    <span className="min-w-[19px] h-[17px] px-1 rounded inline-flex items-center justify-center text-[10px] font-extrabold" style={scoreChipStyle(myScore)}>{myScore}</span>
-                  </>
-                ) : (
-                  <><GoldStar className="w-3 h-3" /> 내 평점·코멘트 남기기</>
-                )}
-              </button>
-              {pc?.count ? (
-                <button onClick={() => onPick(p)}
-                  className="shrink-0 text-[11.5px] font-semibold text-wsub border border-wline bg-card rounded-full px-3 py-1.5 hover:border-ink hover:text-ink transition tabular-nums">
-                  전체 {pc.count}개
-                </button>
-              ) : null}
-            </div>
-          </div>
-        )}
+  // R4 포디움: 높은순 TOP3 카드 — 베스트 한마디 포함, 코멘트 없는 카드만 유도 문구
+  function Podium({ top }: { top: Player[] }) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 border-b border-wsoft">
+        {top.map((p, i) => {
+          const rank = i + 1;
+          const gold = rank === 1;
+          const pc = cdata?.players?.[p.playerId];
+          const best = pc?.top?.[0];
+          const isOpen = !isMine && expanded === p.playerId;
+          const isPog = pog?.playerId === p.playerId;
+          return (
+            <button key={p.mpId}
+              onClick={() => isMine ? onPick(p) : setExpanded(isOpen ? null : p.playerId)}
+              className={`text-left rounded-xl border p-2.5 transition hover:-translate-y-0.5 hover:shadow-md ${
+                gold ? "border-goldline col-span-2 sm:col-span-1" : "border-wline"} ${isOpen ? "ring-1 ring-gold" : ""}`}
+              style={{ background: gold ? "linear-gradient(180deg,#241d0b 0%,#0b1210 62%)" : "#0b1210" }}>
+              <span className={`block text-[10px] font-extrabold mb-1 ${gold ? "text-gold" : "text-wfaint"}`}>
+                {gold && isPog ? `★ 1위 · ${pogLabel(sport || "")}` : `${rank}위`}
+              </span>
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-[3px] h-[14px] rounded-sm shrink-0" style={{ background: p.team === homeTeam ? hColor : aColor }} />
+                <span className="text-[13.5px] font-extrabold text-ink truncate">{p.name}</span>
+                {p.role && <span className="text-[9px] font-extrabold text-wgraytx bg-wgray rounded px-1 py-px shrink-0">{p.role}</span>}
+                <SubBadge pid={p.playerId} />
+              </span>
+              <span className="flex items-baseline gap-1.5 mt-1.5">
+                <span className="text-[18px] font-black tabular-nums leading-none" style={{ color: scoreTextColor(p.avg!) }}>{p.avg}</span>
+                <span className="text-[10px] text-wfaint font-semibold tabular-nums">평가 {p.count}{pc?.count ? ` · 💬 ${pc.count}` : ""}</span>
+              </span>
+              <span className={`block mt-2 pt-1.5 border-t border-dashed border-wsoft text-[10.5px] leading-snug ${best ? "text-wsub" : "text-wmute italic"}`}
+                style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {best ? <>“{best.text}” <b className="text-wfaint font-extrabold tabular-nums">👍 {best.likes}</b></> : "첫 한마디를 남겨보세요"}
+              </span>
+            </button>
+          );
+        })}
       </div>
     );
   }
@@ -768,19 +805,20 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     });
   }
 
+  // R4: 큰 알약 3개 → 작은 세그먼트 컨트롤
   const btn = (k: "high" | "low" | "pos", label: string) => (
     <button onClick={() => setMode(k)}
-      className={`flex-1 text-[12px] font-bold py-2 rounded-lg border transition ${
-        mode === k ? "bg-ink border-ink text-paper" : "bg-card border-wline text-wsub hover:text-ink"}`}>
+      className={`text-[11.5px] font-bold px-3.5 py-1.5 rounded-[7px] transition ${
+        mode === k ? "bg-ink text-deep" : "text-wsub hover:text-ink"}`}>
       {label}
     </button>
   );
 
   return (
     <div className="mt-5">
-      <div className="flex gap-1.5 mb-3">
+      <div className="inline-flex gap-0.5 mb-3 bg-[#0e1713] border border-wsoft rounded-[10px] p-[3px]">
         {btn("high", "평점 높은순")}
-        {btn("low", "평점 낮은순")}
+        {btn("low", "낮은순")}
         {btn("pos", "포지션 비교")}
       </div>
 
@@ -806,6 +844,16 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
           posCompare()
         ) : ratedSorted.length === 0 ? (
           <p className="text-sm text-wfaint text-center py-6">아직 평점이 없습니다.</p>
+        ) : mode === "high" && !isMine && ratedSorted.length >= 3 ? (
+          /* R4: TOP3 포디움 + 4위부터 컴팩트 리스트 */
+          <>
+            <Podium top={ratedSorted.slice(0, 3)} />
+            {(() => {
+              const op = ratedSorted.slice(0, 3).find(p => p.playerId === expanded);
+              return op ? <div className="border-b border-wsoft"><ExpandedPanel p={op} indent={false} /></div> : null;
+            })()}
+            {ratedSorted.slice(3).map((p, i) => <Row key={p.mpId} p={p} rank={i + 4} />)}
+          </>
         ) : (
           ratedSorted.map((p, i) => <Row key={p.mpId} p={p} rank={i + 1} />)
         )}
