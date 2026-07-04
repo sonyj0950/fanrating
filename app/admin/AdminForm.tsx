@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { POSITIONS_BY_LINE } from "@/lib/soccerPositions";
 import { ROUND_PRESETS } from "@/lib/roundPresets";
 import { KBO_TEAMS, KBO_TEAM_LABELS } from "@/lib/kboTeams";
+import { OFFICIAL_TEAM_COLORS, DEFAULT_HOME, DEFAULT_AWAY, badgeLabel, badgeTextColor } from "@/lib/teamColors";
 
 export default function AdminForm() {
   const r = useRouter();
@@ -14,11 +15,55 @@ export default function AdminForm() {
   });
   const [msg, setMsg] = useState("");
 
+  // 팀 색 — 처음 등록하는 팀(공식색·오버라이드 모두 없음)이면 색 지정 UI 노출
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [homeColor, setHomeColor] = useState(DEFAULT_HOME);
+  const [awayColor, setAwayColor] = useState(DEFAULT_AWAY);
+  useEffect(() => {
+    fetch("/api/admin/team-color").then(res => res.ok ? res.json() : null)
+      .then(j => { if (j?.overrides) setOverrides(j.overrides); }).catch(() => {});
+  }, []);
+  const hasColor = (team: string) => overrides[team] != null || OFFICIAL_TEAM_COLORS[team] != null;
+  const ht = f.homeTeam.trim(), at = f.awayTeam.trim();
+  const needsHome = !!ht && !hasColor(ht);
+  const needsAway = !!at && at !== ht && !hasColor(at);
+
   async function submit(e:any){ e.preventDefault();
     const res = await fetch("/api/admin/match",{ method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(f) });
     const j = await res.json();
     if (!res.ok) { setMsg("실패: "+j.error); return; }
-    setMsg("등록완료"); r.refresh();
+    // 첫 등록 팀 색 저장 (색 지정 UI가 떠 있던 팀만)
+    const saveColor = (team: string, color: string) =>
+      fetch("/api/admin/team-color", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ team, color }) });
+    const jobs: Promise<any>[] = [];
+    if (needsHome) jobs.push(saveColor(ht, homeColor));
+    if (needsAway) jobs.push(saveColor(at, awayColor));
+    if (jobs.length) {
+      await Promise.all(jobs).catch(() => {});
+      setOverrides(o => ({ ...o,
+        ...(needsHome ? { [ht]: homeColor.toUpperCase() } : {}),
+        ...(needsAway ? { [at]: awayColor.toUpperCase() } : {}) }));
+    }
+    setMsg("등록완료" + (jobs.length ? " · 팀 색 저장됨" : "")); r.refresh();
+  }
+
+  // 색 지정 한 줄 (배지 미리보기 + 컬러 피커)
+  function ColorRow({ team, color, onChange }: { team: string; color: string; onChange: (c: string) => void }) {
+    return (
+      <div className="flex items-center gap-2.5">
+        <span className="w-[26px] h-[26px] rounded-full grid place-items-center font-black text-[10px] shrink-0"
+          style={{ background: color, color: badgeTextColor(color) }} aria-hidden="true">
+          {badgeLabel(team)}
+        </span>
+        <span className="text-sm font-semibold flex-1 min-w-0 truncate">
+          {team} <span className="text-[11px] text-golddim font-bold">첫 등록 팀</span>
+        </span>
+        <span className="text-[11px] text-wfaint font-mono">{color.toUpperCase()}</span>
+        <input type="color" value={color.toLowerCase()} onChange={e => onChange(e.target.value)}
+          className="w-9 h-7 p-0 border rounded cursor-pointer" aria-label={`${team} 팀 색`} />
+      </div>
+    );
   }
 
   const placeholderKbo = `한 줄에 한 명: 이름,팀,포지션,역할,우선순위(P=우선/공란=벤치)
@@ -67,6 +112,15 @@ export default function AdminForm() {
           <input className="border rounded p-2" placeholder="홈팀" value={f.homeTeam} onChange={e=>setF({...f,homeTeam:e.target.value})}/>
           <input className="border rounded p-2" placeholder="원정팀" value={f.awayTeam} onChange={e=>setF({...f,awayTeam:e.target.value})}/>
         </>
+      )}
+      {(needsHome || needsAway) && (
+        <div className="col-span-2 -mt-1 bg-paper border border-goldline rounded p-2.5 space-y-2">
+          <p className="text-[11px] font-bold text-golddim">
+            🎨 처음 등록하는 팀이에요 — 팀 색을 지정하면 평점 마커·배지·범례에 계속 적용됩니다. (등록 시 저장)
+          </p>
+          {needsHome && <ColorRow team={ht} color={homeColor} onChange={setHomeColor} />}
+          {needsAway && <ColorRow team={at} color={awayColor} onChange={setAwayColor} />}
+        </div>
       )}
       <input className="border rounded p-2" placeholder="홈 점수" value={f.homeScore} onChange={e=>setF({...f,homeScore:e.target.value})}/>
       <input className="border rounded p-2" placeholder="원정 점수" value={f.awayScore} onChange={e=>setF({...f,awayScore:e.target.value})}/>

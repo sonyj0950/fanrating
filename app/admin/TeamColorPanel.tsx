@@ -14,6 +14,9 @@ export default function TeamColorPanel() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
+  // 목록에 없는 팀(BLG·해외팀·국대 등) 직접 추가
+  const [newTeam, setNewTeam] = useState("");
+  const [newColor, setNewColor] = useState("#2563eb");
 
   useEffect(() => {
     if (!open) return;
@@ -62,6 +65,42 @@ export default function TeamColorPanel() {
       {open && (
         <div className="mt-3 space-y-4">
           {msg && <p className="text-sm bg-goldbg border border-goldline rounded px-3 py-2">{msg}</p>}
+          {(() => {
+            // 고정 목록(KBO·LCK) 밖에서 오버라이드된 팀 — 경기 등록 때 색을 지정한 신규 팀들
+            const known = new Set<string>(GROUPS.flatMap(g => [...g.teams]));
+            const extra = Object.keys(overrides).filter(t => !known.has(t)).sort((a, b) => a.localeCompare(b, "ko"));
+            return (
+              <div>
+                <p className="text-[11px] font-semibold text-wfaint mb-1.5">🎯 기타 팀 (직접 추가 — 목록에 없는 팀)</p>
+                {extra.length > 0 && (
+                  <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 mb-2">
+                    {extra.map(team => (
+                      <div key={team} className="flex items-center gap-2 py-0.5">
+                        <span className="w-5 h-5 rounded-md border shrink-0" style={{ background: overrides[team] }} />
+                        <span className="flex-1 text-sm truncate">{team}</span>
+                        <button onClick={() => reset(team)} disabled={busy === team}
+                          className="text-[11px] px-2 py-0.5 border rounded hover:bg-paper disabled:opacity-40">삭제</button>
+                        <input type="color" value={overrides[team].toLowerCase()} disabled={busy === team}
+                          onChange={e => save(team, e.target.value)}
+                          className="w-7 h-6 p-0 border rounded cursor-pointer disabled:opacity-40" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input value={newTeam} onChange={e => setNewTeam(e.target.value)}
+                    placeholder="팀명 (경기 등록에 쓰는 표기 그대로 — 예: BLG)"
+                    className="border rounded p-1.5 text-sm flex-1 min-w-0" />
+                  <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
+                    className="w-9 h-8 p-0 border rounded cursor-pointer" aria-label="새 팀 색" />
+                  <button onClick={async () => { const t = newTeam.trim(); if (!t) return;
+                      await save(t, newColor); setNewTeam(""); }}
+                    disabled={!newTeam.trim() || !!busy}
+                    className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white disabled:opacity-40 shrink-0">추가</button>
+                </div>
+              </div>
+            );
+          })()}
           {GROUPS.map(g => (
             <div key={g.label}>
               <p className="text-[11px] font-semibold text-wfaint mb-1.5">{g.label}</p>
