@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Player } from "./types";
 import { POSITION_MAP, normalizeRole, nearestCode } from "@/lib/soccerPositions";
 import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
@@ -7,6 +7,27 @@ import { scoreChipStyle, scoreTextColor, RAINBOW } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
 
 type Side = "home" | "away";
+
+// 데스크톱(768px↑) 여부 — 가로 필드 전환용 (SSR은 세로로 시작해 마운트 후 판정)
+function useIsWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
+
+// 세로 좌표(홈=아래, 원정=위) → 가로 좌표(홈=왼쪽, 원정=오른쪽)
+// GK(세로 99%)가 가로에서 경계에 잘리지 않게 살짝 안쪽으로 클램프
+function toHoriz(p: Placed): Placed {
+  return { ...p,
+    left: Math.max(5.5, Math.min(94.5, 100 - p.top)),
+    top: Math.max(7, Math.min(93, p.left)) };
+}
 
 // 피치 라벨용 짧은 이름:
 //  - 6자 이하(짧은 한글 등): 풀네임 그대로
@@ -99,42 +120,45 @@ function place(players: Player[], side: Side, flipped: boolean,
 interface Stack { id: string; left: number; top: number; members: Placed[]; }
 
 // 같은 줄에서 이웃 스택이 가까우면 V자 대형으로 — 양끝은 제자리, 중앙으로 갈수록 아래로 (캡슐 겹침 방지)
-function staggerRows(stacks: Stack[]): Stack[] {
-  const ROW_TH = 4;  // 같은 줄로 보는 top 차이(%)
-  const GAP_TH = 24; // 이웃 간격이 이 미만이면 V자 적용(%)
-  const DEPTH = 5;   // 중앙 최대 하강(%)
-  const rows: Stack[][] = [];
-  for (const s of [...stacks].sort((a, b) => a.top - b.top)) {
-    const row = rows.find(r => Math.abs(r[0].top - s.top) < ROW_TH);
-    if (row) row.push(s); else rows.push([s]);
+// horiz(가로 필드)에서는 포메이션 라인이 세로 열이 되므로 V자 패스는 건너뛰고 전역 충돌 완화만 수행
+function staggerRows(stacks: Stack[], horiz = false): Stack[] {
+  if (!horiz) {
+    const ROW_TH = 4;  // 같은 줄로 보는 top 차이(%)
+    const GAP_TH = 24; // 이웃 간격이 이 미만이면 V자 적용(%)
+    const DEPTH = 5;   // 중앙 최대 하강(%)
+    const rows: Stack[][] = [];
+    for (const s of [...stacks].sort((a, b) => a.top - b.top)) {
+      const row = rows.find(r => Math.abs(r[0].top - s.top) < ROW_TH);
+      if (row) row.push(s); else rows.push([s]);
+    }
+    for (const row of rows) {
+      if (row.length < 2) continue;
+      row.sort((a, b) => a.left - b.left);
+      const tight = row.some((s, i) => i > 0 && s.left - row[i - 1].left < GAP_TH);
+      if (!tight) continue;
+      const c = (row.length - 1) / 2;
+      const d = row.map((_, i) => (c > 0 ? DEPTH * (1 - Math.abs(i - c) / c) : 0));
+      // 같은 깊이로 나란해진 이웃(짝수 줄 중앙 쌍 등)은 한쪽을 더 내려 분리
+      for (let i = 1; i < row.length; i++)
+        if (Math.abs(d[i] - d[i - 1]) < 1.2 && row[i].left - row[i - 1].left < GAP_TH) d[i] += 2.6;
+      row.forEach((s, i) => {
+        if (!d[i]) return;
+        // 원본 Placed는 memoize돼 재사용되므로 복제해서 이동 (탭 전환 시 오프셋 누적 방지)
+        s.top += d[i];
+        s.members = s.members.map(m => ({ ...m, top: m.top + d[i] }));
+      });
+    }
   }
-  for (const row of rows) {
-    if (row.length < 2) continue;
-    row.sort((a, b) => a.left - b.left);
-    const tight = row.some((s, i) => i > 0 && s.left - row[i - 1].left < GAP_TH);
-    if (!tight) continue;
-    const c = (row.length - 1) / 2;
-    const d = row.map((_, i) => (c > 0 ? DEPTH * (1 - Math.abs(i - c) / c) : 0));
-    // 같은 깊이로 나란해진 이웃(짝수 줄 중앙 쌍 등)은 한쪽을 더 내려 분리
-    for (let i = 1; i < row.length; i++)
-      if (Math.abs(d[i] - d[i - 1]) < 1.2 && row[i].left - row[i - 1].left < GAP_TH) d[i] += 2.6;
-    row.forEach((s, i) => {
-      if (!d[i]) return;
-      // 원본 Placed는 memoize돼 재사용되므로 복제해서 이동 (탭 전환 시 오프셋 누적 방지)
-      s.top += d[i];
-      s.members = s.members.map(m => ({ ...m, top: m.top + d[i] }));
-    });
-  }
-  // 전역 충돌 완화: V자 이동 후에도 수직·수평 모두 가까운 쌍(예: 수비 중앙 ↔ GK)은 위아래로 밀어 분리
-  // F안 노드(원+명찰)는 캡슐보다 세로로 길어 수직 임계값을 넓게 잡는다
-  const V_TH = 7.5, H_TH = 14;
+  // 전역 충돌 완화: 수직·수평 모두 가까운 쌍(예: 수비 중앙 ↔ GK)은 위아래로 밀어 분리
+  // 세로: 노드(원+명찰)가 세로로 길어 수직 임계값을 넓게. 가로: 피치가 낮아 수직 임계값을 더 넓게, 수평은 열 간격에 맞춰 좁게
+  const V_TH = horiz ? 13 : 7.5, H_TH = horiz ? 9 : 14;
   const move = (s: Stack, d: number) => {
-    const nd = Math.max(3, Math.min(96.5, s.top + d)) - s.top;
+    const nd = Math.max(4, Math.min(94, s.top + d)) - s.top;
     if (!nd) return;
     s.top += nd;
     s.members = s.members.map(m => ({ ...m, top: m.top + nd }));
   };
-  for (let iter = 0; iter < 3; iter++) {
+  for (let iter = 0; iter < (horiz ? 4 : 3); iter++) {
     for (let i = 0; i < stacks.length; i++) for (let j = i + 1; j < stacks.length; j++) {
       const a = stacks[i], b = stacks[j];
       if (Math.abs(a.left - b.left) >= H_TH || Math.abs(a.top - b.top) >= V_TH) continue;
@@ -322,6 +346,7 @@ export default function SoccerField({
 }) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<string | null>(null); // 펼쳐진 스택 id (한 번에 하나)
+  const horiz = useIsWide(); // 데스크톱: 가로 필드(홈 왼쪽↔원정 오른쪽), 모바일: 세로
   // flip이면 두 팀의 진영(상/하)을 서로 맞바꾼다
   const homeP = useMemo(() => place(home, flip ? "away" : "home", flip, subs), [home, flip, subs]);
   const awayP = useMemo(() => place(away, flip ? "home" : "away", flip, subs), [away, flip, subs]);
@@ -351,11 +376,19 @@ export default function SoccerField({
   }
   const homeR = useMemo(() => resolvePitch(homeP.placed, homeP.bench), [homeP, subs]);
   const awayR = useMemo(() => resolvePitch(awayP.placed, awayP.bench), [awayP, subs]);
-  const homeStacks = useMemo(() => staggerRows(buildStacks(homeR.placed, seg, subInfo)), [homeR, seg, subInfo]);
-  const awayStacks = useMemo(() => staggerRows(buildStacks(awayR.placed, seg, subInfo)), [awayR, seg, subInfo]);
+  // 가로 모드면 세로 좌표를 회전한 뒤 겹침 완화 (스태거는 최종 좌표계에서)
+  const homeStacks = useMemo(
+    () => staggerRows(buildStacks((horiz ? homeR.placed.map(toHoriz) : homeR.placed), seg, subInfo), horiz),
+    [homeR, seg, subInfo, horiz]);
+  const awayStacks = useMemo(
+    () => staggerRows(buildStacks((horiz ? awayR.placed.map(toHoriz) : awayR.placed), seg, subInfo), horiz),
+    [awayR, seg, subInfo, horiz]);
 
+  // 진영 라벨 — 세로: 위/아래, 가로: 왼쪽/오른쪽 (세로의 아래(홈)가 가로의 왼쪽이 된다)
   const topLabel = flip ? `▲ 홈 ${homeTeam ?? ""}` : `▲ 원정 ${awayTeam ?? ""}`;
   const bottomLabel = flip ? `▼ 원정 ${awayTeam ?? ""}` : `▼ 홈 ${homeTeam ?? ""}`;
+  const leftLabel2 = flip ? `◀ 원정 ${awayTeam ?? ""}` : `◀ 홈 ${homeTeam ?? ""}`;
+  const rightLabel2 = flip ? `홈 ${homeTeam ?? ""} ▶` : `원정 ${awayTeam ?? ""} ▶`;
   // 스태프 거터: 진영과 함께 좌/우도 맞바꿈
   const leftStaff = flip ? awayStaff : homeStaff;
   const rightStaff = flip ? homeStaff : awayStaff;
@@ -383,8 +416,11 @@ export default function SoccerField({
       const k = s.members.length;
       return s.members.map((m, i) => {
         const off = (i - (k - 1) / 2) * 15;
-        const left = Math.max(7, Math.min(93, s.left + off));
-        return <Marker key={m.player.mpId} p={{ ...m, left }} homeTeam={homeTeam} teamColors={teamColors}
+        // 펼침 분산: 세로 필드는 좌우로, 가로 필드는 위아래로 (포메이션 열을 넘지 않게)
+        const pos = horiz
+          ? { top: Math.max(7, Math.min(93, s.top + off)) }
+          : { left: Math.max(7, Math.min(93, s.left + off)) };
+        return <Marker key={m.player.mpId} p={{ ...m, ...pos }} homeTeam={homeTeam} teamColors={teamColors}
           onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} sub={subInfo[m.player.playerId]}
           highlight={m.player.playerId === highlightId} />;
       });
@@ -400,6 +436,8 @@ export default function SoccerField({
     let y = ((clientY - r.top) / r.height) * 100;
     x = Math.max(2, Math.min(98, x));
     y = Math.max(2, Math.min(98, y));
+    // 가로 필드면 세로 좌표계로 역변환 (저장 좌표는 항상 세로 기준)
+    if (horiz) { const vx = y, vy = 100 - x; x = vx; y = vy; }
     // 저장은 항상 비-flip(기본) 기준으로: flip 화면이면 되돌려 저장
     if (flip) { x = 100 - x; y = 100 - y; }
     // 드롭한 위치 → 팀 로컬 좌표로 변환 후 가장 가까운 포지션 코드 자동 산출
@@ -420,42 +458,61 @@ export default function SoccerField({
         </p>
       )}
       <div className="flex gap-2 justify-center items-stretch">
-        {/* 좌측 스태프 (감독/코치) — 데스크톱만 */}
-        {hasStaff && (
+        {/* 좌측 스태프 (감독/코치) — 세로 필드 데스크톱만 (가로 필드는 아래 배치) */}
+        {hasStaff && !horiz && (
           <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-end pb-2">
             <p className="text-[10px] text-wfaint text-center">{leftLabel}</p>
             {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
           </div>
         )}
 
-        {/* 피치 */}
+        {/* 피치 — 데스크톱: 가로(홈 왼쪽), 모바일: 세로(홈 아래) */}
         <div
           ref={pitchRef}
           onClick={() => { if (!editMode && expanded) setExpanded(null); }}
-          className="pitch-soccer relative w-full max-w-md rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
-            border border-wline"
-          style={{ aspectRatio: "2 / 3.8" }}
+          className={`pitch-soccer relative w-full rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(60,50,20,.15)]
+            border border-wline ${horiz ? "" : "max-w-md"}`}
+          style={{ aspectRatio: horiz ? "16 / 10" : "2 / 3.8" }}
         >
-          {/* 잔디 줄무늬 */}
+          {/* 잔디 줄무늬 — 가로 필드는 세로 줄무늬 */}
           <div className="absolute inset-0 opacity-[0.12] pointer-events-none"
-            style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0 8%, transparent 8% 16%)" }} />
+            style={{ backgroundImage: `repeating-linear-gradient(${horiz ? 90 : 0}deg, #fff 0 8%, transparent 8% 16%)` }} />
 
           {/* 필드 라인 */}
           <div className="absolute inset-2 border-2 border-[#dfe9e2]/60 rounded-sm pointer-events-none" />
-          <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-[#dfe9e2]/60 pointer-events-none" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[26%] aspect-square rounded-full border-2 border-[#dfe9e2]/60 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-[#dfe9e2]/60 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-[#dfe9e2]/60 pointer-events-none" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#dfe9e2]/60 pointer-events-none aspect-square w-[22%] max-w-[110px]" />
+          {horiz ? (
+            <>
+              <div className="absolute top-2 bottom-2 left-1/2 w-0.5 -translate-x-1/2 bg-[#dfe9e2]/60 pointer-events-none" />
+              <div className="absolute top-1/2 -translate-y-1/2 left-2 h-[55%] w-[13%] border-2 border-l-0 border-[#dfe9e2]/60 pointer-events-none" />
+              <div className="absolute top-1/2 -translate-y-1/2 right-2 h-[55%] w-[13%] border-2 border-r-0 border-[#dfe9e2]/60 pointer-events-none" />
+            </>
+          ) : (
+            <>
+              <div className="absolute left-2 right-2 top-1/2 h-0.5 -translate-y-1/2 bg-[#dfe9e2]/60 pointer-events-none" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[55%] h-[16%] border-2 border-t-0 border-[#dfe9e2]/60 pointer-events-none" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-[55%] h-[16%] border-2 border-b-0 border-[#dfe9e2]/60 pointer-events-none" />
+            </>
+          )}
 
           {/* 팀 표시 */}
-          <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{topLabel}</span>
-          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{bottomLabel}</span>
+          {horiz ? (
+            <>
+              <span className="absolute top-1 left-3 text-[10px] text-white/80 font-semibold whitespace-nowrap">{leftLabel2}</span>
+              <span className="absolute top-1 right-3 text-[10px] text-white/80 font-semibold whitespace-nowrap">{rightLabel2}</span>
+            </>
+          ) : (
+            <>
+              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{topLabel}</span>
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-white/80 font-semibold whitespace-nowrap">{bottomLabel}</span>
+            </>
+          )}
 
           {/* 선수 마커 (편집 모드는 개별 렌더로 드래그 유지) */}
           {editMode ? (
             <>
-              {awayP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
-              {homeP.placed.map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
+              {(horiz ? awayP.placed.map(toHoriz) : awayP.placed).map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
+              {(horiz ? homeP.placed.map(toHoriz) : homeP.placed).map(p => <Marker key={p.player.mpId} p={p} homeTeam={homeTeam} teamColors={teamColors} onPick={onPick} editMode={editMode} onDragEnd={handleDragEnd} />)}
             </>
           ) : (
             <>
@@ -465,8 +522,8 @@ export default function SoccerField({
           )}
         </div>
 
-        {/* 우측 스태프 (감독/코치) — 데스크톱만 */}
-        {hasStaff && (
+        {/* 우측 스태프 (감독/코치) — 세로 필드 데스크톱만 */}
+        {hasStaff && !horiz && (
           <div className="hidden md:flex w-24 shrink-0 flex-col gap-1.5 justify-start pt-2">
             <p className="text-[10px] text-wfaint text-center">{rightLabel}</p>
             {rightStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
@@ -474,9 +531,9 @@ export default function SoccerField({
         )}
       </div>
 
-      {/* 스태프 (감독/코치) — 모바일은 피치 아래 가로 배치 */}
+      {/* 스태프 (감독/코치) — 모바일·가로 필드는 피치 아래 가로 배치 */}
       {hasStaff && (
-        <div className="md:hidden mt-2 grid grid-cols-2 gap-2">
+        <div className={`${horiz ? "" : "md:hidden"} mt-2 grid grid-cols-2 gap-2`}>
           <div className="space-y-1">
             <p className="text-[10px] text-wfaint">{leftLabel}</p>
             {leftStaff.map(p => <StaffChip key={p.mpId} p={p} onPick={onPick}/>)}
