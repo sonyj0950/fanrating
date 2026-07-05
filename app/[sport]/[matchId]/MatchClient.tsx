@@ -166,6 +166,11 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
   const homeStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.homeTeam);
   const awayStaff = visiblePlayers.filter(p => isStaff(p) && p.team === match.awayTeam);
 
+  // 전체 평점 패널용 — 탭 필터와 무관하게 이 경기 전 출전 선수 (교체 포함)
+  const fieldAll = rawPlayers.filter(p => !isOfficial(p) && !isStaff(p));
+  const homeAll = fieldAll.filter(p => p.team === match.homeTeam);
+  const awayAll = fieldAll.filter(p => p.team === match.awayTeam);
+
   // 교체 기록 표시용 선수 이름 조회 (야구)
   const nameOf = (id: string) => rawPlayers.find(p => p.playerId === id)?.name ?? "?";
 
@@ -436,6 +441,14 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
           </div>
         )}
       </div>
+
+      {/* ⚡ 전체 평점 한번에 — 축구, 필드 밑 접이식 (경기 시작 후) */}
+      {(match.sport === "kleague" || match.sport === "epl") && match.status !== "scheduled" && (homeAll.length > 0 || awayAll.length > 0) && (
+        <BulkRatePanel home={homeAll} away={awayAll} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          matchId={match.id} sport={match.sport} segments={segments} status={match.status}
+          teamColors={teamColors} loggedIn={!!session}
+          onSaved={() => { setCRev(v => v + 1); router.refresh(); }} />
+      )}
 
       {/* 평점 리스트 (캡처용) — 축구·야구, 현재 탭 기준 */}
       {(match.sport === "kleague" || match.sport === "epl" || match.sport === "kbo") && (home.length > 0 || away.length > 0) && (
@@ -1695,6 +1708,141 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
   );
 }
 
+// ⚡ 전체 평점 한번에 (축구) — 필드 밑 접이식. 구간 선택 후 선수 전원을 인라인으로 일괄 등록.
+function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segments, status, teamColors = {}, loggedIn, onSaved }:
+  { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string; matchId: string;
+    sport: string; segments: { key: string; label: string }[]; status: string;
+    teamColors?: Record<string, string>; loggedIn: boolean; onSaved: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ratable = segments.filter(s => s.key !== "full");
+  const firstRatable = ratable[0]?.key;
+  const [seg, setSeg] = useState("full");
+  const [scores, setScores] = useState<Record<string, Record<string, number | null>>>({});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const segLocked = (key: string) => {
+    if (key === "full") return false;
+    if (status === "finished") return false;
+    if (status === "live") return key !== firstRatable;
+    return true;
+  };
+
+  async function loadMine() {
+    if (!loggedIn) return;
+    try {
+      const r = await fetch(`/api/my-ratings?matchId=${matchId}`);
+      const j = await r.json();
+      const map: Record<string, Record<string, number>> = {};
+      for (const it of (j.items || [])) (map[it.segment] ||= {})[it.playerId] = it.score;
+      setScores(map);
+    } catch {}
+  }
+  useEffect(() => { if (open) loadMine(); /* eslint-disable-next-line */ }, [open]);
+
+  const cur = scores[seg] || {};
+  const setScore = (pid: string, n: number) =>
+    setScores(m => ({ ...m, [seg]: { ...(m[seg] || {}), [pid]: (m[seg]?.[pid] === n ? null : n) } }));
+  const count = Object.values(cur).filter(v => v != null).length;
+
+  async function submit() {
+    if (!loggedIn) { setMsg("로그인이 필요합니다."); return; }
+    const items = Object.entries(cur)
+      .filter(([, sc]) => sc != null)
+      .map(([pid, sc]) => ({ playerId: pid, segment: seg, score: sc as number }));
+    if (items.length === 0) { setMsg("점수를 선택한 선수가 없습니다."); return; }
+    setBusy(true);
+    const res = await fetch("/api/rating/bulk", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ matchId, items }),
+    });
+    setBusy(false);
+    const j = await res.json();
+    if (!res.ok) { setMsg(j.error || "등록 실패"); return; }
+    setMsg(`${j.saved}명 등록 완료!`);
+    onSaved();
+  }
+
+  const Col = ({ team, list, color }: { team: string; list: Player[]; color: string }) => (
+    <div>
+      <p className="flex items-center gap-1.5 text-[12px] font-extrabold mb-1.5">
+        <span className="w-2 h-2 rounded-full" style={{ background: color }} />{team}
+      </p>
+      <div className="space-y-1">
+        {list.map(p => {
+          const v = cur[p.playerId] ?? null;
+          return (
+            <div key={p.mpId} className="flex items-center gap-2">
+              <span className="text-[12.5px] font-bold text-ink w-16 sm:w-20 shrink-0 truncate">{p.name}</span>
+              <div className="flex-1 grid grid-cols-10 gap-0.5">
+                {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                  const on = v === n;
+                  return (
+                    <button key={n} onClick={() => setScore(p.playerId, n)}
+                      className={`h-7 rounded text-[11px] font-extrabold transition ${on ? "text-white" : "border border-wsoft text-wmute hover:text-wsub"}`}
+                      style={on ? scoreChipStyle(n) : undefined}>{n}</button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const hColor = resolveTeamColor(homeTeam, teamColors, DEFAULT_HOME);
+  const aColor = resolveTeamColor(awayTeam, teamColors, DEFAULT_AWAY);
+
+  return (
+    <div className="mt-3 border border-goldline rounded-2xl bg-goldbg/40 overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2 px-4 py-3 text-left">
+        <span className="text-[14px] font-extrabold text-golddim">⚡ 전체 평점 한번에</span>
+        <span className="text-[11px] text-wfaint font-semibold hidden sm:inline">선수 전원을 한 화면에서 — 한 번에 등록</span>
+        <span className="ml-auto text-wfaint">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-goldline/60">
+          {/* 구간 선택 */}
+          <div className="flex gap-1.5 my-3 flex-wrap">
+            {segments.map(s => {
+              const locked = segLocked(s.key);
+              return (
+                <button key={s.key} disabled={locked} onClick={() => setSeg(s.key)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                    seg === s.key ? "bg-gold text-deep" : "bg-card border border-wline text-wsub"} ${locked ? "opacity-40 cursor-not-allowed" : ""}`}>
+                  {locked ? "🔒 " : ""}{s.key === "full" ? "총평" : s.label}
+                </button>
+              );
+            })}
+            <span className="ml-auto self-center text-[11px] text-wfaint font-semibold">
+              {seg === "full" ? "경기 전체를 한 점수로" : `${segments.find(s=>s.key===seg)?.label} 점수`}
+            </span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
+            <Col team={homeTeam} list={home} color={hColor} />
+            <Col team={awayTeam} list={away} color={aColor} />
+          </div>
+
+          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-wsoft">
+            <span className="text-[11.5px] text-wsub font-semibold">
+              선택한 <b className="text-golddim">{count}</b>명만 등록 · 이미 매긴 점수는 채워져 있어요
+            </span>
+            <button onClick={submit} disabled={busy || count === 0}
+              className="ml-auto bg-gold text-deep font-black text-[13px] px-5 py-2 rounded-lg disabled:opacity-40">
+              {count > 0 ? `${count}명 등록` : "등록"}
+            </button>
+          </div>
+          {msg && <p className="text-[13px] mt-2 text-golddim font-semibold">{msg}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlayerModal({ matchId, player, loggedIn, segment, segments, status, sport, onClose }:
   { matchId: string; player: Player; loggedIn: boolean; segment: string; segments:{key:string;label:string}[]; status: string; sport: string; onClose: () => void }) {
   const ratableSegs = segments.filter(s => s.key !== "full");
@@ -1713,37 +1861,57 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
     : status === "live" ? `${ratableSegs[0]?.label ?? "전반"} 진행 중 — 이후 구간은 경기 종료 후 입력할 수 있습니다.`
     : "";
 
-  // 첫 진입 시 입력 가능한 구간으로 자동 선택 ("mine" 탭에서 열면 총평처럼 처리)
-  const initialSeg = (() => {
-    const normalized = segment === "mine" ? "full" : segment;
-    const base = (normalized === "full" || segments.length <= 1) && ratableSegs[0]
-      ? (normalized === "full" ? ratableSegs[0].key : normalized)
-      : normalized;
-    if (status === "live") return ratableSegs[0]?.key ?? base;
-    return base;
-  })();
-  const [seg, setSeg] = useState(initialSeg);
-  const [score, setScore] = useState<number | null>(null);
+  // M안(S1): 총평(full)이 기본 입력, 세트/전후반은 접이식 상세
+  void segment; // (구 진입 구간 자동선택 로직 제거 — 총평 기본)
+  const [full, setFull] = useState<number | null>(null);
+  const [segScores, setSegScores] = useState<Record<string, number | null>>({});
   const [comment, setComment] = useState("");
+  const [detailOpen, setDetailOpen] = useState(false);
   const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
   const [data, setData] = useState<any>(null);
+  const fullLocked = status === "scheduled";
 
   async function load() {
     const r = await fetch(`/api/player-ratings?matchId=${matchId}&playerId=${player.playerId}`);
     setData(await r.json());
   }
-  useEffect(() => { load(); }, []);
+  // 내 기존 평점 프리필 (총평 + 구간별)
+  async function loadMine() {
+    if (!loggedIn) return;
+    try {
+      const r = await fetch(`/api/my-ratings?matchId=${matchId}`);
+      const j = await r.json();
+      const mine = (j.items || []).filter((it: any) => it.playerId === player.playerId);
+      const segs: Record<string, number | null> = {};
+      let f: number | null = null, c = "";
+      for (const it of mine) {
+        if (it.segment === "full") { f = it.score; c = it.comment || ""; }
+        else segs[it.segment] = it.score;
+      }
+      setFull(f); setSegScores(segs); setComment(c);
+      if (Object.keys(segs).length > 0) setDetailOpen(true);
+    } catch {}
+  }
+  useEffect(() => { load(); loadMine(); /* eslint-disable-next-line */ }, []);
 
   async function submit() {
-    if (score === null) { setMsg("평점을 선택하세요."); return; }
-    const res = await fetch("/api/rating", {
+    const items: { playerId: string; segment: string; score: number; comment?: string }[] = [];
+    if (full !== null && !fullLocked) items.push({ playerId: player.playerId, segment: "full", score: full, comment });
+    for (const s of ratableSegs) {
+      const sc = segScores[s.key];
+      if (sc != null && !segLocked(s.key)) items.push({ playerId: player.playerId, segment: s.key, score: sc });
+    }
+    if (items.length === 0) { setMsg("총평 또는 구간 점수를 선택하세요."); return; }
+    setBusy(true);
+    const res = await fetch("/api/rating/bulk", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId, playerId: player.playerId, score, comment, segment: seg }),
+      body: JSON.stringify({ matchId, items }),
     });
+    setBusy(false);
     const j = await res.json();
-    if (!res.ok) { setMsg(j.error); return; }
+    if (!res.ok) { setMsg(j.error || "등록 실패"); return; }
     setMsg("등록 완료!");
-    setComment(""); setScore(null);
     load();
   }
 
@@ -1779,57 +1947,85 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
 
         <div className="p-5 border-b">
           {loggedIn ? (
-            <>
-              {ratableSegs.length > 1 && (
-                <div className="flex gap-1 mb-3 flex-wrap">
-                  {ratableSegs.map(s => {
-                    const locked = segLocked(s.key);
+            fullLocked ? (
+              <p className="text-sm text-golddim bg-goldbg border border-goldline rounded p-3">🔒 {lockMsg}</p>
+            ) : (
+              <>
+                {/* 총평 — 기본 입력 (한 번이면 등록 끝) */}
+                <p className="text-sm font-semibold mb-2">이 경기 총평 <span className="text-xs font-normal text-wfaint">(1~10)</span></p>
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                    const on = full === n;
                     return (
-                      <button key={s.key} type="button" disabled={locked}
-                        onClick={() => setSeg(s.key)}
-                        title={locked ? "아직 입력할 수 없는 구간입니다." : ""}
-                        className={`px-3 py-1 rounded text-sm ${seg===s.key?"bg-gold text-deep":"bg-wgray"} ${locked?"opacity-40 cursor-not-allowed":""}`}>
-                        {locked ? "🔒 " : ""}{s.label}
+                      <button key={n} onClick={() => setFull(on ? null : n)}
+                        className={`h-10 rounded-lg text-sm font-bold transition ${on ? "border-2 border-ink" : "border border-wline bg-card text-wfaint hover:text-wsub"}`}
+                        style={on ? scoreChipStyle(n) : undefined}>
+                        {n}
                       </button>
                     );
                   })}
                 </div>
-              )}
-              {segLocked(seg) ? (
-                <p className="text-sm text-golddim bg-goldbg border border-goldline rounded p-3">
-                  🔒 {lockMsg}
+
+                {/* 세트/전후반 상세 — 접이식 선택 옵션 */}
+                {ratableSegs.length > 0 && (
+                  <div className="mb-3">
+                    <button type="button" onClick={() => setDetailOpen(v => !v)}
+                      className={`w-full flex items-center gap-2 border border-dashed rounded-lg px-3 py-2 text-xs font-bold transition ${
+                        detailOpen ? "border-goldline border-solid text-golddim rounded-b-none" : "border-wline text-wfaint hover:text-wsub"}`}>
+                      🎛 {sport === "lck" ? "세트별로" : "전·후반"} 다르게 매기기 <span className="font-normal">(선택)</span>
+                      <span className="ml-auto">{detailOpen ? "▴" : "▾"}</span>
+                    </button>
+                    {detailOpen && (
+                      <div className="border border-t-0 border-goldline rounded-b-lg divide-y divide-wsoft">
+                        {ratableSegs.map(s => {
+                          const locked = segLocked(s.key);
+                          const cur = segScores[s.key] ?? null;
+                          return (
+                            <div key={s.key} className="flex items-center gap-2 px-2.5 py-2">
+                              <span className="w-12 text-xs font-bold shrink-0">{s.label}</span>
+                              {locked ? (
+                                <span className="text-[11px] text-wfaint">🔒 종료 후 입력</span>
+                              ) : (
+                                <>
+                                  <div className="flex-1 grid grid-cols-10 gap-0.5">
+                                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                                      const on = cur === n;
+                                      return (
+                                        <button key={n} onClick={() => setSegScores(m => ({ ...m, [s.key]: on ? null : n }))}
+                                          className={`h-7 rounded text-[11px] font-extrabold transition ${on ? "text-white" : "border border-wsoft text-wmute hover:text-wsub"}`}
+                                          style={on ? scoreChipStyle(n) : undefined}>{n}</button>
+                                      );
+                                    })}
+                                  </div>
+                                  {cur != null
+                                    ? <button onClick={() => setSegScores(m => ({ ...m, [s.key]: null }))} className="text-wfaint hover:text-live text-sm shrink-0 w-4" title="지우기">✕</button>
+                                    : <span className="w-4 shrink-0" />}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <p className="px-3 py-1.5 text-[10.5px] text-wfaint">미입력 구간은 총평만 반영됩니다.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <textarea value={comment} onChange={e=>setComment(e.target.value)}
+                  placeholder="코멘트 (선택 · 총평에 함께 저장)"
+                  className="w-full border rounded p-2 h-20 text-sm"/>
+                <p className="text-[11px] text-wfaint mt-1 leading-snug">
+                  특정인(선수·감독·심판 등 포함)에 대한 과도한 욕설·비방·모욕, 근거 없는 명예훼손은
+                  통보 없이 삭제될 수 있습니다. 평점·코멘트는 작성자 개인의 의견입니다.
                 </p>
-              ) : (
-                <>
-                  <p className="text-sm font-semibold mb-2">평점 매기기 (1~10)</p>
-                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
-                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                      const on = score === n;
-                      return (
-                        <button key={n} onClick={() => setScore(n)}
-                          className={`h-10 rounded-lg text-sm font-bold transition ${on ? "border-2 border-ink" : "border border-wline bg-card text-wfaint hover:text-wsub"}`}
-                          style={on ? scoreChipStyle(n) : undefined}>
-                          {n}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <textarea value={comment} onChange={e=>setComment(e.target.value)}
-                    placeholder="코멘트 (선택)"
-                    className="w-full border rounded p-2 h-20 text-sm"/>
-                  <p className="text-[11px] text-wfaint mt-1 leading-snug">
-                    특정인(선수·감독·심판 등 포함)에 대한 과도한 욕설·비방·모욕, 근거 없는 명예훼손은
-                    통보 없이 삭제될 수 있습니다. 평점·코멘트는 작성자 개인의 의견입니다.
-                  </p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-wsub">{comment.length}자</span>
-                    <button onClick={submit} disabled={score===null}
-                      className="bg-gold text-deep px-4 py-1.5 rounded disabled:opacity-40">등록</button>
-                  </div>
-                  {msg && <p className="text-sm mt-2 text-red-500">{msg}</p>}
-                </>
-              )}
-            </>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-wsub">{comment.length}자</span>
+                  <button onClick={submit} disabled={busy}
+                    className="bg-gold text-deep px-4 py-1.5 rounded font-bold disabled:opacity-40">등록</button>
+                </div>
+                {msg && <p className="text-sm mt-2 text-golddim">{msg}</p>}
+              </>
+            )
           ) : <p className="text-sm text-wsub">로그인 후 평점을 등록할 수 있습니다.</p>}
         </div>
 
