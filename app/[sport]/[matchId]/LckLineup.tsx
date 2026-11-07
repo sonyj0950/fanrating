@@ -1,5 +1,7 @@
 "use client";
+import { useEffect, useState } from "react";
 import type { Player } from "./types";
+import RatingSlider from "./RatingSlider";
 import { normalizeLane } from "@/lib/lckLanes";
 import { GoldStar } from "@/app/MatchCard";
 import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
@@ -29,6 +31,97 @@ function sortByLane(players: Player[]): Player[] {
     const ib = LANE_ORDER.indexOf(laneOf(b));
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
+}
+
+export function LckOverallRatings({ home, away, homeTeam, awayTeam, matchId, revision, onPick, onSaved }:
+  { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string; matchId: string; revision: number;
+    onPick: (player: Player) => void; onSaved: () => void }) {
+  const [saved, setSaved] = useState<Record<string, number>>({});
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [vibrate, setVibrate] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/my-ratings?matchId=${encodeURIComponent(matchId)}`, { signal: controller.signal })
+      .then(async res => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const scores: Record<string, number> = {};
+        for (const item of data.items ?? []) if (item.segment === "full") scores[item.playerId] = item.score;
+        if (!controller.signal.aborted) setSaved(scores);
+      })
+      .catch(() => { if (!controller.signal.aborted) setMessage("기존 평점을 불러오지 못했습니다."); });
+    return () => controller.abort();
+  }, [matchId, revision]);
+
+  const items = Array.from(new Set([...home, ...away].map(p => p.playerId)))
+    .filter(id => draft[id] != null && draft[id] !== saved[id])
+    .map(playerId => ({ playerId, segment: "full", score: draft[playerId] }));
+
+  async function submit() {
+    if (busy || items.length === 0) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/rating/bulk", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ matchId, items }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMessage(data.error || "평점 등록에 실패했습니다."); return; }
+      const updates = Object.fromEntries(items.map(item => [item.playerId, item.score]));
+      setSaved(current => ({ ...current, ...updates }));
+      setDraft({});
+      setMessage(`${data.saved}명 총평 등록 완료`);
+      onSaved();
+    } catch {
+      setMessage("평점 등록에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section aria-label="LoL 라인업 총평" className="rounded-2xl border border-wline bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 className="font-extrabold text-ink">라인업 평점 <span className="text-xs font-semibold text-wsub">· LoL 총평</span></h3>
+        <label className="text-xs text-wsub flex items-center gap-1.5"><input type="checkbox" checked={vibrate} onChange={e => setVibrate(e.target.checked)} />정수 진동</label>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        {[{ team: homeTeam, players: home }, { team: awayTeam, players: away }].map(({ team, players }) => (
+          <div key={team}>
+            <h4 className="text-base font-extrabold text-ink mb-1">{team} 라인업</h4>
+            <div className="divide-y divide-wline">
+              {sortByLane(players).map(p => (
+                <div key={p.mpId} className="pt-2">
+                  <RatingSlider label={`${p.name} · ${LANE_LABEL[laneOf(p)] ?? p.role}`} score={draft[p.playerId] ?? saved[p.playerId] ?? null}
+                    disabled={busy} vibrate={vibrate} onChange={score => {
+                      setDraft(current => ({ ...current, [p.playerId]: score }));
+                      setMessage("");
+                    }}
+                    onClear={draft[p.playerId] == null ? undefined : () => setDraft(current => {
+                      const next = { ...current };
+                      delete next[p.playerId];
+                      return next;
+                    })}
+                    action={<button type="button" disabled={busy} onClick={() => onPick(p)} className="text-xs text-wsub hover:text-ink underline"
+                      aria-label={`${p.name} 평점 상세`}>상세</button>} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div aria-hidden="true" className="flex justify-between text-xs text-wsub"><span>1.0점</span><span>10.0점</span></div>
+      <button type="button" disabled={busy || items.length === 0} onClick={submit}
+        className="mt-3 w-full min-h-11 rounded-xl bg-gold text-deep font-extrabold disabled:opacity-40">
+        {busy ? "등록 중…" : items.length ? `${items.length}명 평점 등록` : "평점 등록"}
+      </button>
+      {message && <p role="status" className="mt-2 text-sm text-golddim">{message}</p>}
+    </section>
+  );
 }
 
 export type Highlight = { playerId: string; kind: "POG" | "POM" } | null;

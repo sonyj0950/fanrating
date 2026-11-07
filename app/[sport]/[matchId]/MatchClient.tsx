@@ -11,7 +11,8 @@ function Author({ id, name, className }: { id?: string; name: string; className?
 }
 import BaseballField from "./BaseballField";
 import SoccerField from "./SoccerField";
-import LckLineup, { LckMatchup, type Highlight } from "./LckLineup";
+import LckLineup, { LckMatchup, LckOverallRatings, type Highlight } from "./LckLineup";
+import RatingSlider from "./RatingSlider";
 import DeleteMatchButton from "@/components/DeleteMatchButton";
 import ShareButton from "@/components/ShareButton";
 import ShareCardPanel from "./ShareCardPanel";
@@ -133,9 +134,10 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         setMyScores(map);
       })
       .catch(() => setMyScores({}));
-  }, [session, match.id]);
+  }, [session, match.id, cRev]);
 
   const isMine = seg === "mine";
+  const canRateLckLineup = match.sport === "lck" && !!session && match.status !== "scheduled" && rawPlayers.length > 0;
   // mine 탭에서는 각 선수의 avg를 "내 점수"로 교체
   const baseSeg = isMine ? "full" : seg;
   const players = useMemo(() => applyAgg(rawPlayers, agg, baseSeg), [rawPlayers, agg, baseSeg]);
@@ -413,7 +415,15 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
             editMode={editPos && isAdmin && seg !== "mine"}
             onMove={savePosition}/>
         )}
-        {match.sport === "lck" && (
+        {canRateLckLineup && (
+          <div hidden={seg !== "full"}>
+            <LckOverallRatings key={`${match.id}:${(session?.user as any)?.id}`}
+              home={homeAll} away={awayAll} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+              matchId={match.id} revision={cRev} onPick={setOpen}
+              onSaved={() => { setCRev(v => v + 1); router.refresh(); }} />
+          </div>
+        )}
+        {match.sport === "lck" && !(canRateLckLineup && seg === "full") && (
           <LckLineup home={home} away={away} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
             onPick={setOpen} seg={seg} highlight={lckHighlight}/>
         )}
@@ -1846,6 +1856,10 @@ function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segment
 function PlayerModal({ matchId, player, loggedIn, segment, segments, status, sport, onClose }:
   { matchId: string; player: Player; loggedIn: boolean; segment: string; segments:{key:string;label:string}[]; status: string; sport: string; onClose: () => void }) {
   const ratableSegs = segments.filter(s => s.key !== "full");
+  const isLck = sport === "lck";
+  const primarySegment = isLck ? ratableSegs.find(s => s.key === segment) : undefined;
+  const primaryKey = primarySegment?.key ?? "full";
+  const detailSegments = primarySegment ? segments.filter(s => s.key !== primaryKey) : ratableSegs;
 
   // 경기 상태에 따른 평점 가능 구간
   // - scheduled(예정): 아직 평점 불가
@@ -1861,16 +1875,23 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
     : status === "live" ? `${ratableSegs[0]?.label ?? "전반"} 진행 중 — 이후 구간은 경기 종료 후 입력할 수 있습니다.`
     : "";
 
-  // M안(S1): 총평(full)이 기본 입력, 세트/전후반은 접이식 상세
-  void segment; // (구 진입 구간 자동선택 로직 제거 — 총평 기본)
   const [full, setFull] = useState<number | null>(null);
   const [segScores, setSegScores] = useState<Record<string, number | null>>({});
   const [comment, setComment] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [mineLoading, setMineLoading] = useState(isLck && loggedIn);
+  const [vibrate, setVibrate] = useState(true);
   const [data, setData] = useState<any>(null);
   const fullLocked = status === "scheduled";
+  const primaryLocked = primarySegment ? segLocked(primaryKey) : fullLocked;
+  const primaryScore = primarySegment ? segScores[primaryKey] ?? null : full;
+
+  function setSegmentScore(key: string, score: number | null) {
+    if (key === "full") setFull(score);
+    else setSegScores(current => ({ ...current, [key]: score }));
+  }
 
   async function load() {
     const r = await fetch(`/api/player-ratings?matchId=${matchId}&playerId=${player.playerId}`);
@@ -1881,38 +1902,53 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
     if (!loggedIn) return;
     try {
       const r = await fetch(`/api/my-ratings?matchId=${matchId}`);
+      if (!r.ok) throw new Error();
       const j = await r.json();
       const mine = (j.items || []).filter((it: any) => it.playerId === player.playerId);
       const segs: Record<string, number | null> = {};
       let f: number | null = null, c = "";
       for (const it of mine) {
-        if (it.segment === "full") { f = it.score; c = it.comment || ""; }
+        if (it.segment === primaryKey) c = it.comment || "";
+        if (it.segment === "full") f = it.score;
         else segs[it.segment] = it.score;
       }
       setFull(f); setSegScores(segs); setComment(c);
-      if (Object.keys(segs).length > 0) setDetailOpen(true);
-    } catch {}
+      if (detailSegments.some(s => s.key === "full" ? f != null : segs[s.key] != null)) setDetailOpen(true);
+    } catch {
+      if (isLck) setMsg("기존 평점을 불러오지 못했습니다.");
+    } finally {
+      setMineLoading(false);
+    }
   }
   useEffect(() => { load(); loadMine(); /* eslint-disable-next-line */ }, []);
 
   async function submit() {
+    if (busy || mineLoading || primaryLocked) return;
     const items: { playerId: string; segment: string; score: number; comment?: string }[] = [];
-    if (full !== null && !fullLocked) items.push({ playerId: player.playerId, segment: "full", score: full, comment });
+    if (full !== null && !fullLocked)
+      items.push({ playerId: player.playerId, segment: "full", score: full, ...(primaryKey === "full" ? { comment } : {}) });
     for (const s of ratableSegs) {
       const sc = segScores[s.key];
-      if (sc != null && !segLocked(s.key)) items.push({ playerId: player.playerId, segment: s.key, score: sc });
+      if (sc != null && !segLocked(s.key))
+        items.push({ playerId: player.playerId, segment: s.key, score: sc, ...(s.key === primaryKey ? { comment } : {}) });
     }
+    if (isLck && comment.trim() && primaryScore == null) { setMsg("코멘트와 함께 저장할 점수를 선택하세요."); return; }
     if (items.length === 0) { setMsg("총평 또는 구간 점수를 선택하세요."); return; }
     setBusy(true);
-    const res = await fetch("/api/rating/bulk", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId, items }),
-    });
-    setBusy(false);
-    const j = await res.json();
-    if (!res.ok) { setMsg(j.error || "등록 실패"); return; }
-    setMsg("등록 완료!");
-    load();
+    try {
+      const res = await fetch("/api/rating/bulk", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ matchId, items }),
+      });
+      const j = await res.json();
+      if (!res.ok) { setMsg(j.error || "등록 실패"); return; }
+      setMsg("등록 완료!");
+      await load();
+    } catch {
+      setMsg("등록 결과를 불러오지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function like(id: string) {
@@ -1947,11 +1983,17 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
 
         <div className="p-5 border-b">
           {loggedIn ? (
-            fullLocked ? (
+            primaryLocked ? (
               <p className="text-sm text-golddim bg-goldbg border border-goldline rounded p-3">🔒 {lockMsg}</p>
             ) : (
               <>
-                {/* 총평 — 기본 입력 (한 번이면 등록 끝) */}
+                {isLck ? (
+                  <div className="mb-3">
+                    <RatingSlider label={primarySegment ? `${primarySegment.label} 평점` : "이 경기 총평"}
+                      detailed score={primaryScore} disabled={busy || mineLoading} vibrate={vibrate}
+                      onChange={score => setSegmentScore(primaryKey, score)} onClear={() => setSegmentScore(primaryKey, null)} />
+                  </div>
+                ) : <>
                 <p className="text-sm font-semibold mb-2">이 경기 총평 <span className="text-xs font-normal text-wfaint">(1~10)</span></p>
                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
                   {[1,2,3,4,5,6,7,8,9,10].map(n => {
@@ -1965,21 +2007,28 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                     );
                   })}
                 </div>
+                </>}
 
                 {/* 세트/전후반 상세 — 접이식 선택 옵션 */}
-                {ratableSegs.length > 0 && (
+                {detailSegments.length > 0 && (
                   <div className="mb-3">
                     <button type="button" onClick={() => setDetailOpen(v => !v)}
                       className={`w-full flex items-center gap-2 border border-dashed rounded-lg px-3 py-2 text-xs font-bold transition ${
                         detailOpen ? "border-goldline border-solid text-golddim rounded-b-none" : "border-wline text-wfaint hover:text-wsub"}`}>
-                      🎛 {sport === "lck" ? "세트별로" : "전·후반"} 다르게 매기기 <span className="font-normal">(선택)</span>
+                      🎛 {primarySegment ? "총평·다른 세트 매기기" : isLck ? "세트별로 다르게 매기기" : "전·후반 다르게 매기기"} <span className="font-normal">(선택)</span>
                       <span className="ml-auto">{detailOpen ? "▴" : "▾"}</span>
                     </button>
                     {detailOpen && (
                       <div className="border border-t-0 border-goldline rounded-b-lg divide-y divide-wsoft">
-                        {ratableSegs.map(s => {
-                          const locked = segLocked(s.key);
-                          const cur = segScores[s.key] ?? null;
+                        {detailSegments.map(s => {
+                          const locked = s.key === "full" ? fullLocked : segLocked(s.key);
+                          const cur = s.key === "full" ? full : segScores[s.key] ?? null;
+                          if (isLck && !locked) return (
+                            <div key={s.key} className="px-3 pt-2">
+                              <RatingSlider label={s.label} score={cur} disabled={busy || mineLoading} vibrate={vibrate}
+                                onChange={score => setSegmentScore(s.key, score)} onClear={() => setSegmentScore(s.key, null)} />
+                            </div>
+                          );
                           return (
                             <div key={s.key} className="flex items-center gap-2 px-2.5 py-2">
                               <span className="w-12 text-xs font-bold shrink-0">{s.label}</span>
@@ -2005,14 +2054,14 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                             </div>
                           );
                         })}
-                        <p className="px-3 py-1.5 text-[10.5px] text-wfaint">미입력 구간은 총평만 반영됩니다.</p>
+                        {!primarySegment && <p className="px-3 py-1.5 text-[10.5px] text-wfaint">미입력 구간은 총평만 반영됩니다.</p>}
                       </div>
                     )}
                   </div>
                 )}
 
-                <textarea value={comment} onChange={e=>setComment(e.target.value)}
-                  placeholder="코멘트 (선택 · 총평에 함께 저장)"
+                <textarea value={comment} onChange={e=>setComment(e.target.value)} disabled={isLck && (mineLoading || busy)}
+                  placeholder={`코멘트 (선택 · ${primarySegment?.label ?? "총평"}에 함께 저장)`}
                   className="w-full border rounded p-2 h-20 text-sm"/>
                 <p className="text-[11px] text-wfaint mt-1 leading-snug">
                   특정인(선수·감독·심판 등 포함)에 대한 과도한 욕설·비방·모욕, 근거 없는 명예훼손은
@@ -2020,7 +2069,10 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                 </p>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-xs text-wsub">{comment.length}자</span>
-                  <button onClick={submit} disabled={busy}
+                  {isLck && <label className="ml-auto mr-3 text-xs text-wsub flex items-center gap-1.5">
+                    <input type="checkbox" checked={vibrate} onChange={e => setVibrate(e.target.checked)} />정수 진동
+                  </label>}
+                  <button onClick={submit} disabled={busy || mineLoading}
                     className="bg-gold text-deep px-4 py-1.5 rounded font-bold disabled:opacity-40">등록</button>
                 </div>
                 {msg && <p className="text-sm mt-2 text-golddim">{msg}</p>}

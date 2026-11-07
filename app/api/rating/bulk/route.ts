@@ -6,7 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { verificationBlock } from "@/lib/verified";
 
 // 평점 일괄 등록 — 한 경기에 여러 (선수·구간) 점수를 한 번에 upsert.
-//  · 축구 전체 평점: 선수마다 segment="full" 한 줄
+//  · 축구·LoL 전체 평점: 선수마다 segment="full" 한 줄
 //  · 평점 모달(M안): 한 선수의 full + 상세 세트/전후반 여러 줄
 // items: [{ playerId, segment, score, comment? }]  (comment 없으면 기존 코멘트 보존)
 // rate limit은 요청당 1회만 차감(단건 반복 대비 핵심 이점).
@@ -41,11 +41,14 @@ export async function POST(req: Request) {
   if (match.status === "scheduled")
     return NextResponse.json({ error: "경기 시작 후 평점을 매길 수 있습니다." }, { status: 403 });
   const order = SEG_ORDER[match.sport] ?? ["first", "second"];
+  const decimalScores = match.sport === "lck";
 
   for (const it of items) {
     const score = Number(it?.score);
-    if (!it?.playerId || !Number.isInteger(score) || score < 1 || score > 10)
-      return NextResponse.json({ error: "평점은 1~10 사이여야 합니다." }, { status: 400 });
+    if (!it?.playerId || score < 1 || score > 10 || !Number.isInteger(decimalScores ? score * 10 : score))
+      return NextResponse.json({
+        error: decimalScores ? "평점은 1.0~10.0 사이의 0.1점 단위여야 합니다." : "평점은 1~10 사이의 정수여야 합니다.",
+      }, { status: 400 });
     const seg = it.segment || "full";
     if (seg !== "full") {
       const idx = order.indexOf(seg);
