@@ -48,9 +48,9 @@ export default function RatingSlider({ label, score, onChange, onClear, disabled
           disabled={disabled || score === 10} onClick={() => choose(Math.min(100, Math.round(value * 10) + 1) / 10)}
           className="w-11 h-11 shrink-0 rounded-lg border border-wline bg-card text-xl font-bold disabled:opacity-40">+</button>}
       </div>
-      {detailed && <div aria-hidden="true" className="mx-[52px] flex justify-between text-[11px] text-wsub tabular-nums">
-        <span>1.0</span><span>10.0</span>
-      </div>}
+      <div aria-hidden="true" className={`flex justify-between px-0.5 text-[11px] leading-none text-wsub tabular-nums ${detailed ? "mx-[52px]" : ""}`}>
+        {Array.from({ length: 10 }, (_, index) => <span key={index} className="w-4 text-center">{index + 1}</span>)}
+      </div>
     </div>
   );
 }

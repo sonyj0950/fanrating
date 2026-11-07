@@ -95,7 +95,7 @@ export function LckOverallRatings({ home, away, homeTeam, awayTeam, matchId, rev
             <h4 className="text-base font-extrabold text-ink mb-1">{team} 라인업</h4>
             <div className="divide-y divide-wline">
               {sortByLane(players).map(p => (
-                <div key={p.mpId} className="pt-2">
+                <div key={p.mpId} className="py-2">
                   <RatingSlider label={`${p.name} · ${LANE_LABEL[laneOf(p)] ?? p.role}`} score={draft[p.playerId] ?? saved[p.playerId] ?? null}
                     disabled={busy} vibrate={vibrate} onChange={score => {
                       setDraft(current => ({ ...current, [p.playerId]: score }));
@@ -114,7 +114,6 @@ export function LckOverallRatings({ home, away, homeTeam, awayTeam, matchId, rev
           </div>
         ))}
       </div>
-      <div aria-hidden="true" className="flex justify-between text-xs text-wsub"><span>1.0점</span><span>10.0점</span></div>
       <button type="button" disabled={busy || items.length === 0} onClick={submit}
         className="mt-3 w-full min-h-11 rounded-xl bg-gold text-deep font-extrabold disabled:opacity-40">
         {busy ? "등록 중…" : items.length ? `${items.length}명 평점 등록` : "평점 등록"}

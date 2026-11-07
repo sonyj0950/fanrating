@@ -175,7 +175,7 @@ model Rating {
   userId    String
   user      User          @relation(fields: [userId], references: [id])
   segment   String        @default("full") // full | first | second | set1...set5
-  score     Float // 1~10 (LoL은 0.1점 단위)
+  score     Float // 1.0~10.0 (0.1점 단위)
   comment   String        @default("") // 선택 사항 (빈 문자열 허용)
   blinded   Boolean       @default(false) // 신고 누적/관리자 처리로 가려진 상태
   createdAt DateTime      @default(now())

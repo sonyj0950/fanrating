@@ -454,9 +454,10 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
 
       {/* ⚡ 전체 평점 한번에 — 축구, 필드 밑 접이식 (경기 시작 후) */}
       {(match.sport === "kleague" || match.sport === "epl") && match.status !== "scheduled" && (homeAll.length > 0 || awayAll.length > 0) && (
-        <BulkRatePanel home={homeAll} away={awayAll} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-          matchId={match.id} sport={match.sport} segments={segments} status={match.status}
-          teamColors={teamColors} loggedIn={!!session}
+        <BulkRatePanel key={`${match.id}:${(session?.user as any)?.id ?? "guest"}`}
+          home={homeAll} away={awayAll} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+          matchId={match.id} segments={segments} status={match.status}
+          teamColors={teamColors} loggedIn={!!session} revision={cRev}
           onSaved={() => { setCRev(v => v + 1); router.refresh(); }} />
       )}
 
@@ -1719,17 +1720,19 @@ function MatchRecord({ matchId, record, sport }: { matchId: string; record?: str
 }
 
 // ⚡ 전체 평점 한번에 (축구) — 필드 밑 접이식. 구간 선택 후 선수 전원을 인라인으로 일괄 등록.
-function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segments, status, teamColors = {}, loggedIn, onSaved }:
+function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, segments, status, teamColors = {}, loggedIn, revision, onSaved }:
   { home: Player[]; away: Player[]; homeTeam: string; awayTeam: string; matchId: string;
-    sport: string; segments: { key: string; label: string }[]; status: string;
-    teamColors?: Record<string, string>; loggedIn: boolean; onSaved: () => void }) {
+    segments: { key: string; label: string }[]; status: string;
+    teamColors?: Record<string, string>; loggedIn: boolean; revision: number; onSaved: () => void }) {
   const [open, setOpen] = useState(false);
   const ratable = segments.filter(s => s.key !== "full");
   const firstRatable = ratable[0]?.key;
   const [seg, setSeg] = useState("full");
-  const [scores, setScores] = useState<Record<string, Record<string, number | null>>>({});
+  const [savedScores, setSavedScores] = useState<Record<string, Record<string, number>>>({});
+  const [draftScores, setDraftScores] = useState<Record<string, Record<string, number>>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [vibrate, setVibrate] = useState(true);
 
   const segLocked = (key: string) => {
     if (key === "full") return false;
@@ -1738,65 +1741,67 @@ function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segment
     return true;
   };
 
-  async function loadMine() {
-    if (!loggedIn) return;
-    try {
-      const r = await fetch(`/api/my-ratings?matchId=${matchId}`);
-      const j = await r.json();
-      const map: Record<string, Record<string, number>> = {};
-      for (const it of (j.items || [])) (map[it.segment] ||= {})[it.playerId] = it.score;
-      setScores(map);
-    } catch {}
-  }
-  useEffect(() => { if (open) loadMine(); /* eslint-disable-next-line */ }, [open]);
+  useEffect(() => {
+    if (!open || !loggedIn) return;
+    const controller = new AbortController();
+    fetch(`/api/my-ratings?matchId=${matchId}`, { signal: controller.signal })
+      .then(async res => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const map: Record<string, Record<string, number>> = {};
+        for (const item of data.items ?? []) (map[item.segment] ||= {})[item.playerId] = item.score;
+        if (!controller.signal.aborted) setSavedScores(map);
+      })
+      .catch(() => { if (!controller.signal.aborted) setMsg("기존 평점을 불러오지 못했습니다."); });
+    return () => controller.abort();
+  }, [open, loggedIn, matchId, revision]);
 
-  const cur = scores[seg] || {};
-  const setScore = (pid: string, n: number) =>
-    setScores(m => ({ ...m, [seg]: { ...(m[seg] || {}), [pid]: (m[seg]?.[pid] === n ? null : n) } }));
-  const count = Object.values(cur).filter(v => v != null).length;
+  const draft = draftScores[seg] ?? {};
+  const saved = savedScores[seg] ?? {};
+  const items = Object.entries(draft).filter(([id, score]) => score !== saved[id])
+    .map(([playerId, score]) => ({ playerId, segment: seg, score }));
+  const count = items.length;
 
   async function submit() {
     if (!loggedIn) { setMsg("로그인이 필요합니다."); return; }
-    const items = Object.entries(cur)
-      .filter(([, sc]) => sc != null)
-      .map(([pid, sc]) => ({ playerId: pid, segment: seg, score: sc as number }));
-    if (items.length === 0) { setMsg("점수를 선택한 선수가 없습니다."); return; }
+    if (busy || count === 0 || segLocked(seg)) return;
     setBusy(true);
-    const res = await fetch("/api/rating/bulk", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId, items }),
-    });
-    setBusy(false);
-    const j = await res.json();
-    if (!res.ok) { setMsg(j.error || "등록 실패"); return; }
-    setMsg(`${j.saved}명 등록 완료!`);
-    onSaved();
+    try {
+      const res = await fetch("/api/rating/bulk", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ matchId, items }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg(data.error || "등록 실패"); return; }
+      setSavedScores(current => ({ ...current, [seg]: { ...current[seg], ...draft } }));
+      setDraftScores(current => ({ ...current, [seg]: {} }));
+      setMsg(`${data.saved}명 등록 완료!`);
+      onSaved();
+    } catch {
+      setMsg("평점 등록에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const Col = ({ team, list, color }: { team: string; list: Player[]; color: string }) => (
+  const renderColumn = (team: string, list: Player[], color: string) => (
     <div>
       <p className="flex items-center gap-1.5 text-[12px] font-extrabold mb-1.5">
         <span className="w-2 h-2 rounded-full" style={{ background: color }} />{team}
       </p>
       <div className="space-y-1">
-        {list.map(p => {
-          const v = cur[p.playerId] ?? null;
-          return (
-            <div key={p.mpId} className="flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-ink w-16 sm:w-20 shrink-0 truncate">{p.name}</span>
-              <div className="flex-1 grid grid-cols-10 gap-0.5">
-                {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                  const on = v === n;
-                  return (
-                    <button key={n} onClick={() => setScore(p.playerId, n)}
-                      className={`h-7 rounded text-[11px] font-extrabold transition ${on ? "text-white" : "border border-wsoft text-wmute hover:text-wsub"}`}
-                      style={on ? scoreChipStyle(n) : undefined}>{n}</button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        {list.map(p => (
+          <div key={p.mpId} className="border-b border-wline py-2">
+            <RatingSlider label={p.name} score={draft[p.playerId] ?? saved[p.playerId] ?? null}
+              disabled={busy || !loggedIn || segLocked(seg)} vibrate={vibrate}
+              onChange={score => setDraftScores(current => ({ ...current, [seg]: { ...current[seg], [p.playerId]: score } }))}
+              onClear={draft[p.playerId] == null ? undefined : () => setDraftScores(current => {
+                const next = { ...current[seg] };
+                delete next[p.playerId];
+                return { ...current, [seg]: next };
+              })} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1820,7 +1825,7 @@ function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segment
             {segments.map(s => {
               const locked = segLocked(s.key);
               return (
-                <button key={s.key} disabled={locked} onClick={() => setSeg(s.key)}
+                <button key={s.key} disabled={locked || busy} onClick={() => setSeg(s.key)}
                   className={`px-3 py-1 rounded-full text-xs font-bold transition ${
                     seg === s.key ? "bg-gold text-deep" : "bg-card border border-wline text-wsub"} ${locked ? "opacity-40 cursor-not-allowed" : ""}`}>
                   {locked ? "🔒 " : ""}{s.key === "full" ? "총평" : s.label}
@@ -1833,15 +1838,18 @@ function BulkRatePanel({ home, away, homeTeam, awayTeam, matchId, sport, segment
           </div>
 
           <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
-            <Col team={homeTeam} list={home} color={hColor} />
-            <Col team={awayTeam} list={away} color={aColor} />
+            {renderColumn(homeTeam, home, hColor)}
+            {renderColumn(awayTeam, away, aColor)}
           </div>
 
-          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-wsoft">
+          <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-wsoft">
             <span className="text-[11.5px] text-wsub font-semibold">
-              선택한 <b className="text-golddim">{count}</b>명만 등록 · 이미 매긴 점수는 채워져 있어요
+              {loggedIn ? <>변경한 <b className="text-golddim">{count}</b>명만 등록</> : "로그인 후 평점을 등록할 수 있습니다."}
             </span>
-            <button onClick={submit} disabled={busy || count === 0}
+            <label className="text-xs text-wsub flex items-center gap-1.5">
+              <input type="checkbox" checked={vibrate} onChange={e => setVibrate(e.target.checked)} />정수 진동
+            </label>
+            <button onClick={submit} disabled={busy || !loggedIn || count === 0 || segLocked(seg)}
               className="ml-auto bg-gold text-deep font-black text-[13px] px-5 py-2 rounded-lg disabled:opacity-40">
               {count > 0 ? `${count}명 등록` : "등록"}
             </button>
@@ -1881,7 +1889,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
   const [detailOpen, setDetailOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [mineLoading, setMineLoading] = useState(isLck && loggedIn);
+  const [mineLoading, setMineLoading] = useState(loggedIn);
   const [vibrate, setVibrate] = useState(true);
   const [data, setData] = useState<any>(null);
   const fullLocked = status === "scheduled";
@@ -1915,7 +1923,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
       setFull(f); setSegScores(segs); setComment(c);
       if (detailSegments.some(s => s.key === "full" ? f != null : segs[s.key] != null)) setDetailOpen(true);
     } catch {
-      if (isLck) setMsg("기존 평점을 불러오지 못했습니다.");
+      setMsg("기존 평점을 불러오지 못했습니다.");
     } finally {
       setMineLoading(false);
     }
@@ -1932,7 +1940,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
       if (sc != null && !segLocked(s.key))
         items.push({ playerId: player.playerId, segment: s.key, score: sc, ...(s.key === primaryKey ? { comment } : {}) });
     }
-    if (isLck && comment.trim() && primaryScore == null) { setMsg("코멘트와 함께 저장할 점수를 선택하세요."); return; }
+    if (comment.trim() && primaryScore == null) { setMsg("코멘트와 함께 저장할 점수를 선택하세요."); return; }
     if (items.length === 0) { setMsg("총평 또는 구간 점수를 선택하세요."); return; }
     setBusy(true);
     try {
@@ -1987,27 +1995,11 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
               <p className="text-sm text-golddim bg-goldbg border border-goldline rounded p-3">🔒 {lockMsg}</p>
             ) : (
               <>
-                {isLck ? (
-                  <div className="mb-3">
-                    <RatingSlider label={primarySegment ? `${primarySegment.label} 평점` : "이 경기 총평"}
-                      detailed score={primaryScore} disabled={busy || mineLoading} vibrate={vibrate}
-                      onChange={score => setSegmentScore(primaryKey, score)} onClear={() => setSegmentScore(primaryKey, null)} />
-                  </div>
-                ) : <>
-                <p className="text-sm font-semibold mb-2">이 경기 총평 <span className="text-xs font-normal text-wfaint">(1~10)</span></p>
-                <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 mb-3">
-                  {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                    const on = full === n;
-                    return (
-                      <button key={n} onClick={() => setFull(on ? null : n)}
-                        className={`h-10 rounded-lg text-sm font-bold transition ${on ? "border-2 border-ink" : "border border-wline bg-card text-wfaint hover:text-wsub"}`}
-                        style={on ? scoreChipStyle(n) : undefined}>
-                        {n}
-                      </button>
-                    );
-                  })}
+                <div className="mb-3">
+                  <RatingSlider label={primarySegment ? `${primarySegment.label} 평점` : "이 경기 총평"}
+                    detailed score={primaryScore} disabled={busy || mineLoading} vibrate={vibrate}
+                    onChange={score => setSegmentScore(primaryKey, score)} onClear={() => setSegmentScore(primaryKey, null)} />
                 </div>
-                </>}
 
                 {/* 세트/전후반 상세 — 접이식 선택 옵션 */}
                 {detailSegments.length > 0 && (
@@ -2023,34 +2015,15 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                         {detailSegments.map(s => {
                           const locked = s.key === "full" ? fullLocked : segLocked(s.key);
                           const cur = s.key === "full" ? full : segScores[s.key] ?? null;
-                          if (isLck && !locked) return (
-                            <div key={s.key} className="px-3 pt-2">
-                              <RatingSlider label={s.label} score={cur} disabled={busy || mineLoading} vibrate={vibrate}
-                                onChange={score => setSegmentScore(s.key, score)} onClear={() => setSegmentScore(s.key, null)} />
-                            </div>
-                          );
-                          return (
+                          return locked ? (
                             <div key={s.key} className="flex items-center gap-2 px-2.5 py-2">
                               <span className="w-12 text-xs font-bold shrink-0">{s.label}</span>
-                              {locked ? (
-                                <span className="text-[11px] text-wfaint">🔒 종료 후 입력</span>
-                              ) : (
-                                <>
-                                  <div className="flex-1 grid grid-cols-10 gap-0.5">
-                                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                                      const on = cur === n;
-                                      return (
-                                        <button key={n} onClick={() => setSegScores(m => ({ ...m, [s.key]: on ? null : n }))}
-                                          className={`h-7 rounded text-[11px] font-extrabold transition ${on ? "text-white" : "border border-wsoft text-wmute hover:text-wsub"}`}
-                                          style={on ? scoreChipStyle(n) : undefined}>{n}</button>
-                                      );
-                                    })}
-                                  </div>
-                                  {cur != null
-                                    ? <button onClick={() => setSegScores(m => ({ ...m, [s.key]: null }))} className="text-wfaint hover:text-live text-sm shrink-0 w-4" title="지우기">✕</button>
-                                    : <span className="w-4 shrink-0" />}
-                                </>
-                              )}
+                              <span className="text-[11px] text-wfaint">🔒 종료 후 입력</span>
+                            </div>
+                          ) : (
+                            <div key={s.key} className="px-3 py-2">
+                              <RatingSlider label={s.label} score={cur} disabled={busy || mineLoading} vibrate={vibrate}
+                                onChange={score => setSegmentScore(s.key, score)} onClear={() => setSegmentScore(s.key, null)} />
                             </div>
                           );
                         })}
@@ -2060,7 +2033,7 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                   </div>
                 )}
 
-                <textarea value={comment} onChange={e=>setComment(e.target.value)} disabled={isLck && (mineLoading || busy)}
+                <textarea value={comment} onChange={e=>setComment(e.target.value)} disabled={mineLoading || busy}
                   placeholder={`코멘트 (선택 · ${primarySegment?.label ?? "총평"}에 함께 저장)`}
                   className="w-full border rounded p-2 h-20 text-sm"/>
                 <p className="text-[11px] text-wfaint mt-1 leading-snug">
@@ -2069,9 +2042,9 @@ function PlayerModal({ matchId, player, loggedIn, segment, segments, status, spo
                 </p>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-xs text-wsub">{comment.length}자</span>
-                  {isLck && <label className="ml-auto mr-3 text-xs text-wsub flex items-center gap-1.5">
+                  <label className="ml-auto mr-3 text-xs text-wsub flex items-center gap-1.5">
                     <input type="checkbox" checked={vibrate} onChange={e => setVibrate(e.target.checked)} />정수 진동
-                  </label>}
+                  </label>
                   <button onClick={submit} disabled={busy || mineLoading}
                     className="bg-gold text-deep px-4 py-1.5 rounded font-bold disabled:opacity-40">등록</button>
                 </div>
