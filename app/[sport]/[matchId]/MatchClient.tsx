@@ -687,7 +687,7 @@ function RatingList({ home, away, homeTeam, awayTeam, isMine, pog, onPick, subIn
     const v = p.avg!;
     // 순위 색 (높은순 1~3위 골드/실버/브론즈 텍스트)
     const rkColor = mode !== "high" ? "text-wmute"
-      : rank === 1 ? "text-gold" : rank === 2 ? "text-[#cfd8cf]" : rank === 3 ? "text-[#c9975a]" : "text-wmute";
+      : rank === 1 ? "text-golddim" : rank === 2 ? "text-wsub" : rank === 3 ? "text-[color:var(--sc-orange)]" : "text-wmute";
     const pc = cdata?.players?.[p.playerId];
     const best = pc?.top?.[0];
     const isOpen = !isMine && expanded === p.playerId;
