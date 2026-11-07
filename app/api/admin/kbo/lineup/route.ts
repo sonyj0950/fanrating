@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAdmin } from "@/lib/adminLog";
+import { isKboStartingPitcher } from "@/lib/kboTeams";
 
 // KBO 경기 라인업/교체 편집 (관리자 전용)
 // GET  ?matchId=X : 경기 정보 + 홈/원정 1군 로스터 + 현재 라인업/교체
@@ -38,17 +39,16 @@ export async function GET(req: Request) {
     for (const c of candidates) {
       const rows = await prisma.matchPlayer.findMany({
         where: { matchId: c.id, player: { team: recentFor } },
-        select: { playerId: true, role: true, battingOrder: true, player: { select: { name: true } } },
+        select: { playerId: true, role: true, isDefault: true, battingOrder: true, player: { select: { name: true } } },
       });
       if (!rows.some(r => r.battingOrder != null)) continue;
       const batters = Array.from({ length: 9 }, () => ({ playerId: "", position: "" }));
-      let pitcherId = "";
+      const pitcherId = rows.find(isKboStartingPitcher)?.playerId ?? "";
       const names: Record<string, string> = {};
       for (const r of rows) {
         names[r.playerId] = r.player.name;
         if (r.battingOrder != null && r.battingOrder >= 1 && r.battingOrder <= 9)
           batters[r.battingOrder - 1] = { playerId: r.playerId, position: r.role || "" };
-        else if (r.role === "투수") pitcherId = r.playerId;
       }
       const opp = c.homeTeam === recentFor ? c.awayTeam : c.homeTeam;
       const kst = new Date(c.date.getTime() + 9 * 3600 * 1000);

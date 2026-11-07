@@ -1,5 +1,6 @@
 "use client";
 import type { Player } from "./types";
+import { isKboStartingPitcher } from "@/lib/kboTeams";
 import { teamColor, DEFAULT_HOME, DEFAULT_AWAY } from "@/lib/teamColors";
 import { scoreChipStyle } from "@/lib/scoreColor";
 import { GoldStar } from "@/app/MatchCard";
@@ -43,7 +44,7 @@ function FieldMarker({ p, left, top, color, highlight, onPick, sub }:
   { p: Player; left: number; top: number; color: string; highlight?: boolean;
     onPick: (p: Player) => void; sub?: { dir: "in" | "out"; min: number } }) {
   const rated = p.avg !== null;
-  const posShort = POS_SHORT[p.role] ?? "";
+  const posShort = isKboStartingPitcher(p) ? "선발" : POS_SHORT[p.role] ?? "";
   return (
     <button onClick={(e) => { e.stopPropagation(); onPick(p); }} title={p.name}
       style={{ left: `${left}%`, top: `${top}%` }}
@@ -135,7 +136,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
   }
 
   // 분류
-  const starter = players.find(p => p.battingOrder == null && p.role === "투수");
+  const starter = players.find(isKboStartingPitcher);
   const dh = players.find(p => p.role === "지명타자");
   // 필드에 세울 수비수: 타순이 있고 수비 좌표가 있는 포지션
   const placed: { p: Player; left: number; top: number }[] = [];
@@ -150,7 +151,7 @@ export default function BaseballField({ players, onPick, isHome = true, teamLabe
 
   // 남은 선수 = 후보/교체. 투수교체이거나 투수면 불펜으로, 나머지는 후보로.
   const rest = players.filter(p => !placedIds.has(p.mpId) && p !== dh);
-  const isReliever = (p: Player) => subKind[p.playerId] === "투수교체" || p.isPitcher === true;
+  const isReliever = (p: Player) => subKind[p.playerId] === "투수교체" || p.isPitcher === true || p.role === "투수";
   const bullpen = rest.filter(isReliever).sort((a, b) =>
     (subInfo[a.playerId]?.min ?? 99) - (subInfo[b.playerId]?.min ?? 99));
   const bench = rest.filter(p => !isReliever(p));

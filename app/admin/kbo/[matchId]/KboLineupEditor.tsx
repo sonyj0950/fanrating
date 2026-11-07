@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KBO_BATTER_POSITIONS, KBO_SUB_KINDS, KBO_TEAM_LABELS } from "@/lib/kboTeams";
+import { isKboStartingPitcher, KBO_BATTER_POSITIONS, KBO_SUB_KINDS, KBO_TEAM_LABELS } from "@/lib/kboTeams";
 
 type RP = { id: string; name: string; position: string | null; isPitcher: boolean | null };
 type Batter = { playerId: string; position: string };
@@ -44,7 +44,7 @@ export default function KboLineupEditor({ matchId }: { matchId: string }) {
 
         const build = (team: string): Side => {
           const ent = (j.lineup || []).filter((l: any) => l.player.team === team);
-          const pit = ent.find((l: any) => l.role === "투수" && l.battingOrder == null);
+          const pit = ent.find(isKboStartingPitcher);
           const bs = emptyBatters();
           ent.forEach((l: any) => { if (l.battingOrder >= 1 && l.battingOrder <= 9) bs[l.battingOrder - 1] = { playerId: l.playerId, position: l.role || "" }; });
           return { pitcherId: pit ? pit.playerId : "", batters: bs };

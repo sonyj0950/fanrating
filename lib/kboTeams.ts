@@ -13,6 +13,15 @@ export function classifyPitcher(position?: string | null): boolean {
   return /투|선발|마무리|불펜|중계|셋업|좌완|우완/.test(p);
 }
 
+export function isKboStartingPitcher(player: {
+  isDefault: boolean;
+  battingOrder?: number | null;
+  role?: string | null;
+}): boolean {
+  return player.isDefault && player.battingOrder == null &&
+    /^(투수|선발|선발투수)$/.test(player.role?.trim() ?? "");
+}
+
 // 타자 수비 포지션 (라인업 빌더 드롭다운)
 export const KBO_BATTER_POSITIONS = ["포수", "1루수", "2루수", "3루수", "유격수", "좌익수", "중견수", "우익수", "지명타자"] as const;
 
