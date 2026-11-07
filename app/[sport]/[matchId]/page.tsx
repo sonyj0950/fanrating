@@ -1,3 +1,5 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import MatchClient from "./MatchClient";
@@ -75,20 +77,23 @@ export default async function MatchPage({ params }: any) {
   const teamColors: Record<string, string> = {};
   for (const c of colorRows) teamColors[c.team] = c.color;
 
-  // 공유 카드 데이터 (평점 30개 이상·종료 시 노출). 이미 가진 쿼리로 계산.
-  const shareCard = buildShareCardData(
-    {
-      id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
-      homeLabel: teamLabel(m.sport, m.homeTeam), awayLabel: teamLabel(m.sport, m.awayTeam),
-      homeScore: m.homeScore, awayScore: m.awayScore, date: m.date, round: m.round ?? null,
-      record: m.record ?? null, status: m.status,
-    },
-    m.players.map(mp => ({
-      playerId: mp.playerId, name: mp.player.name, team: mp.player.team,
-      role: (mp.role ?? mp.player.position ?? "") || "", isPitcher: mp.player.isPitcher ?? null,
-    })),
-    m.ratings.map(r => ({ playerId: r.playerId, score: r.score })),
-  );
+  const session = await getServerSession(authOptions);
+  const isAdmin = (session?.user as any)?.role === "admin";
+  const shareCard = isAdmin
+    ? buildShareCardData(
+        {
+          id: m.id, sport: m.sport, homeTeam: m.homeTeam, awayTeam: m.awayTeam,
+          homeLabel: teamLabel(m.sport, m.homeTeam), awayLabel: teamLabel(m.sport, m.awayTeam),
+          homeScore: m.homeScore, awayScore: m.awayScore, date: m.date, round: m.round ?? null,
+          record: m.record ?? null, status: m.status,
+        },
+        m.players.map(mp => ({
+          playerId: mp.playerId, name: mp.player.name, team: mp.player.team,
+          role: (mp.role ?? mp.player.position ?? "") || "", isPitcher: mp.player.isPitcher ?? null,
+        })),
+        m.ratings.map(r => ({ playerId: r.playerId, score: r.score })),
+      )
+    : null;
 
   return (
     <MatchClient

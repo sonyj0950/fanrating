@@ -293,7 +293,7 @@ export default function MatchClient({ match, players: rawPlayers, agg, subs = []
         </div>
       )}
 
-      {shareCard && <ShareCardPanel data={shareCard} canPreview={isAdmin} />}
+      {isAdmin && shareCard && <ShareCardPanel data={shareCard} canPreview />}
 
       {seg !== "mine" && isAdmin && (
         <StatsPanel players={fieldPlayers} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
