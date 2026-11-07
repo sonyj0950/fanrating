@@ -43,8 +43,8 @@ export default function Header() {
 
   return (
     <header className="bg-paper border-b border-wline sticky top-0 z-40">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-1.5 sm:gap-2">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 sm:h-14 sm:flex sm:justify-between">
+        <Link href="/" aria-label="팬아레나 홈" className="flex items-center gap-2 shrink-0 min-h-12 sm:min-h-0">
           <span aria-hidden="true"
             className="w-[26px] h-[26px] rounded-lg bg-gold text-deep grid place-items-center text-[15px] font-black leading-none">
             F
@@ -54,7 +54,7 @@ export default function Header() {
             fanarena<span className="text-wfaint">.kr</span>
           </span>
         </Link>
-        <nav className="flex items-center gap-0 sm:gap-1 text-[13px] sm:text-sm min-w-0 overflow-x-auto">
+        <nav className="col-span-2 row-start-2 flex items-center gap-0 sm:gap-1 text-[13px] sm:text-sm min-w-0 overflow-x-auto border-t border-wline sm:border-t-0">
           {NAV.map(n => (
             <Link key={n.href} href={n.href}
               className={`px-1.5 sm:px-2 py-1.5 font-bold whitespace-nowrap transition ${
@@ -79,11 +79,15 @@ export default function Header() {
             </>
           )}
         </nav>
-        <div className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
+        <div className="col-start-2 row-start-1 justify-self-end flex min-h-12 items-center gap-1.5 sm:min-h-0 sm:gap-3 text-sm shrink-0">
           <ThemeToggle />
           {session ? (
             <>
-              <Link href={`/u/${(session.user as any).id}`} className="text-wsub hidden lg:inline hover:text-ink whitespace-nowrap">{session.user?.name}님</Link>
+              <Link href={`/u/${(session.user as any).id}`}
+                className="px-2.5 sm:px-3.5 py-1 rounded-full border border-wline text-ink font-semibold hover:border-ink hover:bg-wsoft transition whitespace-nowrap lg:p-0 lg:border-0 lg:text-wsub lg:hover:bg-transparent lg:hover:text-ink">
+                <span className="lg:hidden">내 페이지</span>
+                <span className="hidden lg:inline">{session.user?.name}님</span>
+              </Link>
               <button onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-2.5 sm:px-3.5 py-1 rounded-full border-[1.5px] border-wline text-wsub font-semibold hover:border-ink hover:text-ink transition whitespace-nowrap">로그아웃</button>
             </>
